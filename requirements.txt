@@ -53,3 +53,11 @@ cryptography>=42.0.0
 # matched to whichever Scala build is in use (the `_2.12` in its artifact id).
 pyspark==3.5.1
 pyarrow>=14.0.0
+
+# Dev/test-only dependencies - not needed to run the app, only to test it.
+pytest>=8.0.0
+
+# Required by starlette's TestClient, which route tests use to exercise the app
+# through its real middleware stack (request ids, error handling, CORS) rather
+# than by calling handler functions directly.
+httpx>=0.27.0

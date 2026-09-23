@@ -54,7 +54,6 @@ dq_parameter.yaml
 *.parquet
 *.xlsx
 *.xls
-!backend/rules/*.xlsx
 ~$*
 
 # Logs and temp files

@@ -3,7 +3,6 @@ from core.config import BASE_DIR
 
 ACCEL_PATH = BASE_DIR
 ACCEL_SRC_PATH = BASE_DIR / "src"
-RULES_MASTER_PATH = BASE_DIR / "rules" / "DQ_Rules_Master.xlsx"
 
 
 RUNTIME_DIR = BASE_DIR.parent / "runtime"

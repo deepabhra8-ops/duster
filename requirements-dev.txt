@@ -1,0 +1,9 @@
+# Dev/test-only dependencies - not needed to run the app, only to test it.
+-r requirements.txt
+
+pytest>=8.0.0
+
+# Required by starlette's TestClient, which route tests use to exercise the app
+# through its real middleware stack (request ids, error handling, CORS) rather
+# than by calling handler functions directly.
+httpx>=0.27.0

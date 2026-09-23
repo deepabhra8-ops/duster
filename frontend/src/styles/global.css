@@ -1,0 +1,7011 @@
+/* ═══════════════════════════════════════════════════════════════
+   DUSTER - style.css
+   Design: Refined industrial-data aesthetic.
+   Fonts: Sora (display) + JetBrains Mono (code/data)
+═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+/* ── Design tokens ──────────────────────────────────────────── */
+:root {
+  --navy: #0F2744;
+  --navy2: #1A3A5C;
+  --blue: #1D4ED8;
+  --blue2: #2563EB;
+  --lblue: #D4E9F7;
+  /* Table headers. The redesign's #f7fafc sat so close to the card background
+     that the header row did not read as a header at all. A light grey rather
+     than a tint of the brand blue: it separates the header from the data
+     without competing with the blue used for links, pills and primary actions. */
+  --table-head-bg: #E2E8F0;
+  --table-head-border: #CBD5E1;
+  --llblue: #EBF5FC;
+  --teal: #0A7373;
+  --lteal: #C8EAEA;
+  --green: #2A5F2A;
+  --lgreen: #D4EDDA;
+  --red: #8B1A1A;
+  --lred: #FAE0E0;
+  --amber: #7A4100;
+  --lamber: #FEF3CD;
+  --orange: #C45C0C;
+  /* Amber above reads as brown, not yellow - it's a text colour tuned for
+     contrast on --lamber, not a display swatch. This is a separate, plainly
+     yellow tone (same muted depth as --red/--green) just for the score
+     gauge's red -> yellow -> green gradient (ScoreGauge.jsx). */
+  --yellow: #B8860B;
+  /* Lighter red/yellow/green - one step up from --red/--yellow/--green,
+     well short of the pale --lred/--lamber/--lgreen tints - for the score
+     gauge's gradient fill specifically. */
+  --gauge-red: #E05D5B;
+  --gauge-yellow: #F4C438;
+  --gauge-green: #4CAF50;
+  /* Job status colours - ONE colour per status, used as-is by the status pill
+     (.pill-status-*), the jobs-table progress bar and the dashboard "Jobs by
+     Type" chart. Change a status colour here and nowhere else. */
+  --status-done: #A5D8B4;
+  --status-error: #F2B0B0;
+  --status-cancelled: #BFCAD9;
+  --status-queued: #F8DE93;
+  --status-running: #B4D8F2;
+  --status-cancelling: #3C6DB2;
+  --status-draft: #CBB6E8;
+  --status-unknown: #E2E8F0;
+  /* Donut / chart segments - softer tints tuned for small rings, not text-on-tint pills. */
+  --chart-done: #2EC4A6;
+  --chart-error: #F07178;
+  --chart-cancelled: #A8B5C6;
+  --chart-queued: #F5C04E;
+  --chart-running: #5B9CF5;
+  --chart-cancelling: #F5925E;
+  --chart-draft: #C5CDD8;
+  --chart-unknown: #CBD5E1;
+  --chart-track: #E9EEF4;
+  --white: #FFFFFF;
+  --bg: #F4F7F9;
+  --surface: #FFFFFF;
+  --border: #CBD5E1;
+  --border2: #E2E8F0;
+  --mgray: #64748B;
+  --dgray: #0F172A;
+  --lgray: #F8FAFC;
+
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+
+  /* Icon-only rail width (collapsed desktop state and every other width).
+     rem so the chrome scales with the root font size alongside the type and
+     spacing scales; a 64px rail beside 20px text on a 4K display reads as a
+     sliver. */
+  --sidebar-w: 4rem;
+  /* 64px  */
+  /* Width of the mobile drawer (<=768px), the one place the rail is always
+     shown with labels. */
+  --sidebar-w-drawer: 13.75rem;
+  /* 220px */
+  /* Width of the desktop rail once expanded via .sb-brand-toggle (see
+     .sidebar.expanded) - a bit roomier than the drawer, since it also has to
+     fit the nested Discovery accordion's indented catalog links. */
+  --sidebar-w-expanded: 16.5rem;
+  /* 264px */
+  --topbar-h: 4rem;
+  /* 64px  */
+
+  /* ── Breakpoints ──────────────────────────────────────────
+     One ladder for the whole app. These cannot be referenced from inside
+     `@media` - the spec does not resolve var() in a media condition - so
+     they are documented here and written as literals at each query. Keep
+     the two in step; do not introduce a value that is not on this ladder.
+
+       sm   640px   phone                    (absorbed 480 / 600 / 620)
+       md   768px   tablet portrait, drawer  (absorbed 700 / 720)
+       lg  1024px   tablet landscape         (absorbed 900 / 960)
+       xl  1440px   desktop                  (absorbed 1100 / 1300 / 1500)
+  */
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1440px;
+
+  /* Sidebar chrome - kept independent of --navy (used elsewhere for
+     text/accents) so it can read as a near-black left rail. Topbar reverted
+     to --navy (see .topbar below) - the lighter tone tried here didn't suit
+     the brand mark. */
+  --sidebar-bg: #0F2744;
+  /* Top-to-bottom wash for the rail, in five stops. --sidebar-bg stays as the
+     solid base beneath it, so it is also what shows if a gradient is ever
+     unsupported. */
+  --sidebar-gradient: linear-gradient(
+    to bottom,
+    #0F2744 0%,
+    #18395A 25%,
+    #215071 50%,
+    #26628A 75%,
+    #296BBC 100%
+  );
+  --trans: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Magnifying glass for search inputs, as a background-image so any input can
+     wear it without a wrapper element or an icon component. A token rather than
+     a literal repeated per rule: the stroke colour is baked into the URI
+     (%2364748B is --mgray), so a second copy is a second thing to keep in sync.
+     Consumers pair it with left padding - see .search-input below. */
+  --icon-search: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+
+  /* ── Spacing scale (4px base) ───────────────────────────── */
+  /* rem, not px, so the whole scale rides the root font size. That is what
+     makes browser zoom, an OS/browser font-size preference, and the 2K/4K
+     `html { font-size }` steps at the foot of this file actually do
+     something - while they were px these tokens ignored all three.
+     1rem = 16px at the default root size, so the values are unchanged on a
+     default setup; nothing shifts visually until the root moves. */
+  --space-1: 0.25rem;
+  /* 4px  */
+  --space-2: 0.5rem;
+  /* 8px  */
+  --space-3: 0.75rem;
+  /* 12px */
+  --space-4: 1rem;
+  /* 16px */
+  --space-5: 1.5rem;
+  /* 24px */
+  --space-6: 2rem;
+  /* 32px */
+  --space-7: 3rem;
+  /* 48px */
+  --space-8: 4rem;
+  /* 64px */
+
+  /* Adaptive gutters. The page's own padding and the gaps between dashboard
+     panels grow with the viewport, so a wide display does not read as the same
+     layout with more whitespace bolted on - it reads as a roomier one. Bounded
+     at both ends like the type scale. */
+  --gutter: clamp(0.75rem, 0.5rem + 1.2vw, 2.5rem);
+  /* 12 → 40px - page edge padding            */
+  --gap-panel: clamp(0.625rem, 0.5rem + 0.5vw, 1.25rem);
+  /* 10 → 20px - between dashboard panels     */
+
+  /* ── Type scale ─────────────────────────────────────────── */
+  /* Dense data application - ramp stays tight; goal is consistency
+     and legibility, not dramatically larger text. */
+  /* Fluid: each step grows with the viewport between the `sm` and `xl` stops
+     and is hard-bounded at both ends by clamp(), so nothing shrinks below its
+     old value on a phone or runs away on an ultrawide. The vw term is what
+     removes the need for per-breakpoint font-size overrides - the ramp is
+     continuous rather than stepping at 640/1024/1440.
+
+     The rem terms inside clamp() keep the whole scale tied to the root font
+     size, so browser zoom and an OS font-size preference still work; a purely
+     vw-based scale would ignore both, which fails WCAG 1.4.4 (resize text).
+
+     Small text stays nearly flat - body copy and table cells are sized for
+     reading, not for filling space; the display sizes carry the scaling. */
+  --text-xs: clamp(0.6875rem, 0.66rem + 0.08vw, 0.8125rem);
+  /* 11 → 13px  - meta, table captions        */
+  --text-sm: clamp(0.75rem, 0.72rem + 0.09vw, 0.875rem);
+  /* 12 → 14px  - secondary, pills            */
+  --text-base: clamp(0.875rem, 0.84rem + 0.11vw, 1.0625rem);
+  /* 14 → 17px  - body, table cells, inputs   */
+  --text-md: clamp(1rem, 0.95rem + 0.16vw, 1.25rem);
+  /* 16 → 20px  - card titles                 */
+  --text-lg: clamp(1.25rem, 1.15rem + 0.3vw, 1.75rem);
+  /* 20 → 28px  - page headings               */
+  --text-xl: clamp(1.625rem, 1.45rem + 0.5vw, 2.5rem);
+  /* 26 → 40px  - dashboard tile figures      */
+  --text-2xl: clamp(2.125rem, 1.85rem + 0.8vw, 3.25rem);
+  /* 34 → 52px  - score gauge                 */
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ── Motion ─────────────────────────────────────────────── */
+  --transition-fast: 120ms ease;
+  --transition: 180ms ease;
+}
+
+/* ── Reduced motion opt-out ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Reset & base ───────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--dgray);
+  min-height: 100vh;
+  /* Was a flat 14px, which pinned every unstyled descendant to 14px no matter
+     what the root did - the single biggest reason the 2K/4K root-size steps
+     had no effect. */
+  font-size: var(--text-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: .88em;
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  height: var(--topbar-h);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 250;
+  border-bottom: 1px solid var(--border2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+}
+
+/* Mobile drawer toggle. Hidden by default and revealed only inside the drawer
+   breakpoint - above it the rail is on screen and there is nothing to open. */
+.topbar-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--dgray);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.topbar-menu-btn:hover {
+  background: var(--lgray);
+}
+
+.topbar-left,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar-logo {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: 0.01em;
+}
+
+.notification-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--llblue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s;
+  color: var(--blue2);
+}
+
+.notification-btn:hover {
+  transform: scale(1.05);
+}
+
+.notification-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  -webkit-mask-image: url(/icons/notification.svg);
+  mask-image: url(/icons/notification.svg);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}
+
+/* Unread count. Was a 6px dot before there was a count to show. The fill is deeper than
+   --gauge-red on purpose: white 11px text on that reaches only ~3.5:1, and small text needs
+   4.5:1 - this red is ~5.6:1. The white ring lifts the pill off both the button and the bar. */
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  box-sizing: border-box;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 2px solid var(--white);
+  border-radius: 10px;
+  background: #C62828;
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  background-image: var(--sidebar-gradient);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 260;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255, 255, 255, .06);
+  transition: width .2s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* An icon column by default; a toggle revealed on hover of the brand mark
+   (.sb-brand-toggle) widens it to --sidebar-w-expanded, roomier than the
+   mobile drawer since it also has to fit the nested Discovery accordion's
+   indented catalog links. An item's name is its link's `title` / aria-label
+   at every width - the expanded labels are a bonus, not the only way to
+   read them. The mobile drawer below is always effectively expanded (no
+   hover to reveal a toggle on touch), regardless of this class. */
+.sidebar.expanded {
+  width: var(--sidebar-w-expanded);
+}
+
+@media (min-width: 769px) {
+  #root:has(.sidebar.expanded) .main {
+    margin-left: var(--sidebar-w-expanded);
+    width: calc(100% - var(--sidebar-w-expanded));
+  }
+}
+
+/* Backdrop behind the mobile drawer. Present at all widths but inert until the
+   drawer breakpoint turns it on, so it can fade rather than appear. */
+.sidebar-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 39, 68, .45);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 255;
+  display: none;
+  transition: opacity .2s cubic-bezier(.4, 0, .2, 1);
+}
+
+.sb-footer {
+  width: 100%;
+  padding-bottom: var(--space-5);
+}
+
+.main {
+  /* Flex column filling the viewport below the topbar, so a page can claim the
+     leftover height instead of stopping at its content and leaving the body
+     background showing beneath it.
+
+     This model existed before, but only on Home - .dashboard-page opted into it
+     with its own `min-height: calc(100vh - ...)`. Every other page rendered a
+     bare <section>, whose height is the sum of its content and which therefore
+     never grew with the viewport. Zooming out multiplies the CSS viewport
+     vertically exactly as it does horizontally, which is what made the gap
+     obvious. Lifting the model here means a page opts out, not in.
+
+     min-height, not height: content taller than the viewport still grows and
+     scrolls normally. box-sizing is border-box globally, so the padding below
+     is inside this figure. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--topbar-h));
+  margin-left: var(--sidebar-w);
+  margin-top: var(--topbar-h);
+  /* Adaptive edge padding - tight on a phone, generous on a wide display.
+     No max-width and no auto margins: the column fills the space beside the
+     rail at every width, and the grids inside it add columns rather than
+     stretching. See the note at "Content width: fill, don't cap" below. */
+  padding: var(--gutter) var(--gutter) var(--space-7);
+  width: calc(100% - var(--sidebar-w));
+  /* The page is the scroll container's child; without this a wide table's
+     overflow would widen the whole document instead of scrolling in place. */
+  min-width: 0;
+  /* Animates the page sliding over when the second-tier panel opens or closes. */
+  transition: margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Sidebar internals ──────────────────────────────────────── */
+/* Brand mark at the head of the rail. The row is as tall as the topbar, so the
+   mark sits in the same band as the bar's title, and .sb-nav's own top padding
+   is the breathing room before the first item. Left padding puts the mark's
+   centre on the nav icons' axis: item padding 20px + 3px active border + half of
+   the 20px icon = 33px, minus half of the 36px mark = 15px. */
+.sb-brand {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: var(--topbar-h);
+  padding-left: 15px;
+  padding-right: 14px;
+}
+
+.sb-brand-logo {
+  display: block;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+}
+
+/* Wordmark beside the mark. White reads with the badge's own check mark;
+   the accent word picks up its orange tile, which also matches the active
+   nav item's left border - the one accent colour the dark rail already
+   uses. Hidden by default (icon-only rail); shown once the rail is
+   expanded, or always in the mobile drawer (see the drawer breakpoint). */
+.sb-brand-text {
+  margin-left: 10px;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
+  color: rgba(255, 255, 255, .92);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+
+.sidebar.expanded .sb-brand-text {
+  opacity: 1;
+}
+
+/* Expand/collapse toggle. Collapsed, there is nowhere in the 64px rail to
+   lay it out inline, so it is absolutely positioned over the brand row's
+   right edge and revealed on hover, without affecting the row's height or
+   the logo's fixed position. Expanded, it drops back into normal flow at
+   the end of the row - `margin-left: auto` pushes it flush right, beside
+   the wordmark. The chevron itself rotates 180deg to point the other way
+   rather than swapping icons. */
+.sb-brand-toggle {
+  position: absolute;
+  left: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 50%;
+  background: var(--navy2);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s ease, background .15s ease;
+  z-index: 1;
+}
+
+.sidebar.expanded .sb-brand-toggle {
+  position: static;
+  transform: none;
+  margin-left: auto;
+}
+
+.sb-brand:hover .sb-brand-toggle,
+.sb-brand-toggle:focus-visible,
+.sidebar.expanded .sb-brand-toggle {
+  opacity: 1;
+}
+
+.sb-brand-toggle:hover {
+  background: var(--navy);
+}
+
+.sb-brand-toggle:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 1px;
+}
+
+.sb-brand-toggle svg {
+  transition: transform .2s ease;
+}
+
+.sidebar.expanded .sb-brand-toggle svg {
+  transform: rotate(180deg);
+}
+
+/* Fixed icon-only rail - no label text (shown as a hover tooltip instead,
+   via the NavLink's title attribute), so items just center the icon. */
+.sb-nav {
+  padding: 10px 0 20px;
+  flex: 1;
+}
+
+.sb-section {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .35);
+  padding: 14px 20px 5px;
+}
+
+.sb-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 20px;
+  color: rgba(255, 255, 255, .68);
+  cursor: pointer;
+  user-select: none;
+  border-left: 3px solid transparent;
+  transition: var(--trans);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+.sb-item:hover {
+  background: rgba(255, 255, 255, .07);
+  color: #fff;
+}
+
+.sb-item.active {
+  background: rgba(255, 255, 255, .11);
+  color: #fff;
+  border-left-color: var(--orange);
+  font-weight: 700;
+}
+
+.sb-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  /* Icon files are single-color source SVGs - mask them so color follows
+     currentColor (hover/active states) instead of the file's own fill. */
+  -webkit-mask-image: var(--icon-src, none);
+  mask-image: var(--icon-src, none);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}
+
+.sb-item-icon-emoji {
+  font-size: 16px;
+  background: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.sb-item-icon-react {
+  font-size: 20px;
+  background: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sb-item-icon-react svg {
+  margin: 0 !important;
+}
+
+.sb-item:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: -2px;
+}
+
+.sb-item-label {
+  margin-left: 12px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  opacity: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar.expanded .sb-item-label {
+  opacity: 1;
+}
+
+/* ── Discovery accordion ─────────────────────────────────────────
+   components/Sidebar.jsx. Replaces the old second-tier side panel: Discovery
+   is a rail item that is a toggle, not a link, and opens inline, directly
+   under itself, rather than in a separate panel beside the rail. Its content
+   only has room once the rail is expanded (or, on touch, inside the mobile
+   drawer, which is always effectively expanded) - collapsed, it is just an
+   icon like any other rail item. Two levels nest inside it: a catalog
+   section (Rule Catalog / Data Catalog), then that catalog's links - each
+   its own 0fr -> 1fr accordion, same technique as the item panel below. */
+.sb-discovery {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-discovery-trigger {
+  width: 100%;
+  border: 0;
+  border-left: 3px solid transparent;
+  /* Unlike the other rail items (all <a> - see .sb-item), this one is a
+     <button>, which brings its own opaque UA background (pale grey/white)
+     unless it's reset - left alone it showed through as a near-white box
+     behind the label whenever the button wasn't hovered or active. */
+  background: none;
+  font: inherit;
+  letter-spacing: 0.3px;
+}
+
+.sb-discovery-trigger-chevron {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: rgba(255, 255, 255, .45);
+  opacity: 0;
+  transition: transform .2s cubic-bezier(.4, 0, .2, 1), opacity .15s ease;
+}
+
+.sidebar.expanded .sb-discovery-trigger-chevron {
+  opacity: 1;
+}
+
+.sb-discovery.is-open .sb-discovery-trigger-chevron {
+  transform: rotate(180deg);
+}
+
+.sb-discovery-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows .2s cubic-bezier(.4, 0, .2, 1), visibility 0s linear .2s;
+}
+
+.sidebar.expanded .sb-discovery.is-open .sb-discovery-panel,
+.sidebar.is-open .sb-discovery.is-open .sb-discovery-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows .2s cubic-bezier(.4, 0, .2, 1), visibility 0s;
+}
+
+.sb-discovery-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 4px 8px 8px 20px;
+}
+
+.sb-discovery-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sb-discovery-section-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, .62);
+  text-align: left;
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.sb-discovery-section-trigger:hover {
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+}
+
+.sb-discovery-section-trigger:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: -2px;
+}
+
+.sb-discovery-section.is-open .sb-discovery-section-trigger {
+  color: #fff;
+  font-weight: 600;
+}
+
+.sb-discovery-section-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-discovery-chevron {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, .45);
+  transition: transform .2s cubic-bezier(.4, 0, .2, 1);
+}
+
+.sb-discovery-section.is-open .sb-discovery-chevron {
+  transform: rotate(180deg);
+}
+
+.sb-discovery-section-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows .2s cubic-bezier(.4, 0, .2, 1), visibility 0s linear .2s;
+}
+
+.sb-discovery-section.is-open .sb-discovery-section-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows .2s cubic-bezier(.4, 0, .2, 1), visibility 0s;
+}
+
+.sb-discovery-section-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 2px;
+}
+
+.sb-discovery-link {
+  display: flex;
+  align-items: center;
+  padding: 7px 8px 7px 26px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, .55);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: var(--trans);
+}
+
+.sb-discovery-link:hover {
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+}
+
+.sb-discovery-link.active {
+  background: rgba(255, 255, 255, .11);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sb-discovery-link:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-discovery-panel,
+  .sb-discovery.is-open .sb-discovery-panel,
+  .sb-discovery-trigger-chevron,
+  .sb-discovery-section-panel,
+  .sb-discovery-section.is-open .sb-discovery-section-panel,
+  .sb-discovery-chevron {
+    transition: none;
+  }
+}
+
+/* ── Page header ─────────────────────────────────────────────── */
+.page-header {
+  margin-bottom: 22px;
+}
+
+.page-header h2 {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: -0.5px;
+}
+
+.page-header p {
+  color: var(--mgray);
+  font-size: 0.8125rem;
+  margin-top: 4px;
+}
+
+/* ProfileMapperJob.jsx's Dashboard tab - reuses .page-header for the job
+   name/id/description, but it's the only content in that tab panel (not
+   sitting above other page content), so no trailing margin needed. */
+.job-dashboard-header {
+  margin-bottom: 0;
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border2);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(139, 26, 26, 0.15), 0 4px 6px -4px rgba(139, 26, 26, 0.1);
+}
+
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dgray);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Forms ──────────────────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-grid.cols3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group.full {
+  grid-column: 1 / -1;
+}
+
+label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mgray);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+input,
+select,
+textarea {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 0.8125rem;
+  font-family: var(--font-ui);
+  color: var(--dgray);
+  background: var(--white);
+  width: 100%;
+  transition: border-color .18s, box-shadow .18s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(29, 111, 164, .14);
+}
+
+input[type="password"] {
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 64px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--mgray);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.section-desc {
+  font-size: 0.8125rem;
+  color: var(--mgray);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: var(--trans);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--navy2);
+}
+
+.btn-navy {
+  background: var(--navy);
+  color: #fff;
+}
+
+.btn-navy:hover:not(:disabled) {
+  background: #0a1d33;
+}
+
+.btn-teal {
+  background: var(--teal);
+  color: #fff;
+}
+
+.btn-teal:hover:not(:disabled) {
+  background: #085f5f;
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #6e1414;
+}
+
+/* A disabled danger button (e.g. Remove row while locked) reads as a faded
+   red at .btn:disabled's default opacity - genuinely greys out instead, so
+   "disabled" reads the same way it does for every other button variant. */
+.btn-danger:disabled {
+  background: var(--lgray);
+  color: var(--mgray);
+  opacity: 1;
+}
+
+.btn-ghost {
+  background: var(--lgray);
+  color: var(--dgray);
+  border: 1.5px solid var(--border);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--border2);
+}
+
+.btn-sm {
+  padding: 6px 13px;
+  font-size: 12px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Segment control ─────────────────────────────────────────── */
+.seg {
+  display: inline-flex;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.seg-opt {
+  padding: 8px 18px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  background: var(--white);
+  color: var(--mgray);
+  border: none;
+  transition: var(--trans);
+}
+
+.seg-opt.on {
+  background: var(--blue);
+  color: #fff;
+}
+
+.seg-opt:hover:not(.on) {
+  background: var(--lgray);
+}
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1.5px solid var(--border2);
+}
+
+.tab {
+  padding: 9px 4px;
+  margin-bottom: -1.5px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--mgray);
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.tab+.tab {
+  margin-left: 14px;
+}
+
+.tab:hover:not(.on) {
+  color: var(--dgray);
+}
+
+.tab.on {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+/* Tab bar + a right-aligned toolbar (search/Filters/Columns/Download)
+   sharing one row (ReportResultsTabs.jsx). Tabs keeps its own underline;
+   the row adds a second, full-width divider below the whole thing (chips
+   have their own all-round border, so a shared border running through
+   their middle - the .tabs-only approach used before this toolbar existed
+   - would look wrong now). */
+.report-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--border2);
+}
+
+/* Search / Filters / Columns / Download - one shared "outlined chip" look:
+   thin border, plain surface fill, muted icon+label. Not wired to real
+   search/filter/column-visibility logic yet - inert, same sample-data
+   status as the rest of this page. */
+.report-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--mgray);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.toolbar-chip:hover {
+  background: var(--lgray);
+  color: var(--dgray);
+}
+
+.toolbar-chip .btn-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.toolbar-chip-icon-only {
+  padding: 8px;
+}
+
+.toolbar-search {
+  min-width: 240px;
+  cursor: text;
+}
+
+/* Overrides the global `input` rule's 9px/12px padding + 1.5px border
+   (global.css's ── Forms section) - those are what made this look far
+   taller than the Filters/Columns chips beside it; this input should be
+   borderless/padding-less and let .toolbar-chip's own 7px/14px do the
+   sizing instead. Also resets text-transform/font-weight/color, which
+   would otherwise inherit the ALL-CAPS/bold/muted look global.css's plain
+   `label` rule gives its labels (this chip is a <label>, for click-to-focus). */
+.toolbar-search input {
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  line-height: normal;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  font-family: var(--font-ui);
+  color: var(--dgray);
+  text-transform: none;
+  letter-spacing: normal;
+  flex: 1;
+  min-width: 0;
+}
+
+.toolbar-search input::placeholder {
+  color: var(--mgray);
+}
+
+/* ── Badge ───────────────────────────────────────────────────── */
+.badge {
+  background: var(--lblue);
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: .2px;
+}
+
+.pill-teal {
+  background: var(--lteal);
+  color: var(--teal);
+}
+
+.pill-gray {
+  background: var(--border2);
+  color: var(--mgray);
+}
+
+/* ── Alerts ──────────────────────────────────────────────────── */
+.alert {
+  padding: 11px 15px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+.alert-info {
+  background: var(--llblue);
+  color: var(--navy);
+  border-left: 4px solid var(--blue);
+}
+
+.alert-ok {
+  background: var(--lgreen);
+  color: var(--green);
+  border-left: 4px solid var(--teal);
+}
+
+.alert-err {
+  background: var(--lred);
+  color: var(--red);
+  border-left: 4px solid #C62828;
+}
+
+.alert-warn {
+  background: var(--lamber);
+  color: var(--amber);
+  border-left: 4px solid #D97706;
+}
+
+/* ── Tables ──────────────────────────────────────────────────── */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.tbl th {
+  background: var(--table-head-bg);
+  color: var(--navy);
+  font-weight: 700;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: .2px;
+}
+
+.tbl td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border2);
+  vertical-align: middle;
+}
+
+.tbl tr:last-child td {
+  border-bottom: none;
+}
+
+.tbl tr:hover td {
+  background: var(--lgray);
+}
+
+.tbl code {
+  background: var(--lgray);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ── Log terminal ────────────────────────────────────────────── */
+.log-box {
+  background: #0D1B2A;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.75;
+  color: #90A4B8;
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, .06);
+}
+
+.log-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.log-box::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .15);
+  border-radius: 3px;
+}
+
+.log-ok {
+  color: #4CD964;
+}
+
+.log-warn {
+  color: #FFD60A;
+}
+
+.log-err {
+  color: #FF6B6B;
+}
+
+.log-info {
+  color: #5AC8FA;
+}
+
+.log-idle {
+  color: #445566;
+  font-style: italic;
+}
+
+/* ── Steps ───────────────────────────────────────────────────── */
+.steps {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  transition: var(--trans);
+}
+
+.step-num.done {
+  background: var(--teal);
+  color: #fff;
+}
+
+.step-num.active {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(29, 111, 164, .2);
+}
+
+.step-num.pending {
+  background: var(--border);
+  color: var(--mgray);
+}
+
+.step-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mgray);
+}
+
+.step-conn {
+  flex: 1;
+  min-width: 20px;
+  height: 2px;
+  background: var(--border);
+  transition: background .4s;
+}
+
+.step-conn.done {
+  background: var(--teal);
+}
+
+/* ── Score cards ─────────────────────────────────────────────── */
+/* Wider floor (was 150px) so auto-fill favours fewer, wider columns over
+   many narrow ones - paired with the card's own row layout below, this is
+   what gives each card a landscape (wide, not tall) shape. */
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+/* Row layout (icon beside the label/value text, not stacked under it) plus
+   trimmed vertical padding - together these keep the card's height to about
+   one line while grid-template-columns above claims the width, so the card
+   reads as a wide rectangle rather than the square-ish stack it was. */
+.score-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  text-align: left;
+}
+
+.score-card-text {
+  min-width: 0;
+}
+
+.score-card .dim {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 4px;
+}
+
+.score-card .val {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+.score-card .rag {
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+
+.sc-good {
+  background: var(--lgreen);
+  color: var(--green);
+}
+
+.sc-warn {
+  background: var(--lamber);
+  color: var(--amber);
+}
+
+.sc-bad {
+  background: var(--lred);
+  color: var(--red);
+}
+
+.sc-grey {
+  background: var(--lgray);
+  color: var(--mgray);
+}
+
+/* ── Overall score large display ─────────────────────────────── */
+.overall-score {
+  font-size: 54px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.overall-score.sc-good {
+  color: var(--green);
+}
+
+.overall-score.sc-warn {
+  color: var(--amber);
+}
+
+.overall-score.sc-bad {
+  color: var(--red);
+}
+
+.overall-score.sc-grey {
+  color: var(--mgray);
+}
+
+/* ── Upload zone ─────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--trans);
+  background: var(--lgray);
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--blue);
+  background: var(--llblue);
+}
+
+.upload-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.upload-zone strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.upload-zone p {
+  color: var(--mgray);
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* ── Upload progress rows ────────────────────────────────────── */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--lgray);
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.prog-name {
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prog-size {
+  color: var(--mgray);
+}
+
+.prog-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.prog-status.pending {
+  background: var(--lgray);
+  color: var(--mgray);
+}
+
+.prog-status.uploading {
+  background: var(--lblue);
+  color: var(--blue);
+}
+
+.prog-status.done {
+  background: var(--lgreen);
+  color: var(--green);
+}
+
+.prog-status.error {
+  background: var(--lred);
+  color: var(--red);
+}
+
+/* ── Source table row cards ──────────────────────────────────── */
+.table-row-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: var(--lgray);
+}
+
+/* SchemaTableColumnRows.jsx's rows only (not SourceTables.jsx's, which
+   still gets the grey fill above) - white instead, and once locked, a
+   more compact read as a finished/summary row: smaller dropdown text,
+   quieter label. */
+.table-row-card.stc-row {
+  background: var(--white);
+}
+
+.table-row-card.stc-row.locked label {
+  color: var(--mgray);
+  font-size: 10px;
+}
+
+.table-row-card.stc-row.locked .metadata-combobox>input {
+  font-size: 12px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.lov-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+/* ── Connection status badge ─────────────────────────────────── */
+.conn-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.conn-ok {
+  background: var(--lgreen);
+  color: var(--green);
+}
+
+.conn-err {
+  background: var(--lred);
+  color: var(--red);
+}
+
+/* ── Progress bar (ProgressBar.jsx) ─────────────────────────────── */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--border2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .3s ease;
+}
+
+.progress-bar-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--mgray);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── Profile Mapper list page layout (ProfileMapper.jsx) ─────────
+   Wider main column (the existing toolbar + jobs-table cards) + a
+   narrower side column holding one vertical card - empty placeholder for
+   now. Own classes rather than reusing .job-layout* below - those now
+   carry a fixed 640px height tailored to ProfileMapperJob.jsx's content,
+   which doesn't apply here; this one just stretches both columns to
+   match each other's natural height. */
+/* Full width, like every other jobs list. This used to be a two-column flex
+   layout with an empty placeholder card reserving 220px+ on the right; that
+   width came straight out of the table, and since this table carries one more
+   column than the Validator's, it pushed Job ID and Actions into wrapping. */
+.profile-mapper-main {
+  min-width: 0;
+}
+
+/* Toolbar sitting above the jobs table inside the same card: filters
+   (status/sort) start at the extreme left, New Job sits at the extreme
+   right (pushed there via margin-left: auto on the button itself). */
+.profile-mapper-table {
+  /* plain wrapper around the table + pagination */
+}
+
+/* Reserves height for a full page of rows (JOBS_PAGE_SIZE=10, appConfig.js)
+   regardless of how many are actually showing - 1 for "Loading…"/the empty
+   state, fewer than 10 on a partial last page, or a live poll tick briefly
+   changing the count - so the table (and Pagination, and the side card
+   stretching to match via align-items:stretch above) doesn't grow/shrink
+   and jump on every fetch. ~36px header (10px padding + ~12px text) + 10 ×
+   ~58px rows (9px+9px cell padding around the tallest cell content, the
+   Actions column's 38px icon buttons - .file-action-btns-lg - plus a 1px
+   border-bottom) ≈ 616px; a little slack over that. min-height (not height)
+   so a future wider row that genuinely needs more room still gets it. */
+.profile-mapper-table-scroll {
+  overflow-x: auto;
+  /* Capped against the viewport: 625px is a sensible floor on a desktop but
+     taller than the whole content area of a 1366x768 laptop, where it forced
+     the page to scroll before the table had any rows in it. */
+  min-height: min(625px, 60vh);
+}
+
+/* ── Job page layout (ProfileMapperJob.jsx) ─────────────────────
+   Main content (left, wider) + a side rail (right, narrower), each its
+   own stack of cards - structural scaffold only for now, see
+   docs/ux-plan.md §5. */
+/* Main content + side rail. A grid with a fluid rail track rather than a flex
+   row with a fixed `min-width: 220px` side: the rail now grows with the page
+   instead of staying 220px on a wide display, and the pair collapses to one
+   column on its own once the main column cannot hold 520px - no breakpoint
+   decides it. */
+.job-layout {
+  display: grid;
+  grid-template-columns: minmax(min(520px, 100%), 1fr) clamp(240px, 20%, 400px);
+  gap: var(--gap-panel);
+  align-items: stretch;
+}
+
+@media (max-width: 1024px) {
+  .job-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.job-layout-main,
+.job-layout-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-panel);
+  min-width: 0;
+}
+
+.job-layout-main {
+  /* `flex: 4` was the other half of the old flex split - inert now that
+     .job-layout is a grid, and removed rather than left to confuse. */
+  min-width: 0;
+}
+
+.job-layout-side {
+  /* The grid's track sizing owns the width now; the old `flex: 1` +
+     `min-width: 220px` pair was what pinned this rail narrow on wide screens. */
+  min-width: 0;
+}
+
+/* ProfileMapperJob.jsx's Placeholder E only - narrower than the shared
+   .job-layout-side default (ValidatorJob.jsx's 3-box side column keeps
+   that default). Fixed basis, no grow/shrink, so it stays this width
+   regardless of viewport rather than the default's flex:1 stretch. */
+.job-layout-side-narrow {
+  flex: 0 0 260px;
+  min-width: 260px;
+}
+
+/* These two columns used to carry `height: 1000px` (and 700px for the Profile
+   Mapper variant) - a figure arrived at by measuring ~12 table rows at a
+   specific desktop width. A definite height is the wrong tool: 1000px is
+   taller than the content area of any laptop (a 1366x768 screen has roughly
+   640px below the topbar), so the columns overflowed the viewport on the most
+   common screen there is, and on a short window the side rail's cards were cut
+   off with no way to scroll them.
+
+   A floor instead of a fixed value: the columns still line up and still don't
+   jump between fetches, but content longer than the floor now extends rather
+   than overflowing. The floor itself is capped against the viewport so it can
+   never exceed the window it has to fit in. align-items: stretch on .job-layout
+   is doing real work again now that no explicit height overrides it. */
+.job-layout-main,
+.job-layout-side {
+  min-height: min(1000px, calc(100vh - var(--topbar-h) - var(--space-7)));
+}
+
+.profile-mapper-job-layout .job-layout-main,
+.profile-mapper-job-layout .job-layout-side {
+  min-height: min(700px, calc(100vh - var(--topbar-h) - var(--space-7)));
+}
+
+/* Side column's boxes share the column: every box gets equal flex except the
+   last, which gets twice as much - 1:1:2 for ValidatorJob.jsx's 3-box column;
+   ProfileMapperJob.jsx's own two boxes (Download and Summary) simply take that
+   share. By :last-child rather than a fixed nth-child(3) so both column lengths
+   share this rule without a modifier class.
+
+   `flex-basis: 0` with a min-height floor rather than bare `flex: 1`: the
+   parent's height is no longer definite, so proportional growth needs
+   something to be proportional to, and each box needs a size of its own when
+   the column is only as tall as its content. */
+.job-layout-side>* {
+  flex: 1 1 0;
+  min-height: 120px;
+}
+
+.job-layout-side>*:last-child {
+  flex: 2 1 0;
+}
+
+/* .card's own margin-bottom would double up with the flex `gap` above. */
+.job-layout-main>.card,
+.job-layout-side>.card {
+  margin-bottom: 0;
+}
+
+/* Placeholder layout scaffold: three small boxes in a row, sized to their
+   own content (not flex-grown), then a taller box below that flex-grows
+   to fill the rest of job-layout-main's fixed height. */
+.job-placeholder-row {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.job-placeholder-row>.card {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  padding: 14px 16px;
+}
+
+.job-placeholder-row>.card>.card-title {
+  margin-bottom: 4px;
+  font-size: 0.8125rem;
+}
+
+.job-placeholder-row>.card>.pill {
+  font-size: 10px;
+  padding: 1px 7px;
+}
+
+.job-placeholder-box-lg {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Dashboard layout (Home.jsx) ─────────────────────
+   Own classes rather than reusing .job-layout* above - those carry a fixed
+   1000px height (sized for a specific "12 rows visible" content
+   requirement) and a last-child-gets-2x side-column bias tailored to the
+   job detail pages; this page's wireframe wants the opposite (side column's
+   *top* box taller). Structural scaffold only, matching every other page's
+   "labeled Placeholder box, no real data" convention (docs/ux-plan.md §2 -
+   content still undecided).
+   .dashboard-page (the <section> Home.jsx renders into) is a flex column
+   filling the viewport below the topbar/.main padding; .dashboard-layout
+   is flex:1 inside it, so it always claims exactly whatever's left after
+   .page-header's own natural height - not a guessed pixel value for that
+   header (an earlier pass hardcoded ~71px for it here, which undershot and
+   still left a visible gap). Without dashboard-page's min-height at all,
+   Placeholder E/G's panels stopped at their own min-height/flex-share and
+   left empty gray page background beneath them. */
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The dashboard's two halves as an auto-fit grid: one column when neither half
+   can hold 440px, two when they can. Replaces a flex row plus a media query at
+   1024px that flipped flex-direction - the grid reaches the same result without
+   a breakpoint, and keeps the halves equal at every width above the floor. */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
+  gap: var(--gap-panel);
+  align-items: stretch;
+  flex: 1;
+}
+
+.dashboard-main,
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  /* Lets the column hold a child to the row's height rather than being pushed
+     taller by it - the panel's internal scroll depends on this. */
+  min-height: 0;
+}
+
+.dashboard-main {
+  flex: 4;
+}
+
+.dashboard-side {
+  flex: 1;
+  min-width: 220px;
+}
+
+.dashboard-main>.card,
+.dashboard-side>.card {
+  margin-bottom: 0;
+}
+
+/* Row of 4 tiles - flex:1 so they stretch to fill the main column's full
+   width (matching the wireframe, where the tile row spans edge-to-edge
+   with the big panel below it), with a fixed height instead of
+   aspect-ratio: 1/1 - at real page widths, a true square tied to that
+   stretched width came out far taller than intended. */
+/* Auto-fit rather than a flex row: below ~1100px the four tiles wrap to two
+   rows of two and then to one column, instead of all four squeezing toward
+   illegibility; above it they share the width equally. The breakpoint is
+   implicit in the 210px floor, so no media query decides it - the content
+   does. */
+.dashboard-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--gap-panel);
+  flex: 0 0 auto;
+}
+
+.dashboard-tiles>.card {
+  flex: 1;
+  min-width: 0;
+  height: 130px;
+  padding: 20px 24px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+}
+
+.dashboard-tiles>.card>.card-title {
+  margin-bottom: 8px;
+}
+
+.tile-figure {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  color: var(--blue2);
+  margin-top: 12px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+/* Big panel below the tiles, grows to fill the rest of the main column -
+   min-height raised (260px → 420px) so it's taller even on shorter
+   viewports where flex:1's share of the fixed-height dashboard-page would
+   otherwise land smaller than that. */
+.dashboard-panel-lg {
+  flex: 1;
+  min-height: 420px;
+}
+
+/* Side rail's two boxes - was 3:2 (top clearly taller); narrowed to 3:2.5
+   to give the bottom box (Placeholder G) more height without flattening
+   the top/bottom distinction the wireframe asked for. min-height on the
+   last child is the more visible lever of the two (a flex-share change
+   only matters once the column's total height exceeds both boxes'
+   natural/min size, same caveat as dashboard-panel-lg above). */
+.dashboard-side>.card:first-child {
+  flex: 2;
+}
+
+.dashboard-side>.card:last-child {
+  flex: 3.5;
+  min-height: max-content;
+}
+
+/* ── Stacked Bar Chart (JobStatusChart.jsx) ────────────────────────────────────────────── */
+.stacked-chart-container {
+  width: 100%;
+  position: relative;
+}
+
+.stacked-chart-area {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.stacked-chart-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  pointer-events: none;
+}
+
+.grid-label-spacer {
+  width: 70px;
+  /* Space for Validation/Profiling labels */
+  flex-shrink: 0;
+}
+
+.grid-lines-container {
+  flex: 1;
+  position: relative;
+}
+
+.grid-line {
+  position: absolute;
+  top: 0;
+  bottom: -24px;
+  /* Extend down for labels */
+  border-left: 1px dashed var(--border2);
+}
+
+.grid-line-label {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--mgray);
+}
+
+.stacked-chart-bars {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px 0 24px 0;
+}
+
+.stacked-bar-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: default;
+}
+
+.stacked-bar-label {
+  width: 70px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--mgray);
+  text-align: right;
+  padding-right: 12px;
+}
+
+.stacked-bar-track {
+  flex: 1;
+  height: 32px;
+  background-color: transparent;
+  display: flex;
+  border-radius: 4px;
+  position: relative;
+}
+
+.stacked-bar-segment {
+  height: 100%;
+}
+
+.stacked-bar-segment:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.stacked-bar-segment:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+/* Tooltip styles */
+.stacked-bar-tooltip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 12px;
+  z-index: 10;
+  min-width: 140px;
+  pointer-events: none;
+}
+
+.tooltip-top {
+  bottom: calc(100% + 4px);
+}
+
+.tooltip-bottom {
+  top: calc(100% + 4px);
+}
+
+.tooltip-title {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.tooltip-row:last-child {
+  margin-bottom: 0;
+}
+
+.tooltip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tooltip-status {
+  color: var(--mgray);
+  flex: 1;
+}
+
+.tooltip-count {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+/* Keep the legend styles as we reused them */
+.donut-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--mgray);
+}
+
+.donut-legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.08);
+}
+
+/* ── Score gauge (ScoreGauge.jsx) - simple semi-radial progress arc ──
+   Capped at max-width rather than width:100%/height:auto, so it renders at
+   its own small, fixed-proportion size instead of stretching to fill
+   whatever the card happens to be wide enough to give it. */
+.score-gauge {
+  display: block;
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+  margin: 2px auto 0;
+}
+
+.score-gauge-endlabel {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--mgray);
+}
+
+.score-gauge-value {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 800;
+  fill: var(--dgray);
+}
+
+/* Profile Map Results card (ProfileMapperJob.jsx) - title, Cancel/Edit/Save,
+   and the table all live under one .profile-map-results-body div now (no
+   separate header div splitting title+actions off from the table; Download
+   lives only in the side rail's Files card, not this titlebar).
+   .profile-map-results-titlebar is that title+actions row's own flex
+   layout within that one div - same flex-row .card-title used to provide
+   before the buttons moved out of it. */
+.profile-map-results-titlebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* The title carries .card-title's bottom margin, which in a flex row pushes it
+   off the actions' centre line. Reset it here rather than inline at the call
+   site, so the row stays aligned wherever it is reused. */
+.profile-map-results-titlebar .card-title {
+  margin-bottom: 0;
+}
+
+/* Wide result tables scroll inside their own container rather than stretching
+   the page - previously set inline on the scroll child. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* Cancel/Edit/Save group, in that order, pushed to the titlebar's right
+   edge (margin-left: auto - it's a flex sibling of .card-title now, not its
+   own full-width row) - Cancel/Save enabled only while there's an
+   uncommitted cell edit, see the handler comments at the call site
+   (ProfileMapperJob.jsx). */
+.profile-map-results-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Cancel/Save render as bare icons, not .btn-styled buttons - no border/
+   background/padding-box, just the masked svg (still a real <button> for
+   click/keyboard/disabled semantics, just stripped of all button chrome).
+   Cancel's close.svg tints neutral gray, Save's check.svg tints green, so
+   the two read as distinct actions without needing a text label. */
+.profile-map-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.profile-map-action-btn:hover:not(:disabled) {
+  background: var(--bg2, rgba(0, 0, 0, .05));
+}
+
+.profile-map-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: .35;
+}
+
+.profile-map-action-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  -webkit-mask-image: var(--icon-src, none);
+  mask-image: var(--icon-src, none);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}
+
+.profile-map-action-icon-cancel {
+  color: var(--mgray);
+}
+
+.profile-map-action-icon-save {
+  color: var(--green);
+}
+
+.profile-map-action-icon-edit {
+  color: var(--teal);
+}
+
+/* Profile Map table shell - table-layout: fixed + the <colgroup> widths
+   ProfileMapperJob.jsx sets (PROFILE_MAP_COLUMN_WIDTHS) pin every column's
+   width up front. word-break so one long unbroken token (an email, a long
+   rule-parameter string) would wrap within its fixed column instead of
+   overflowing it, if the table ever carries data again. */
+.profile-map-table {
+  table-layout: fixed;
+  border: 2px solid var(--border);
+}
+
+.profile-map-table td {
+  word-break: break-word;
+}
+
+/* Header labels stay on one line - PROFILE_MAP_COLUMN_WIDTHS is sized
+   generously enough that this doesn't need to ellipsis in practice, but
+   the overflow/text-overflow pair is a harmless safety net if a label
+   ever runs slightly long. */
+.profile-map-table th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The "#" row-number cell: without this, table-layout: fixed's narrow column
+   plus the generic td's word-break: break-word let the browser wrap a
+   2+ digit number mid-token ("20" splitting onto two lines). Right-aligned,
+   tabular-nums so digits don't shift width row to row. */
+.profile-map-row-num {
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Column groups ───────────────────────────────────────────────
+   A profiled column owns one row per DQ rule, so its stats are rendered once
+   in a rowSpan'd cell with only the rule cells repeating beside it. Two
+   consequences for styling:
+   1. Zebra striping is off here - nth-child would stripe the rule lines
+      inside a group rather than the groups themselves, which reads as noise.
+   2. Each group needs its own boundary instead, so a column's block of rules
+      is visually one unit: a stronger rule above the group's first line, and
+      no divider between lines within it. */
+/* Two class selectors so this beats .tbl's own nth-child striping regardless of
+   source order - .tbl's rule is declared later in this file and would otherwise
+   win on equal specificity, striping rule lines inside a group at random. */
+.tbl.profile-map-table tbody tr:nth-child(even) td {
+  background: none;
+}
+
+.profile-map-table td {
+  border-bottom: none;
+  vertical-align: middle;
+}
+
+.profile-map-table tbody tr.profile-map-group-start>td {
+  border-top: 1.5px solid var(--border);
+}
+
+/* The body stays white - groups are delimited by the rule above each one and the
+   hairline beside the metadata, not by banding. Only genuine state (an edited cell,
+   a pending new rule) carries colour, so colour always means something here. */
+
+/* Metadata cells sit against the group's rules - a hairline keeps the boundary
+   between "the column" and "its rules" readable across a wide table. */
+.profile-map-table tbody td[rowspan] {
+  border-right: 1px solid var(--border2);
+}
+
+.tbl.profile-map-table tbody td[rowspan].profile-map-editable-cell.is-edited {
+  background: var(--lamber);
+}
+
+/* A deleted rule leaves the table straight away (it leaves the database on Save).
+   Re-applying it means picking it from the Add-rule dropdown, which offers it
+   again once the column no longer carries it - so there's no struck-through
+   tombstone row to style here. */
+
+/* Per-rule delete, in its own trailing column so suggested and added rules carry
+   the same control in the same place. */
+.profile-map-actions-cell {
+  text-align: center;
+}
+
+.profile-map-delete-rule-btn {
+  color: var(--red);
+}
+
+.profile-map-delete-rule-btn .profile-map-action-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Rule id on a saved row - a quiet monospace badge so DQ1/DQ5/DQ10 are
+   scannable down a column group rather than blending into the prose cells. */
+.profile-map-rule-id {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--navy);
+  background: var(--lblue);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+}
+
+/* "+ Add rule" - the last line of a group while editing. Deliberately quiet
+   (no filled button) so it reads as an affordance on the row, not a primary action. */
+.profile-map-add-rule-cell {
+  padding: 4px 6px;
+}
+
+.profile-map-add-rule-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--blue);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.profile-map-add-rule-btn:hover {
+  background: var(--llblue);
+  border-color: var(--blue);
+  border-style: solid;
+}
+
+/* A rule row added but not yet saved - tinted for the whole line so it is
+   obvious which rules are pending. */
+.tbl.profile-map-table td.profile-map-editable-cell.is-new,
+.tbl.profile-map-table td.profile-map-actions-cell.is-new {
+  background: var(--lgreen);
+}
+
+/* The rule picker on a new row. Sized and typed to echo .profile-map-rule-id
+   above it, so a column's rules read as one consistent stack whether they were
+   suggested by profiling or picked here - rather than one wide dropdown
+   breaking the rhythm of the badges. */
+.profile-map-rule-select {
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--navy);
+  background: var(--lblue);
+  border: 1px solid var(--blue2);
+  border-radius: var(--radius-sm);
+  padding: 3px 4px;
+}
+
+.profile-map-rule-select:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: -1px;
+}
+
+/* The source tables of a multi-table profiling run are picked from a tab strip
+   (.profile-map-table-picker, below). Every table is visible at once, which is
+   what makes it obvious how many the profile covers and which one is open - a
+   dropdown was tried here and hid both facts behind a closed control. Long
+   names are handled by scrolling the strip rather than wrapping it. */
+
+.profile-map-table-picker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 0 var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border2);
+}
+
+/* min-width:0 is what actually lets the strip scroll: without it this flex item
+   refuses to shrink below its content and pushes the count off the card
+   instead. */
+.profile-map-table-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* The strip's own underline would double up with the picker's bottom border. */
+.profile-map-table-tabs .tabs {
+  border-bottom: none;
+  flex-wrap: nowrap;
+}
+
+.profile-map-table-tabs .tab {
+  white-space: nowrap;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.profile-map-table-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--mgray);
+}
+
+/* Loading skeleton for the Profile Map table body - rendered inside the real
+   <table>/<colgroup>/<thead>, so headers and column widths are already final
+   and no layout shift happens once real rows replace these placeholder rows. */
+.skeleton-cell {
+  display: block;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--lgray) 25%, var(--border2) 37%, var(--lgray) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Editable cells (CDE (X=Yes)/Applicable Rules/Rule Parameters/Analyst
+   Notes columns only - PROFILE_MAP_EDITABLE_COLUMNS in ProfileMapperJob.jsx)
+   in the Profile Map table. There's no per-cell pencil anymore - the
+   titlebar's single Edit icon (profile-map-action-icon-edit) toggles every
+   editable cell into an input at once (ProfileMapperJob.jsx's
+   profileMapEditMode). is-edited (an uncommitted change exists for this
+   cell) tints the cell so pending-but-not-yet-Saved edits are visually
+   obvious at a glance across a wide table. */
+.profile-map-table td.profile-map-editable-cell {
+  padding: 4px 6px;
+}
+
+.profile-map-table td.profile-map-editable-cell.is-edited {
+  background: var(--lamber);
+}
+
+/* Fills the cell exactly (colgroup already pins column widths) so entering
+   edit mode doesn't reflow the row's other columns. */
+.profile-map-cell-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 3px 5px;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+}
+
+/* CDE (X=Yes) in edit mode - a checkbox instead of the free-text input every
+   other editable column gets, since the column is really a boolean (X or
+   blank), not free text. Centered, since PROFILE_MAP_COLUMN_WIDTHS gives it
+   a fixed 110px column much wider than the box itself needs. */
+.profile-map-cell-checkbox {
+  display: block;
+  margin: 0 auto;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Main column's one merged card (action row + placeholder grid, previously
+   two stacked cards) - fills job-layout-main's fixed height instead of
+   just sizing to its own content, and scrolls internally
+   (overflow-y:auto) on the rare state whose content exceeds it rather
+   than growing the card past that height. min-height:0 overrides
+   flexbox's default "never shrink below content size" so that overflow
+   can actually kick in. */
+.job-config-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Dashboard/Configuration tab bar sits above everything else in the card -
+   breathing room before whichever tab's content follows. */
+.job-config-card>.tabs {
+  margin-bottom: 16px;
+}
+
+/* Cancel/Edit/Start Mapping - was split space-between against a Database
+   Type label on the left, removed per request; now just right-aligned. */
+.job-config-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Bordered card holding the Source Type radio and, below it, either
+   the flat-file dropzone or the Select Saved Connection/Fetch section -
+   used to be a two-column panel sharing this space with Job Name/
+   Description, removed per request. */
+.job-config-panel {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  background: var(--white);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+/* Card below .job-config-panel holding SchemaTableColumnRows.jsx's Schema/
+   Table/Column row picker (own card look, not .job-config-panel's 2-column
+   flex row - this only ever has the one child). */
+.job-config-extra {
+  background: var(--white);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+/* Shared fixed height for the Description textarea and the flat-file
+   dropzone's .upload-zone, so the two line up regardless of either's own natural
+   sizing - the textarea loses its usual resize handle (a fixed height only
+   means something if the user can't drag it away from matching). */
+.job-config-fixed-box {
+  height: 160px;
+  resize: none;
+}
+
+.upload-zone.job-config-fixed-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Picking a "Select Saved Connection" option scans it immediately (no
+   separate Fetch button) - while that scan is in flight, a small spinner
+   + label shows underneath the dropdown (no table/filters render the
+   result anymore, removed per request; just the one-line success/error
+   alert above this). */
+.job-config-metadata-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.job-config-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+}
+
+/* .job-config-extra's own scan-pending state (waiting on job.metadata_scan
+   before SchemaTableColumnRows.jsx can render) - same spinner, but as the
+   sole content of a full card it reads better centered and larger than
+   the compact inline version under the connection dropdown above. */
+.job-config-extra>.job-config-metadata-loading {
+  justify-content: center;
+  padding: 30px 0;
+}
+
+.job-config-extra>.job-config-metadata-loading .job-config-spinner {
+  width: 26px;
+  height: 26px;
+  border-width: 3px;
+}
+
+/* ── Job download card (JobDownloadCard.jsx) ─────────────────────────
+   Icon + filename above an explicit Download button, rather than the whole row
+   being a click target - the action is named, so there's no guessing. xls.svg
+   renders as a plain <img> (not a masked span): it's a real full-colour file
+   icon, and masking it to currentColor would flatten it. */
+.job-download {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.job-download-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--lgray);
+}
+
+.job-download-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.job-download-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: var(--weight-semibold);
+  color: var(--dgray);
+}
+
+.job-download .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Job summary (side rail) ─────────────────────────────────── */
+.job-summary {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.job-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border2);
+}
+
+.job-summary-row:last-child {
+  border-bottom: none;
+}
+
+.job-summary dt {
+  font-size: 0.8125rem;
+  color: var(--mgray);
+}
+
+.job-summary dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: var(--weight-semibold);
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  text-transform: capitalize;
+}
+
+/* ── Misc helpers ────────────────────────────────────────────── */
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  background: var(--lgray);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.link {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.mono.link {
+  color: var(--blue);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-5) 0;
+}
+
+/* Backward-compat: .row was here before; keep it, add new utilities after */
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* Enhanced empty state with optional CTA support */
+.empty-state {
+  color: var(--mgray);
+  text-align: center;
+  font-size: var(--text-sm);
+  padding: var(--space-6) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.empty-state-icon {
+  font-size: 32px;
+  opacity: .55;
+}
+
+.empty-state-text {
+  color: var(--mgray);
+  font-size: var(--text-base);
+}
+
+.empty-state-sub {
+  color: var(--mgray);
+  font-size: var(--text-sm);
+  opacity: .8;
+}
+
+/* ── Phase 2: Layout utility classes ───────────────────────────── */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.row-end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.muted {
+  color: var(--mgray);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Phase 7: Screen-reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Phase 2: Named component classes ──────────────────────────── */
+/* Dashboard tile figure (replaces style={{ fontSize:"28px" }}) */
+.tile-figure {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  padding: var(--space-1) 0;
+  font-family: var(--font-mono);
+}
+
+/* Run page progress area */
+.run-status-box {
+  margin-top: var(--space-4);
+}
+
+.run-progress-track {
+  height: 8px;
+  background: var(--border2);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.run-progress-fill {
+  height: 100%;
+  background: var(--teal);
+  border-radius: 999px;
+  transition: width .3s ease;
+}
+
+.run-btn-row {
+  margin-top: var(--space-4);
+}
+
+.warning-list {
+  margin: var(--space-2) 0 0 var(--space-5);
+  line-height: var(--leading-normal);
+}
+
+/* Modal body (replaces AlertModal's inline padding) */
+.modal-body {
+  padding: var(--space-5) var(--space-4);
+}
+
+/* Home jobs list */
+.home-jobs-list {
+  margin: 0;
+  padding-left: var(--space-5);
+  line-height: 1.8;
+}
+
+/* Topbar logo link - no default anchor decoration */
+.topbar-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* ── Phase 3: Form error state ──────────────────────────────────── */
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(139, 26, 26, .12);
+}
+
+.field-error {
+  font-size: var(--text-xs);
+  color: var(--red);
+  margin-top: var(--space-1);
+  line-height: var(--leading-normal);
+}
+
+/* ── Phase 3: Button improvements ──────────────────────────────── */
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.btn-busy {
+  pointer-events: none;
+  opacity: .75;
+}
+
+/* ── Phase 3: Card hover elevation ─────────────────────────────── */
+.card-interactive {
+  transition: box-shadow var(--transition), transform var(--transition);
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* ── Phase 3: Table improvements ───────────────────────────────── */
+.tbl-scroll {
+  overflow-x: auto;
+}
+
+.tbl-sticky thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--table-head-bg);
+}
+
+.tbl td.num,
+.tbl th.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Zebra striping - subtle, doesn't override hover */
+.tbl tbody tr:nth-child(even) td {
+  background: rgba(0, 0, 0, .018);
+}
+
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Scrollbar (Webkit) ──────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mgray);
+}
+
+/* ── Toast notifications (ToastContext.jsx/ToastViewport.jsx) ───
+   Fixed top-right stack, above modals (.modal-overlay is 1000). Each toast
+   auto-dismisses via .toast-progress-fill's shrink animation, whose
+   duration is set inline per-toast (ToastViewport.jsx) - the bar itself is
+   the only visible countdown, no separate numeric timer. */
+.toast-viewport {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+}
+
+.toast {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  /* An even 1px border with a tinted icon tile, not the old 4px colour bar down
+     one edge. The tile carries the meaning AND the colour in the same place the
+     eye already goes for the icon, and it is the pattern the modals, score cards
+     and result panels all use - so a toast now looks like part of the app
+     rather than a widget borrowed from somewhere else. */
+  border: 1px solid var(--border2);
+  box-shadow: 0 12px 28px -8px rgba(15, 39, 68, .22), 0 0 0 1px rgba(15, 39, 68, .03);
+  padding: 14px 14px 16px;
+  /* Grows out of its top-right corner, which the viewport pins directly under
+     the notification bell - so a toast reads as emerging from the bell rather
+     than sliding in from the edge of the screen. */
+  transform-origin: top right;
+  animation: toast-in .22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-leaving {
+  animation: toast-out .18s ease forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    /* Starts small and slightly up, i.e. at the bell just above it. */
+    transform: translateY(-10px) scale(0.82);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.82);
+  }
+}
+
+/* One tint per meaning, matching the pills and panels elsewhere. */
+.toast-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.toast-success .toast-icon {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.toast-error .toast-icon {
+  background: var(--lred);
+  color: var(--red);
+}
+
+.toast-warn .toast-icon {
+  background: var(--lamber);
+  color: var(--orange);
+}
+
+.toast-info .toast-icon {
+  background: #DBEAFE;
+  color: var(--blue);
+}
+
+.toast-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--dgray);
+  margin-bottom: 3px;
+  line-height: 1.35;
+}
+
+.toast-message {
+  font-size: 12.5px;
+  color: var(--mgray);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+/* In the flex row rather than absolutely placed, so a long title wraps against
+   it instead of running underneath it. */
+.toast-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: -2px -2px 0 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--mgray);
+  transition: var(--trans);
+}
+
+.toast-close:hover {
+  background: var(--lgray);
+  color: var(--dgray);
+}
+
+.toast-close:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 1px;
+}
+
+/* Inset from the edges and rounded, so the countdown reads as part of the card
+   rather than a strip stuck to its underside. */
+.toast-progress {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 8px;
+  height: 3px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--border2);
+}
+
+.toast-progress-fill {
+  height: 100%;
+  width: 100%;
+  animation-name: toast-shrink;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.toast-success .toast-progress-fill {
+  background: #16A34A;
+}
+
+.toast-error .toast-progress-fill {
+  background: var(--red);
+}
+
+.toast-warn .toast-progress-fill {
+  background: var(--orange);
+}
+
+.toast-info .toast-progress-fill {
+  background: var(--blue);
+}
+
+@keyframes toast-shrink {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+@media (max-width: 640px) {
+  .toast-viewport {
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+}
+
+/* ── Phase 4: Skeleton loaders ──────────────────────────────────── */
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--border2) 25%, var(--lgray) 50%, var(--border2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-row {
+  height: 44px;
+  margin-bottom: var(--space-2);
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: var(--space-2);
+}
+
+.skeleton-text.sm {
+  width: 60%;
+}
+
+.skeleton-text.xs {
+  width: 35%;
+}
+
+.skeleton-tile {
+  height: 40px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Validator results loading state (ValidatorJob.jsx) ─────────────
+   The results dashboard renders its full structure on first paint and
+   fills only the unknown values with the placeholders below, so nothing
+   moves when the job's scores and findings arrive. */
+
+/* Job title placeholder - sized to the h2 it stands in for, inline-block so
+   the header keeps its real height. */
+.skeleton-heading {
+  display: inline-block;
+  width: 240px;
+  height: 26px;
+  vertical-align: middle;
+}
+
+/* Status pill placeholder (Good/Warning/Poor), sized like the real pill. */
+.pill-skeleton {
+  display: inline-block;
+  width: 58px;
+  height: 15px;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+}
+
+/* Indeterminate gauge sweep: a short arc segment running the length of the
+   track on a loop. The path carries pathLength="100", so these numbers are
+   percentages of the arc regardless of its radius. The segment is stroked
+   with the gauge's own position-based gradient, so it shifts red -> yellow
+   -> green as it travels rather than reading as a score of zero. */
+.score-gauge-sweep {
+  stroke-dasharray: 22 100;
+  animation: gauge-sweep 1.7s cubic-bezier(.55, .1, .45, .9) infinite;
+}
+
+@keyframes gauge-sweep {
+  from {
+    stroke-dashoffset: 22;
+  }
+
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+/* Three dots holding the percentage's slot, breathing in sequence. */
+.score-gauge-dots circle {
+  fill: var(--border);
+  animation: gauge-dot 1.25s ease-in-out infinite;
+}
+
+@keyframes gauge-dot {
+
+  0%,
+  100% {
+    opacity: .28;
+    transform: translateY(1.5px);
+  }
+
+  50% {
+    opacity: .95;
+    transform: translateY(-1.5px);
+  }
+}
+
+/* Tab-strip placeholder - inert spans carrying .tab's own padding/border, so
+   the strip matches the real Tabs.jsx row's height exactly; only the label
+   inside is a shimmering bar. */
+.tab-skeleton {
+  cursor: default;
+}
+
+.tab-skeleton-bar {
+  display: block;
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--border2) 25%, var(--lgray) 50%, var(--border2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Side-rail Download card placeholders. */
+.job-download-btn-skeleton {
+  display: block;
+  width: 100%;
+  height: 32px;
+  border-radius: var(--radius-sm);
+}
+
+/* Values fading up into their slots as they populate. --reveal-i staggers
+   siblings so a row of four cards resolves left to right. */
+.reveal-in {
+  animation: reveal-in .4s ease both;
+  animation-delay: calc(var(--reveal-i, 0) * 70ms);
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Motion here is decorative; the placeholders still read as placeholders
+   without it. */
+@media (prefers-reduced-motion: reduce) {
+
+  .skeleton,
+  .skeleton-cell,
+  .tab-skeleton-bar,
+  .score-gauge-sweep,
+  .score-gauge-dots circle,
+  .reveal-in,
+  .btn-icon-spinning {
+    animation: none;
+  }
+
+  .score-gauge-sweep {
+    stroke-dashoffset: -34;
+  }
+
+  .score-gauge-dots circle {
+    opacity: .5;
+  }
+}
+
+/* ── Responsive breakpoints ─────────────────────────────────────── */
+/* The four-stop ladder documented on :root - 640 | 768 | 1024 | 1440.
+   Do not add a value outside it. */
+
+/* The ">=1440px: cap .main at 1440px" block that used to sit here is gone:
+   the content cap is a single fluid clamp near the foot of this file now,
+   and a stepped max-width here only fought it. */
+
+/* ≤1024px (lg): tablet landscape - stack the dashboard's two halves */
+@media (max-width: 1024px) {
+  .form-grid.cols3 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* .dashboard-layout's stacking rule used to live here (flex-direction:
+     column). It is an auto-fit grid now, so it collapses to one column on its
+     own as soon as two 440px tracks stop fitting - no breakpoint needed. */
+  .dashboard-side>.card {
+    min-width: 0;
+  }
+}
+
+/* 768-1024px: collapse multi-column forms; wide tables scroll */
+@media (max-width: 1024px) {
+  .form-grid.cols3 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .job-layout-main,
+  .job-layout-side {
+    width: 100%;
+    min-width: 0;
+    /* The fixed `height` these used to carry is gone; the floor set on them
+       further up is viewport-capped, so nothing needs unsetting here. */
+  }
+
+  .profile-mapper-main {
+    width: 100%;
+  }
+
+  .dashboard-tiles>.card {
+    height: auto;
+    padding: var(--space-4);
+  }
+}
+
+/* ≤md (768px): the rail becomes an off-canvas drawer.
+ *
+ * It used to be `display: none` with nothing put in its place, which meant
+ * navigation simply ceased to exist below this width - and AccountMenu lives
+ * inside the rail, so sign-out went with it. The only way to change page was
+ * to type a URL.
+ *
+ * Translating it off-canvas instead of removing it keeps every one of those
+ * controls in the DOM and reachable, and lets it animate. Topbar.jsx's
+ * hamburger drives it; App.jsx owns the state.
+ */
+@media (max-width: 768px) {
+  .topbar-menu-btn {
+    display: inline-flex;
+  }
+
+  /* The topbar was pinned to `left: var(--sidebar-w)` and no media query ever
+     reset it, so once the rail was hidden the bar stayed inset 64px - a dead
+     notch at the top-left, with the bar's own contents pushed off the right
+     edge. */
+  .topbar {
+    left: 0;
+  }
+
+  .sidebar {
+    width: var(--sidebar-w-drawer);
+    transform: translateX(-100%);
+    transition: transform .2s cubic-bezier(.4, 0, .2, 1);
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  /* No hover on touch, so labels (and the brand wordmark) can never be
+     revealed the desktop way - the drawer is full width anyway, so just show
+     them, and the Discovery accordion is reachable the same way it is when
+     the desktop rail is expanded (see `.sidebar.is-open` above). */
+  .sb-item-label,
+  .sb-brand-text {
+    opacity: 1;
+  }
+
+  .sb-brand-toggle {
+    display: none;
+  }
+
+  .sidebar-scrim {
+    display: block;
+  }
+
+  .sidebar-scrim.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Anchored to the rail's right edge on desktop; in the drawer it simply
+     sits inside it. */
+  .account-menu-dropdown {
+    left: var(--space-3);
+  }
+
+  .main {
+    margin-left: 0;
+    width: 100%;
+    padding: var(--space-4);
+  }
+
+  .form-grid,
+  .form-grid.cols3 {
+    grid-template-columns: 1fr;
+  }
+
+  .steps {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .step-conn {
+    width: 2px;
+    height: 16px;
+    min-width: 0;
+  }
+
+  .profile-mapper-table-scroll {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar-scrim {
+    transition: none;
+  }
+}
+
+/* `.profile-map-mobile-notice` used to be defined here - an amber banner shown
+   only under 700px, telling the user the Profile Map editor did not work on
+   their screen. It had no markup left rendering it, and the rule that revealed
+   it went with the drawer work above. Removed rather than kept dark: the honest
+   fix for "this page does not fit" is to make it fit. */
+
+/* ≤640px (sm): phone */
+@media (max-width: 640px) {
+  .toast-viewport {
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+
+  .page-header h2 {
+    font-size: var(--text-lg);
+  }
+}
+
+/* ── Phase 7: Focus visible (accessibility) ─────────────────────── */
+/* Global fallback */
+:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 2px;
+}
+
+/* Per-element boosts for specific contexts */
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Sidebar items - inset ring works against dark rail */
+.sb-item:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: -2px;
+}
+
+/* Table row icon actions - inset so ring stays within cell */
+.btn-icon-only:focus-visible {
+  outline-offset: 1px;
+}
+
+/* Inputs: ring in addition to border-color change */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px rgba(29, 111, 164, .18);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   Additions for v3 refactor
+═══════════════════════════════════════════════════════════════ */
+
+/* ── CSV guidance block (req #7) ────────────────────────────── */
+.csv-guidance {
+  background: var(--lgray);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-top: 14px;
+}
+
+.csv-guidance-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.csv-guidance ul {
+  padding-left: 18px;
+  font-size: 0.8125rem;
+  color: var(--mgray);
+  line-height: 1.7;
+}
+
+.csv-guidance-title+ul {
+  margin-bottom: 10px;
+}
+
+.csv-example {
+  background: #0D1B2A;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.csv-example code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #7EC8E3;
+  background: none;
+  padding: 0;
+}
+
+/* ── Searchable file dropdown (req #6, #8) ───────────────────── */
+.file-search-wrap {
+  position: relative;
+}
+
+.file-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-md);
+}
+
+.file-dropdown.hidden {
+  display: none;
+}
+
+.file-dropdown-item {
+  padding: 9px 12px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  color: var(--dgray);
+  transition: background .12s;
+}
+
+.file-dropdown-item:hover {
+  background: var(--lblue);
+  color: var(--navy);
+}
+
+/* ── Table hint paragraph ────────────────────────────────────── */
+#tbl-hint-flat,
+#tbl-hint-db {
+  font-style: italic;
+}
+
+/* ── Download buttons start disabled ────────────────────────── */
+#btn-dl-staging:disabled,
+#res-btn-staging:disabled {
+  opacity: .4;
+}
+
+
+/* ═══ NEW STYLES (v3 additions) ═══════════════════════════════════ */
+
+/* Uploads toolbar */
+.uploads-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1 1 260px;
+  min-width: 260px;
+  padding: 7px 12px 7px 34px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: var(--bg);
+  background-image: var(--icon-search);
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  background-size: 16px 16px;
+  color: var(--dgray);
+  outline: none;
+  transition: border-color .2s;
+}
+
+.search-input:focus {
+  border-color: var(--blue);
+}
+
+.search-input::placeholder {
+  color: var(--navy);
+  opacity: 1;
+}
+
+.filter-select {
+  padding: 7px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  min-width: 150px;
+}
+
+.filter-select:focus {
+  border-color: var(--blue);
+}
+
+/* Group of filter dropdowns that should wrap together as one unit (stay
+   side by side) rather than each individually wrapping onto its own line
+   when the toolbar runs out of horizontal space. */
+.filter-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+/* Pagination bar */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.pagination-bar button {
+  padding: 5px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  transition: background .15s, border-color .15s;
+}
+
+.pagination-bar button:hover:not(:disabled) {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+.pagination-bar button.active {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+.pagination-bar button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.pagination-bar .pg-info {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0 6px;
+}
+
+/* Upload instructions */
+.upload-instructions {
+  margin-bottom: 14px;
+}
+
+/* DB dynamic fields grid */
+#db-dynamic-fields .form-grid {
+  margin-top: 12px;
+}
+
+/* Preview modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal-box {
+  background: var(--surface);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  /* `min-width: 340px` used to sit here, which overflowed any viewport
+     narrower than that (a 320px phone) no matter what max-width said - a
+     minimum always beats a maximum. min() expresses the same intent without
+     ever exceeding the screen. */
+  width: min(800px, 100vw - var(--space-5));
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, .25);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Modal header's close (✕) button - icons/close.svg masked so it follows
+   currentColor, same technique as the sidebar/topbar icons. */
+.modal-close-icon {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  -webkit-mask-image: var(--icon-src, none);
+  mask-image: var(--icon-src, none);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}
+
+/* Generic icon-in-button - action buttons (Edit/Cancel/Pause/Delete, etc.)
+   pairing an icons/*.svg with a text label. Masked so it follows the
+   button's own text color (btn-ghost's dark gray, btn-danger's white),
+   including through :disabled's dimmed opacity. .btn's own flex `gap`
+   spaces it from the label automatically. */
+.btn-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  -webkit-mask-image: var(--icon-src, none);
+  mask-image: var(--icon-src, none);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}
+
+#preview-modal-body {
+  padding: 16px 20px;
+}
+
+/* Stepper-wizard modals (ConnectionWizardModal) - fixed
+   height, header/body/footer split so only the body scrolls. */
+.wizard-box {
+  display: flex;
+  flex-direction: column;
+  height: 520px;
+  max-height: 85vh;
+  position: relative;
+  /* positioning context for .wizard-loading-overlay below */
+}
+
+/* Blocking loading state covering the whole modal (NewProfileMapperJobModal.jsx's
+   Database step 2, while a picked connection's metadata scan is in flight) -
+   sits above header/body/footer alike via position:absolute + inset:0
+   against .wizard-box, rather than just the body, so nothing in the modal
+   (including Back/Create) is reachable mid-fetch. */
+.wizard-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, .85);
+}
+
+.wizard-loading-spinner {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border: 4px solid var(--border2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+}
+
+/* Full-viewport blocking loading state - ConnectionWizardModal.jsx's "Save &
+   Connect" (create mode), while the just-created connection's metadata scan
+   is in flight. Distinct from .wizard-loading-overlay above (which only
+   covers the modal box): this covers the *entire screen*, fixed to the
+   viewport rather than positioned against .wizard-box, and z-index 2000 -
+   above .modal-overlay's 1000 - so it visually sits on top of the modal
+   itself too. Reuses .wizard-loading-spinner's circular/spin styles, just
+   bigger (the descendant selector below overrides size/border-width only). */
+.fullscreen-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, .92);
+}
+
+.fullscreen-loading-overlay .wizard-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border-width: 5px;
+}
+
+.wizard-box-lg {
+  /* min() rather than a flat width: these dialogs sit inside .modal-overlay,
+     whose padding is the only thing that was keeping them on screen, and a
+     flat 900px overflowed anything narrower than that outright. */
+  width: min(900px, 100vw - var(--space-5));
+  height: min(640px, 100vh - var(--space-5));
+}
+
+/* Narrower than -lg but roomier than -sm - EditJobConfigurationModal.jsx's
+   3-column Schema/Table/Column row grid needs more than -sm's 480px, but
+   -lg's 900px left it looking sparse. Height stays the shared fixed 520px. */
+.wizard-box-md {
+  width: min(640px, 100vw - var(--space-5));
+}
+
+/* Narrower modal for compact single-step forms (Connections' and Profile
+   Mapper's New Job/Connection modals) - height stays the shared fixed
+   520px above, only width shrinks. */
+.wizard-box-sm {
+  width: min(480px, 100vw - var(--space-5));
+}
+
+/* NewProfileMapperJobModal.jsx only - Name/Description/checkbox/radio plus
+   (inline now, not a separate step) the Flat File dropzone or Database's
+   connection picker + SchemaTableColumnRows grid is more than -sm's shared
+   520px fits without scrolling. Same 640px .wizard-box-lg already uses
+   elsewhere rather than a new magic number; width stays -sm's 480px (only
+   height changes) - narrowed from -md's 640px to match
+   NewValidatorJobModal.jsx's width (see that modal's own header comment),
+   so this modifier now layers on top of wizard-box-sm instead. */
+.new-profile-mapper-job-modal-box {
+  height: 640px;
+}
+
+.wizard-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* setting overflow-y alone makes the spec treat overflow-x as
+    "auto" too, not "visible" - so a fraction-of-a-pixel width overrun (e.g. a
+    percentage grid/flex child rounding up against the vertical scrollbar's own
+    width) was enough to pop a real, if sliver-thin, horizontal scrollbar. None
+    of these forms scroll sideways by design, so clip it outright rather than
+    exposing it. */
+  padding: 18px 20px;
+}
+
+.wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* Connections wizard only - every field one-per-row per spec (not the
+   normal 2/3-column .form-grid other pages use). */
+.wizard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* `display: flex` above beats the user-agent's `[hidden] { display: none }`,
+   which is a specificity fact rather than a browser quirk: the UA sheet loses to
+   any author rule. A wizard step marked `hidden` therefore stayed fully visible,
+   and the two-step New Job modal rendered both of its screens at once. Any
+   author `display` on an element that is ever `hidden` needs this companion. */
+[hidden] {
+  display: none !important;
+}
+
+.wizard-stack .form-grid {
+  grid-template-columns: 1fr;
+}
+
+/* New Job wizard reuses existing multi-column section components as-is
+   (SourceTables' schema/table/PK row benefits from staying 3-column) -
+   just stacks the *cards themselves*, not what's inside each one. */
+.wizard-step {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-icon {
+  cursor: help;
+  font-size: 12px;
+}
+
+/* Action buttons column spacing in file table */
+.file-action-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Icon-only action button (Connections table's Edit/Delete) - square,
+   just centers a .btn-icon with no label. */
+.btn-icon-only {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* .file-action-btns-lg is gone. It up-sized the Profile Mapper Actions cell to
+   38px buttons on the reasoning that four default-size buttons "left a visible
+   gap of empty space beside them in this column". That stopped being true once
+   the id/name/description columns were capped and made to narrow with the
+   window: the column has no slack to fill, and width spent here comes straight
+   out of the columns whose content actually varies. Both tables use
+   .file-action-btns-compact instead - see the bottom of this file. */
+
+/* Archived badge */
+.badge-archived {
+  font-size: 11px;
+  background: #f3f4f6;
+  color: #888;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+
+/* Hide file-group when in database mode */
+.source-type-database .file-group {
+  display: none;
+}
+
+/* Hide schema-group when in flat file mode */
+.source-type-flat .schema-group {
+  display: none;
+}
+
+/* =========================================================
+   Metadata searchable dropdown
+   ========================================================= */
+
+.metadata-select {
+  position: relative;
+}
+
+.metadata-combobox {
+  position: relative;
+  width: 100%;
+}
+
+.metadata-combobox>input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 36px;
+}
+
+.metadata-combobox>input:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  background: var(--lgray);
+}
+
+/* Now a lucide <ChevronDown> rather than a text glyph (SearchableSelect.jsx),
+   so `display: block` replaces the old font-size: an inline SVG otherwise sits
+   on the text baseline and the translateY centring is off by the descender. */
+.metadata-chevron {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: block;
+  pointer-events: none;
+  color: #64748b;
+}
+
+.metadata-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 1000;
+
+  max-height: 240px;
+  overflow-y: auto;
+
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.metadata-option {
+  width: 100%;
+  display: block;
+
+  border: 0;
+  background: #ffffff;
+
+  padding: 10px 12px;
+
+  text-align: left;
+  font-size: 14px;
+
+  cursor: pointer;
+}
+
+.metadata-option:hover,
+.metadata-option.selected {
+  background: #f1f5f9;
+}
+
+.metadata-option.metadata-loading,
+.metadata-option.metadata-empty {
+  color: #64748b;
+  cursor: default;
+}
+
+/* ── Auth ────────────────────────────────────────────────────── */
+
+
+/* Account menu - topbar avatar trigger + dropdown. */
+.account-menu {
+  position: relative;
+  width: 100%;
+}
+
+.account-menu-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  /* Centers the 32px avatar horizontally at 30px, matching the 20px icons with 20px padding */
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: var(--trans);
+  /* Full white rather than the 68% the nav items use: this sits at the foot of
+     the rail, on the lightest part of --sidebar-gradient, where 68% white reads
+     too dim. */
+  color: #fff;
+}
+
+.account-menu-trigger:hover {
+  background: rgba(255, 255, 255, .07);
+  color: #fff;
+}
+
+.account-menu-trigger:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 2px;
+}
+
+.account-menu-avatar {
+  width: 18px;
+  height: 18px;
+  -webkit-mask-image: var(--icon-src, none);
+  mask-image: var(--icon-src, none);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: #fff;
+}
+
+.account-menu-dropdown {
+  position: fixed;
+  bottom: 24px;
+  left: calc(var(--sidebar-w) + 12px);
+  top: auto;
+  right: auto;
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  color: var(--dgray);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 16px -8px rgba(0, 0, 0, 0.08);
+  padding: 8px;
+  z-index: 300;
+  transform-origin: bottom left;
+  animation: menuPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes menuPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.account-menu-username {
+  padding: 6px 12px 10px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--navy);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+}
+
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--mgray);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.account-menu-item span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mgray);
+  transition: inherit;
+}
+
+.account-menu-item:hover {
+  background: var(--lred);
+  color: var(--red);
+}
+
+.account-menu-item:hover span {
+  color: var(--red);
+}
+
+/* ── Login screen ───────────────────────────────────────────────── */
+/* Uses the same navy the topbar and sidebar rail use, so the sign-in screen
+   reads as the same product rather than a detached form on a grey page. */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, var(--navy2) 0%, transparent 60%),
+    var(--navy);
+}
+
+.login-panel {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: var(--space-5);
+}
+
+.login-logo {
+  height: 40px;
+  width: auto;
+  margin-bottom: var(--space-4);
+  /* No colour filter: the mark ships on its own white plate (which is why the
+     topbar shows it the same way). Inverting it erased the lettering and left a
+     solid white block. Rounded to match the topbar's treatment. */
+  border-radius: var(--radius-sm);
+}
+
+.login-title {
+  margin: 0;
+  color: var(--white);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+.login-subtitle {
+  margin: var(--space-1) 0 0;
+  color: var(--lblue);
+  font-size: var(--text-sm);
+}
+
+.login-card {
+  width: 100%;
+  margin-bottom: 0;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+}
+
+.login-card-title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--dgray);
+}
+
+.login-card .form-group {
+  margin-bottom: var(--space-4);
+}
+
+.login-error {
+  margin-bottom: var(--space-4);
+}
+
+.login-submit {
+  width: 100%;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.login-footer {
+  margin: var(--space-5) 0 0;
+  text-align: center;
+  color: var(--lblue);
+  font-size: var(--text-xs);
+  opacity: 0.75;
+}
+
+.auth-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mgray);
+  font-size: 0.8125rem;
+}
+
+
+/* ── Schema/Table/Column row picker ─────────────────────────────── */
+/* Four siblings in one grid: three equal dropdowns plus the row actions.
+   The actions used to live inside the Column form-group, which made that
+   column wider than the other two and pushed its input out of line with
+   Schema/Table. */
+.stc-title {
+  margin-bottom: var(--space-3);
+}
+
+.stc-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.stc-row-grid .form-group {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+/* Sits on the input baseline, not the label's - so the buttons line up with
+   the three dropdowns rather than floating above them. */
+.stc-row-actions {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  padding-bottom: 1px;
+}
+
+.stc-row-error {
+  margin: var(--space-2) 0 0;
+  color: var(--red);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 1024px) {
+  .stc-row-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stc-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .stc-row-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Dropdown loading state ─────────────────────────────────────── */
+/* Tables and columns are fetched when opened, so the control has to show
+   that it is working rather than briefly reading as empty. */
+.metadata-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  animation: metadata-spin 620ms linear infinite;
+}
+
+@keyframes metadata-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.metadata-combobox.is-loading>input {
+  color: var(--mgray);
+  cursor: progress;
+}
+
+.metadata-option.metadata-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--mgray);
+  cursor: default;
+}
+
+/* .btn-icon-delete is retired: every delete control in the app now renders the
+   same lucide Trash2 inline, rather than half of them masking
+   /icons/delete.svg - two different bins at two different weights, in tables
+   that otherwise share a layout. */
+
+
+/* ── Jobs toolbar ───────────────────────────────────────────────── */
+/* The search width and the primary action's right-alignment were inline
+   styles, so the row's controls drifted out of alignment whenever one of them
+   changed height. */
+.jobs-toolbar-search {
+  flex: 0 0 220px;
+}
+
+.jobs-toolbar-action {
+  margin-left: auto;
+}
+
+.jobs-toolbar-search,
+.jobs-toolbar-action {
+  align-self: center;
+}
+
+/* ── DQ Score Trend Line Chart ────────────────────────────────────────────── */
+.trend-line-chart-wrapper {
+  display: flex;
+  width: 100%;
+  height: 220px;
+  font-family: var(--font-ui);
+  margin-top: 16px;
+}
+
+.trend-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 12px;
+  padding-bottom: 24px;
+  /* Space for x-axis */
+}
+
+.trend-y-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.trend-y-label {
+  font-size: 11px;
+  color: var(--mgray);
+}
+
+.trend-chart-content {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.trend-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  /* Space for x-axis */
+  pointer-events: none;
+}
+
+.trend-grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--border2);
+}
+
+.trend-data-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+}
+
+.trend-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The point's hit area. The dot inside is 8px - a full stop - and requiring a
+   pointer to land on it exactly makes the tooltip feel broken rather than
+   precise, so the target is 24px and the dot merely sits at its centre. */
+.trend-point {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.trend-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #5B9CF5;
+  /* matches the blue line */
+  border: 2px solid white;
+  border-radius: 50%;
+  transition: transform 0.12s ease;
+}
+
+/* Grows on hover, so it is clear which point the tooltip is describing. */
+.trend-point.is-hovered {
+  z-index: 6;
+}
+
+.trend-point.is-hovered .trend-dot {
+  transform: scale(1.5);
+}
+
+.trend-x-axis {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+}
+
+.trend-x-label-container {
+  position: absolute;
+  bottom: -4px;
+  transform: translateX(-50%);
+}
+
+.trend-x-label {
+  font-size: 11px;
+  color: var(--mgray);
+}
+
+@media (max-width: 768px) {
+  .jobs-toolbar-search {
+    flex: 1 1 100%;
+  }
+
+  .jobs-toolbar-action {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+
+/* ── Jobs table row cells ───────────────────────────────────────── */
+/* Actions stay on one line. The shared .file-action-btns wraps by design for
+   narrow containers, but in a jobs row that turns a tidy button group into a
+   three-line stack and makes rows different heights between pages. */
+.tbl td .file-action-btns {
+  flex-wrap: nowrap;
+}
+
+/* Column budget for a jobs row. Three of these columns hold long text, and left
+   to auto-layout the longest one wins and starves the rest - a full-width job id
+   squeezed Description into six wrapped lines and tripled the row height.
+   So: the id and the description truncate (both keep their full value in a
+   title tooltip), and the name is the one guaranteed to show in full, since it
+   is the only column a person actually reads to identify a run. */
+.job-id-cell {
+  max-width: 132px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-desc-cell {
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Name truncates like the other two now. It used to be the one column allowed
+   to show in full, on the reasoning that names are length-capped at creation
+   (NAME_MAX_LENGTH in the new-job modals) - but that cap is generous enough
+   that a long name still pushed the Profile Mapper table, which carries an
+   extra Type column, past the width of its card. The full name is one hover
+   away, same as the id and the description. */
+.job-name-cell {
+  max-width: 190px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--weight-medium);
+}
+
+/* The three text columns give up width as the window narrows, so the table
+   keeps fitting instead of handing the last columns to a scrollbar. Every one
+   of them carries its full value in a title tooltip, so narrowing them costs
+   nothing but a hover.
+
+   Measured against the real column set: the Profile Mapper list (the wider of
+   the two - it adds Type) fits its card without a horizontal scrollbar down to
+   about 1300px. Below that a 7-column table with an action-button group cannot
+   honestly fit, and the container's overflow-x: auto shows a bar only then. */
+@media (max-width: 1440px) {
+  .job-desc-cell {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .job-id-cell {
+    max-width: 110px;
+  }
+
+  .job-name-cell {
+    max-width: 150px;
+  }
+
+  .job-desc-cell {
+    max-width: 150px;
+  }
+}
+
+/* ── Account Menu Avatar ───────────────────────────────────── */
+/* Remove .avatar-btn since we are styling .account-menu-trigger directly */
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  /* A bit smaller to match sidebar icons */
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.avatar-circle:hover {
+  transform: scale(1.05);
+}
+
+.account-avatar-initials {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 0.5px;
+}
+
+/* ── Login Screen ───────────────────────────────────────────── */
+.login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 20px;
+}
+
+.login-panel {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: -4px;
+  /* Pull it even closer to the username field */
+}
+
+.login-logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  color: var(--mgray);
+}
+
+.login-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 40px 32px;
+  border: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dgray);
+  margin-bottom: 8px;
+}
+
+.login-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 12px;
+  font-size: 14px;
+  margin-top: 12px;
+  /* Restore breathing room since gap is now very tight */
+}
+
+.login-footer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: -12px;
+}
+
+.login-footer,
+.login-footer-sub {
+  font-size: 0.8125rem;
+  color: var(--mgray);
+  text-align: center;
+  margin: 0;
+}
+
+/* `.main` deliberately carries NO animation, transform, filter or opacity.
+
+   It used to fade in with `fadeIn 0.4s ... forwards`, whose keyframes also did
+   `transform: translateY(10px) -> translateY(0)`. That cost every dialog in the
+   app, in two separate ways:
+
+     1. Containing block. A `transform` other than `none` makes an element the
+        containing block for `position: fixed` DESCENDANTS, and `forwards` pins
+        the final `translateY(0)` permanently. So `.modal-overlay` resolved
+        `inset: 0` against `.main` instead of the viewport - indented by the
+        sidebar, pushed down by the topbar, and AS TALL AS THE PAGE CONTENT.
+        `margin: auto` then centred the dialog inside that full-page-height box,
+        which is why modals appeared far down the page, and why the overlay's
+        own `overflow-y: auto` never scrolled: it was already tall enough to fit
+        anything.
+
+     2. Stacking context. A filling animation of `opacity` (or a transform)
+        makes the element a stacking context with `z-index: auto`, trapping the
+        overlay's `z-index: 1000` INSIDE `.main`. The topbar (`z-index: 250`,
+        but a sibling stacking context) then painted over the dialog's header
+        and close button.
+
+   Dropping the transform alone fixes (1) but not (2) - an opacity-only
+   keyframe still creates the stacking context. Since any ancestor of a modal
+   is disqualified from animating, and the modals render inside the page tree,
+   the fade has to go. A 0.4s decorative fade is not worth breaking every
+   dialog in the app; if it is ever wanted back, move the modals into a
+   `createPortal` on `document.body` FIRST. */
+
+/* ── Refresh control (components/RefreshButton.jsx) ──────────────
+   The per-page refresh button and its freshness stamp. Sits in the existing
+   .uploads-toolbar row, so it inherits that row's flex gap and alignment. */
+.refresh-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Deliberately quiet: the stamp is reference information, not a label competing
+   with the page's own controls. */
+.refresh-stamp {
+  font-size: 12px;
+  color: var(--mgray);
+  white-space: nowrap;
+}
+
+/* Reuses the existing `spin` keyframe (see .spinner) rather than adding a
+   second one. The icon is a CSS mask painted with currentColor, so rotating the
+   span rotates the artwork with it - no separate spinner element needed.
+   Disabled under prefers-reduced-motion, in the block above. */
+.btn-icon-spinning {
+  animation: spin .65s linear infinite;
+}
+
+/* Puts a page's heading and its refresh control on one line, so the control
+   sits beside the title rather than pinned to the opposite edge of the page.
+   .page-header itself is shared by 13 pages and is not a flex container, so
+   this scopes the change to the heading row of the pages that need it. */
+.page-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* The h2's own margin would otherwise offset it from the button beside it. */
+.page-header-title h2 {
+  margin: 0;
+}
+
+/* ── Responsive: job pages, toolbars and the refresh control ─────
+   The app already had breakpoints at 1200/1024/900/768/700/480, but three
+   things were never covered: the two-column .job-layout (a flex row with no
+   breakpoint, so on a phone a 260px side rail competed with the results table),
+   the column-profile toolbar added with the Profile Map redesign, and the
+   refresh control added with page caching. */
+
+@media (max-width: 1024px) {
+  /* The side rail stops being a rail and becomes a section under the content.
+     Its fixed basis has to go with it, or it keeps reserving 260px it no
+     longer has. */
+  .job-layout {
+    flex-direction: column;
+  }
+
+  .job-layout-side,
+  .job-layout-side-narrow {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Both columns are pinned to a fixed height to stop the results table
+     jumping as it loads. Stacked, that becomes 2000px of mostly empty page. */
+  .job-layout-main,
+  .job-layout-side {
+    height: auto;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  /* Title and its actions stop sharing a line once the title needs the width. */
+  .column-profile-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .column-profile-toolbar {
+    width: 100%;
+  }
+
+  /* The search box is the only control left in this toolbar, so let it use
+     the row rather than sitting at an arbitrary fixed width. */
+  .column-profile-toolbar .toolbar-search {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Wraps under the heading instead of forcing the title to shrink. */
+  .page-header-title {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  /* The stamp is the first thing worth dropping - the button still works and
+     still says what it does via its aria-label/title. */
+  .refresh-stamp {
+    display: none;
+  }
+
+  /* Toolbar controls go full width rather than squeezing onto one line. */
+  .uploads-toolbar .search-input,
+  .uploads-toolbar .jobs-toolbar-search {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .filter-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .filter-group .filter-select {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Wide data tables stay usable by scrolling inside their own container -
+     the page itself must never scroll sideways. */
+  .table-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-header-title {
+    gap: 8px;
+  }
+
+  /* A full-width primary action reads better than a squeezed one. */
+  .jobs-toolbar-action {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* ── Jobs list tables ────────────────────────────────────────────
+   The Profile Mapper and Validator lists reuse .profile-map-table for its
+   visual styling, but that class exists for the Profile Map grid, which pairs
+   it with an explicit <colgroup> of per-column pixel widths. The jobs lists
+   have no colgroup, so `table-layout: fixed` divided the width equally across
+   every column: a job id and a "Completed" pill got the same space, content was
+   truncated with an ellipsis, and the Actions column ended up half off-screen
+   at anything below a wide desktop.
+
+   Auto layout lets each column take what it needs; min-width keeps the row
+   legible and hands the overflow to the scroll container rather than crushing
+   the cells. */
+.jobs-list-table {
+  table-layout: auto;
+  min-width: 900px;
+}
+
+/* ── Job lists below `md`: table → stacked cards ──────────────────
+   These lists are ~6-7 columns of short values, so unlike the data grids
+   below they genuinely reflow. Keeping them as a table meant an 820-900px
+   floor and a horizontal scrollbar on every phone; as one card per row with
+   the header text moved inline, nothing is off-screen and nothing is
+   truncated.
+
+   The header labels come from each cell's `data-label` (set in
+   ProfileMapper.jsx, Validator.jsx and Connections.jsx) rather than from
+   nth-child rules here, so a column added or reordered in the markup cannot
+   silently mislabel a value.
+
+   `display: contents` on the cell lets the ::before label and the cell's own
+   content become siblings in the row's grid, giving a clean label/value
+   pair per line without a wrapper element. */
+@media (max-width: 768px) {
+  .jobs-list-table,
+  .jobs-table-scroll .jobs-list-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .jobs-list-table thead {
+    display: none;
+  }
+
+  .jobs-list-table,
+  .jobs-list-table tbody {
+    display: block;
+  }
+
+  .jobs-list-table tr {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, max-content) 1fr;
+    gap: var(--space-1) var(--space-3);
+    align-items: baseline;
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .jobs-list-table td {
+    display: contents;
+    /* The desktop rows lean on inline paddingLeft and per-cell width caps;
+       neither means anything once the cell is a grid participant. */
+    padding: 0;
+    border: none;
+  }
+
+  .jobs-list-table td::before {
+    content: attr(data-label);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--mgray);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+
+  /* The full-width "Loading…" / "No jobs match" row has no data-label and
+     must not be split into two columns. */
+  .jobs-list-table td.empty-state {
+    display: block;
+    grid-column: 1 / -1;
+    padding: var(--space-5) var(--space-3);
+    text-align: center;
+  }
+
+  .jobs-list-table td.empty-state::before {
+    content: none;
+  }
+
+  /* Width caps that exist to protect the desktop grid would ellipsise text
+     that now has a whole line to itself. */
+  .jobs-list-table .job-id-cell,
+  .jobs-list-table .job-name-cell,
+  .jobs-list-table .job-desc-cell {
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+  }
+
+  /* Actions were a nowrap strip sized for a narrow column; let them wrap. */
+  .jobs-list-table .file-action-btns {
+    flex-wrap: wrap;
+  }
+}
+
+/* The inner scroll is where wide tables are meant to overflow, but a thin
+   overlay scrollbar gives no hint that there is more to the right - which reads
+   as "the page is cut off" rather than "this scrolls". Make it visible. */
+.profile-mapper-table-scroll,
+.table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.profile-mapper-table-scroll::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.profile-mapper-table-scroll::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+}
+
+.profile-mapper-table-scroll::-webkit-scrollbar-thumb:hover,
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--border2);
+}
+
+/* ── Responsive modals ───────────────────────────────────────────
+   .modal-box carried `min-width: 340px` and .wizard-box a fixed `height: 520px`.
+   Together that meant a dialog could not fit a narrow phone (340 + the
+   overlay's 2x16px padding needs 372px) and could not shrink on a short
+   viewport - so the modal itself overflowed the screen, which is precisely
+   where a locked background page becomes a trap: nothing scrolls at all. */
+
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 10px;
+    /* Long dialogs align to the top rather than centring, so the header and
+       its close button stay reachable instead of being pushed off-screen. */
+    align-items: flex-start;
+  }
+
+  .modal-box {
+    /* min() rather than a flat 340px: on a 320px phone the old floor was wider
+       than the viewport. */
+    min-width: min(340px, 100%);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .wizard-box {
+    height: auto;
+    max-height: calc(100vh - 20px);
+  }
+
+  /* The body is the part that scrolls; the header and footer stay put. */
+  .wizard-body {
+    max-height: none;
+  }
+
+  /* Footers put their actions side by side with a spacer; stacked, the buttons
+     should own the full width rather than sitting half-off the edge. */
+  .wizard-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .wizard-footer .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* Short viewports (a landscape phone, or a laptop with devtools open) need the
+   fixed-height wizard to give way even when the screen is wide. */
+@media (max-height: 640px) {
+  .wizard-box {
+    height: auto;
+    max-height: calc(100vh - 32px);
+  }
+}
+
+/* ── Table scrolling and sticky headers ──────────────────────────
+   Three things this fixes, all reported together:
+
+   1. The scroll lived on the outer box in some places, so a wide table pushed
+      the whole card sideways instead of scrolling within it. The scroller is
+      now the table's own container on every table, and it scrolls on BOTH
+      axes - previously only overflow-x was set, which silently forces
+      overflow-y to "auto" as well, but with no height bound it never engaged.
+
+   2. `overflow: scroll` rather than `auto` so the bars are always present.
+      With `auto` the track appears only once content overflows, so on Windows
+      a table that just fits gives no hint that a narrower window will hide
+      columns - which is how the Actions column went missing without anyone
+      realising the table scrolled at all.
+
+   3. Headers stay put while the body scrolls. Sticky resolves against the
+      nearest scrolling ancestor, so it only works now that these containers
+      own the vertical scroll too. */
+
+.tbl-scroll,
+.table-scroll,
+.profile-mapper-table-scroll {
+  overflow: scroll;
+  max-height: min(70vh, 720px);
+}
+
+/* Sticky for every .tbl, not just the one table that opted in via .tbl-sticky.
+   Every .tbl now sits inside a scrolling container (the standalone ones were
+   wrapped in .table-scroll for exactly this), except FilePreviewModal's, whose
+   ancestor .wizard-body already scrolls - sticky resolves against that.
+   ExpandableColumnRow's nested rules table is untouched: it uses
+   .rules-subtable, not .tbl, so a nested header cannot start floating.
+   The header needs its own background (it scrolls over rows) and a bottom
+   border, since a sticky element does not carry the table's collapsed border
+   with it. */
+.tbl thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--table-head-bg);
+  /* A collapsed border is not carried by a sticky cell, so the header needs its
+     own edge. Kept to 1px in the light tone: at 2px in --border it read as a
+     hard rule slicing under the header rather than a table gridline. */
+  box-shadow: inset 0 -1px 0 var(--border2);
+}
+
+/* The profile map grid pins its own height for the loading skeleton; keep that
+   as the floor and let the max-height above bound the top. Viewport-capped for
+   the same reason as the base rule - this later declaration would otherwise win
+   and reinstate the uncapped 625px. */
+.profile-mapper-table-scroll {
+  min-height: min(625px, 60vh);
+}
+
+/* Always-visible bars deserve to look deliberate rather than like an overlay
+   artefact. */
+.tbl-scroll,
+.table-scroll,
+.profile-mapper-table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.tbl-scroll::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar,
+.profile-mapper-table-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.tbl-scroll::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb,
+.profile-mapper-table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+}
+
+.tbl-scroll::-webkit-scrollbar-thumb:hover,
+.table-scroll::-webkit-scrollbar-thumb:hover,
+.profile-mapper-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--border2);
+}
+
+/* ── Overrides for profile-map-redesign.css ──────────────────────
+   That sheet styles `.profile-map-table.redesigned`, which every data table in
+   the app now carries, and two of its rules defeat the table behaviour above.
+   Both are answered here with a strictly higher specificity rather than by
+   relying on load order, since it is imported from a page component and its
+   position in the bundle is not something this file can depend on.
+
+   1. `.profile-map-table.redesigned th { background-color: #f7fafc }` (0,2,1)
+      outranks `.tbl thead th` (0,1,2), so the header stayed near-white however
+      dark --table-head-bg was set.
+
+   2. `.profile-map-table.redesigned { overflow: hidden }` on the TABLE - added
+      to clip the rounded corners - makes the table itself the sticky header's
+      containing block. A sticky element is clipped by the nearest ancestor
+      whose overflow is not visible, so the header was pinned inside a box that
+      does not scroll and could never stick. The wrapper does the clipping now. */
+
+.tbl.profile-map-table.redesigned {
+  overflow: visible;
+}
+
+.tbl.profile-map-table.redesigned thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--table-head-bg);
+  color: var(--navy);
+  /* No extra edge here: border-collapse is `separate` on these tables, so the
+     th's own border-bottom travels with it while sticky. Stacking a shadow on
+     top of that border is what produced the hard grey line under the header. */
+  box-shadow: none;
+}
+
+/* The corner clipping the table gave up moves to its scroll container. */
+.tbl-scroll,
+.table-scroll,
+.profile-mapper-table-scroll {
+  border-radius: 8px;
+}
+
+/* ── Dashboard layout ────────────────────────────────────────────
+   Tiles span the full width; beneath them the page splits in half - the
+   activity table on the left, the two charts stacked on the right.
+
+   Previously dashboard-main took 4/5 of the row and dashboard-side 1/5, with
+   the tiles nested inside the left column - so the tiles stopped short of the
+   right edge and the charts were squeezed into a 220px rail. */
+
+.dashboard-tiles {
+  margin-bottom: var(--gap-panel);
+}
+
+/* Equal halves. The grid track sizing on .dashboard-layout now does the
+   dividing, so these only need to stop their contents establishing a minimum
+   width - `min-width: 0` is what lets a wide table scroll inside its column
+   instead of forcing the column wider. */
+.dashboard-layout > .dashboard-main,
+.dashboard-layout > .dashboard-side {
+  min-width: 0;
+}
+
+.dashboard-layout > .dashboard-side {
+  /* The old 220px floor was sized for a narrow rail; at half width it only
+     gets in the way when the window shrinks. */
+  min-width: 0;
+  gap: 16px;
+}
+
+/* The right half divides horizontally: line chart above, bar chart below.
+   The old 2 / 3.5 ratio belonged to the tall narrow rail.
+
+   `flex: 1 1 auto` with a max-content floor, NOT `flex: 1 1 0; min-height: 0`.
+   The latter lets a flex item shrink below the size of its own contents, so
+   when the row was shorter than the two charts needed, the cards shrank and the
+   trend line and the bar chart's axis labels drew outside them. The cards share
+   any SPARE height; they never give up height their charts are using. */
+.dashboard-layout > .dashboard-side > .card:first-child,
+.dashboard-layout > .dashboard-side > .card:last-child {
+  flex: 1 1 auto;
+  min-height: max-content;
+}
+
+/* The 1024px block that used to sit here stacked .dashboard-layout and rewrapped
+   .dashboard-tiles. Both are auto-fit grids now and reflow on their own track
+   floors, so the breakpoint had nothing left to do. */
+
+/* ── Large displays: 2K and 4K ───────────────────────────────────
+   .main caps at 1440px above 1440px wide but keeps `margin-left: sidebar-w`,
+   so on a 2560 or 3840 screen the content stayed pinned to the left with a
+   third to two-thirds of the display empty beside it.
+
+   Auto side margins centre the capped column. Safe against the fixed sidebar
+   at every cap used here: the narrowest case (1920px viewport, 1760px cap)
+   still leaves 80px on each side, clear of the 64px rail. */
+
+/* ── Content width: fill, don't cap ──────────────────────────────
+   There is deliberately no max-width on .main any more.
+
+   Every previous approach here capped the column and centred the surplus:
+   first four stepped caps (1440 → 1760 → 2200), then one fluid clamp with
+   the same 2200px ceiling. Both left large empty gutters the moment the
+   viewport passed the ceiling - on an ultrawide monitor, or simply at a
+   zoomed-out browser, where 33% zoom reports a ~4200px viewport and stranded
+   roughly 2000px of unused width.
+
+   The centring also carried a bug worth recording: `margin-inline: auto`
+   silently overrode the `margin-left: var(--sidebar-w)` set on .main further
+   up this file (same specificity, later declaration), so the column centred
+   on the whole viewport rather than on the region beside the rail. The rail
+   is fixed-position, so it sat on top of the left gutter and the right gutter
+   was always wider by exactly the rail's width.
+
+   A cap was the wrong tool for the readability problem it was solving. Long
+   lines are handled where they occur - the grids below reflow into MORE
+   columns as width allows (auto-fit/minmax) rather than stretching a single
+   column - so the page fills the display and stays readable. */
+
+/* Root font size steps up on very large displays, so the rem-based spacing and
+   type scales grow with it. This only has an effect because those scales are
+   rem; while they were px these two rules did nothing at all. */
+@media (min-width: 2560px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 3840px) {
+  html {
+    font-size: 20px;
+  }
+}
+
+/* ── Modals fit the viewport at every size ───────────────────────
+   The responsive modal rules above only engaged under 600px wide or 640px
+   tall, so a laptop at e.g. 1300x620 fell through every one of them and kept
+   .wizard-box's flat `height: 520px`. Add the header, footer and the overlay's
+   padding and the dialog exceeded the window, putting Create below the fold
+   with no way to reach it - the background is scroll-locked by design.
+
+   These are breakpoint-free: the box is sized against the viewport itself, so
+   there is no window size left for it to fall through. */
+
+.modal-overlay {
+  /* A dialog taller than the viewport scrolls within the overlay instead of
+     being clipped. Paired with align-items: flex-start, since a centred flex
+     item taller than its container overflows BOTH edges and the top - with the
+     header and its close button - becomes unreachable. */
+  overflow-y: auto;
+  align-items: flex-start;
+  padding: 16px;
+}
+
+/* Centre vertically only while there is room to; otherwise sit at the top. */
+.modal-overlay > * {
+  margin: auto;
+}
+
+.modal-box {
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The wizard keeps its comfortable 520px, but never beyond what the viewport
+   can show. min() rather than a media query: it holds at any height. */
+.wizard-box {
+  height: min(520px, calc(100vh - 32px));
+  max-height: calc(100vh - 32px);
+}
+
+/* Header and footer hold their size; the body takes the remainder and scrolls,
+   so the footer's actions are always on screen. */
+.wizard-box > .modal-header,
+.wizard-box > .wizard-footer {
+  flex: 0 0 auto;
+}
+
+.wizard-body {
+  min-height: 0;
+}
+
+/* ── Table cells do not wrap ─────────────────────────────────────
+   `.profile-map-table td { word-break: break-word }` was written for the
+   Profile Map GRID, whose <colgroup> pins every column width - there, a long
+   unbroken rule-parameter string has to wrap or it overflows its fixed column.
+
+   Every list table then inherited that class, and with auto layout the same
+   rule chopped ordinary values mid-word: "Redshift" became "Reds/hift",
+   "PostgreSQL" became "Postg/reSQL/L", "In-Progress" became "In-Progre/ss".
+   These tables scroll horizontally, so there is no reason to wrap at all. */
+
+.tbl td,
+.tbl th {
+  white-space: nowrap;
+}
+
+/* The grid keeps wrapping: its columns cannot grow, so the text must give. */
+.profile-map-grid td {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Description is the one column where wrapping is acceptable - it already
+   truncates with an ellipsis and carries the full text in a title tooltip, so
+   it stays as it is rather than growing every row's height. */
+
+/* ── Dashboard: job type flag ────────────────────────────────────
+   The Type column holds one of two values, so spelling out "Profile Mapper"
+   made the widest column in the table the least informative one. A single
+   letter in a tinted chip carries it, and the space goes to Name - the only
+   column whose content is genuinely open-ended. The full word stays available
+   through title/aria-label. */
+
+.job-type-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  /* Two chips of the same size and shape read as one scale, so the colour is
+     doing the distinguishing rather than the silhouette. */
+  flex-shrink: 0;
+}
+
+.job-type-flag.is-profile-mapper {
+  background: var(--lblue);
+  color: var(--navy);
+}
+
+.job-type-flag.is-validator {
+  background: #DCF0EA;
+  color: var(--teal);
+}
+
+/* The Name column takes the table's remaining width and ellipsises what does
+   not fit. `max-width: 0` is the idiom that makes this work in a table: without
+   it a cell's width is driven by its content, so a long name widens the column
+   instead of being clipped by it, and text-overflow never engages. The nowrap
+   comes from `.tbl td`; the full name is on the link's title. */
+.dashboard-name-cell {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The link has to be a block-level box of its own for the ellipsis to apply to
+   it rather than to the cell around it. */
+.dashboard-name-cell a {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Validator results grid (components/validator/ReportSheetGrid.jsx) ──
+   This sheet borrows .profile-map-table for its look, but that class exists
+   for the Profile Map GRID, which pairs `table-layout: fixed` with an explicit
+   <colgroup> pinning every column. ReportSheetGrid has no colgroup, so fixed
+   layout split the width into ten EQUAL columns regardless of content: "CDE"
+   (one tick) got as much room as "Rule Notes" (a full sentence). The headers
+   ellipsised to "Rule N...", "Invalid...", "Total ...", and because the cells
+   are nowrap without an overflow clip, the body text ran straight out of its
+   column and printed on top of the neighbouring one.
+
+   Same remedy as .jobs-list-table: auto layout, so each column takes what it
+   needs, and a min-width so the row stays legible and hands the overflow to
+   .table-scroll - which is exactly what the horizontal scrollbar is for. */
+.report-sheet-table {
+  table-layout: auto;
+  min-width: 1180px;
+}
+
+/* Rule Notes is sentence-length and stays nowrap like everything else: the
+   column simply grows and the table scrolls. That is the agreed trade for
+   these grids - a horizontal scrollbar is already there, and wrapping was
+   what made rows ragged and hard to scan in the first place. */
+
+/* ── Job provenance row (ValidatorJob.jsx, ProfileMapperJob.jsx) ─────────
+   "Started by" and "Created at" under the job id. A results page is often
+   opened days after the run, by someone who did not start it, so who ran it
+   and when are the first two questions it has to answer.
+
+   A <dl> rather than a paragraph: these are label/value pairs, and the pairing
+   is the meaning. Laid out as inline items that wrap, so a narrow screen
+   stacks them instead of overflowing the header. */
+.job-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 10px 0 0;
+}
+
+.job-meta-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.job-meta-row dt {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--mgray);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.job-meta-row dd {
+  font-size: 0.8125rem;
+  color: var(--dgray);
+  margin: 0;
+  /* A username or a locale timestamp can both run long; the row wraps as a
+     whole rather than letting one value push the header sideways. */
+  overflow-wrap: anywhere;
+}
+
+/* The skeletons stand in at the value's own size, so nothing shifts when the
+   job lands. */
+.job-meta-row dd .skeleton-text {
+  display: inline-block;
+  width: 110px;
+  vertical-align: middle;
+}
+
+/* ── Profile Map grid sizes to its content ───────────────────────
+   This grid pairs `table-layout: fixed` with PROFILE_MAP_COLUMN_WIDTHS, and
+   several of those widths are narrower than the header they carry: "Total
+   Count" had 100px (68px inside the padding) for ~80px of text, so the headers
+   rendered as "Total Co...", "Distinct Co...", "Uniqu...". Fixed layout also
+   forced the values to wrap inside their column - "100.00 %" over two lines,
+   "Not Applicabl/e" broken mid-word.
+
+   Auto layout makes those numbers preferred widths instead of hard ones: a
+   column keeps its configured size and grows when its header or a value needs
+   more. The grid already scrolls horizontally, which is where the extra width
+   belongs - far better than hiding the column names behind an ellipsis. */
+.profile-map-grid {
+  table-layout: auto;
+  /* Still fills the card when the content is narrower than it. */
+  min-width: 100%;
+}
+
+/* No ellipsis on the headers - the whole point is that they read in full. */
+.profile-map-grid th {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+/* And no wrapping in the body: the columns can grow now, so a value has no
+   reason to break across lines or mid-word. */
+.profile-map-grid td {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+/* ── Jobs lists fit their card ───────────────────────────────────
+   The Profile Mapper and Validator lists hold the same columns except that
+   Profile Mapper adds Type, and that one extra column was enough to push it
+   past its card - so the two pages, which are meant to look identical, did not.
+
+   Two changes make them agree:
+
+   1. Horizontal overflow is `auto` here, not the `scroll` every other table
+      container gets. The always-visible bars exist for the genuinely wide
+      grids (the Profile Map grid, the validator's report sheet), where a
+      hidden scrollbar once made the Actions column vanish without trace. These
+      two lists are sized to fit instead, so a permanent horizontal track would
+      be a scrollbar for nothing. Vertical stays `scroll`, as before.
+
+   2. A lower min-width. 900px was set when every cell was free to take the
+      width it wanted; with the id, name and description all capped and
+      ellipsised, the columns no longer need that floor to stay legible. */
+.jobs-table-scroll {
+  overflow-x: auto;
+  overflow-y: scroll;
+}
+
+.jobs-table-scroll .jobs-list-table {
+  min-width: 820px;
+}
+
+/* ── Failed-job error affordance (components/JobErrorButton.jsx) ──────
+   A failed row used to show an "Error" pill and nothing else; the reason was
+   already in jobs.error_message but never reachable from the list. The button
+   sits directly beside the pill so it reads as part of the status, not as
+   another row action - those live in the Actions column. */
+.status-with-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.job-error-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--red);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
+}
+
+.job-error-btn:hover:not(:disabled) {
+  background: var(--lred, rgba(239, 68, 68, 0.12));
+}
+
+.job-error-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.job-error-btn:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+
+/* Wider than the standard alert box: these messages are stack traces, and
+   reflowing one into a 420px column is how a readable failure becomes an
+   unreadable one. Still bounded by the viewport on a small screen. */
+.job-error-box {
+  width: min(720px, 100%);
+}
+
+.job-error-body {
+  padding: 18px 20px;
+  /* The trace scrolls inside the dialog rather than growing it past the
+     screen - .modal-box already caps its own height. */
+  overflow: auto;
+  max-height: min(50vh, 420px);
+  /* Space reserved for the message before it arrives. The dialog is centred by
+     `margin: auto`, so its height and its position are the same thing: a box
+     that grew when the fetch resolved also JUMPED up the screen, out from under
+     the pointer that had just clicked to open it. Holding a floor here means
+     the loading state and the loaded state occupy the same box, and only the
+     text inside it changes. Roughly four lines of the monospace trace - past
+     that the container scrolls instead of the dialog growing. */
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The placeholder sits where the first line of the message will be, rather than
+   floating in the middle of the reserved space and then moving. */
+.job-error-body > * {
+  margin: 0;
+}
+
+.job-error-text {
+  margin: 0;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--dgray);
+  /* Keep the message's own line breaks, but wrap the long unbroken tokens
+     (S3 keys, Java class paths) a trace is full of. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Recent Job Runs fills its panel ─────────────────────────────
+   The panel's height is set by the two charts in the other half of the row, so
+   the table almost never ends exactly where the card does. With the rows at
+   their natural height the remainder showed as blank card below the last row.
+
+   Make the scroll container take the leftover height instead: the rows fill it,
+   and anything past the bottom scrolls - which is what the list already does.
+   `min-height: 0` is required for a flex child to shrink below its content;
+   without it the container reports the full table height and the card grows
+   past the row instead. That is safe HERE, unlike the chart cards beside it
+   (see the flex: 1 1 auto note above), because this child is a scroll
+   container: shrinking it reveals a scrollbar rather than clipping a drawing. */
+.dashboard-panel-lg {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-panel-lg > .table-scroll {
+  /* Basis 0, NOT auto. With `auto` the container takes its content height as a
+     starting size, so a long list grew the card, stretched the charts beside it
+     to match, and pushed the dashboard past the viewport into a page scroll.
+     Basis 0 means it claims no height of its own and simply fills what the card
+     has left - the list scrolls inside instead of the page scrolling. */
+  flex: 1 1 0;
+  min-height: 0;
+  /* Overrides the shared min(70vh, 720px) cap: here the card's own height is
+     the bound, and the cap would reintroduce the gap on a tall screen. */
+  max-height: none;
+}
+
+/* ── Schema/table tree picker (SchemaTreePicker.jsx) ─────────────
+   Two panes: the connection's catalog on the left, the tables chosen from it
+   on the right. The old row-of-dropdowns version is gone - see that file's
+   header for why. */
+.stc-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stp-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mgray);
+  white-space: nowrap;
+}
+
+/* At the ceiling the count is the explanation for why the remaining tables
+   went flat, so it stops being incidental text. */
+.stp-count.is-full {
+  color: var(--blue2);
+}
+
+/* Same magnifier the jobs-list search wears, so "type here to narrow a long
+   list" looks the same everywhere in the app. Not .search-input itself: that
+   class also carries flex/min-width sizing for a toolbar row, which would fight
+   this full-width field. */
+.stp-search {
+  width: 100%;
+  margin: 10px 0 12px;
+  padding-left: 34px;
+  background-image: var(--icon-search);
+  background-repeat: no-repeat;
+  background-position: 11px center;
+  background-size: 16px 16px;
+}
+
+.stp-panes {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* Equal halves, each scrolling on its own: the catalog can run to hundreds of
+   tables while the right pane holds at most five entries, and neither should
+   make the modal itself grow. */
+.stp-tree,
+.stp-selected {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow-y: auto;
+  height: 300px;
+}
+
+.stp-tree {
+  padding: 6px;
+}
+
+.stp-selected {
+  padding: 10px;
+}
+
+.stp-node + .stp-node {
+  margin-top: 2px;
+}
+
+.stp-schema {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dgray);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stp-schema:hover {
+  background: var(--lgray);
+}
+
+.stp-caret {
+  font-size: 9px;
+  color: var(--mgray);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.stp-caret.is-open {
+  transform: rotate(90deg);
+}
+
+/* The indent is the tree: children sit inside a rule line running down from
+   their schema, so depth is readable without counting pixels. */
+.stp-children {
+  margin: 2px 0 2px 15px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border2);
+}
+
+.stp-table {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: var(--dgray);
+  cursor: pointer;
+  /* These rows are <label> elements wrapping their checkbox, so the global
+     `label` rule applied to them - uppercasing and letter-spacing every table
+     name. A table name is an identifier: "saved_connections" rendered as
+     "SAVED_CONNECTIONS" is not the name the database has, and is not what the
+     user would search for. Reset all three. */
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: var(--weight-regular, 400);
+  /* Table names are long and the pane is half a modal - one line each, with the
+     full name on hover, keeps the list scannable. */
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.stp-table:hover {
+  background: var(--lgray);
+}
+
+.stp-table.is-selected {
+  background: var(--lblue);
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.stp-table.is-blocked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The bare `input, select, textarea` rule at the top of this file sets
+   `width: 100%` for text fields, and a checkbox is an input too - so each tick
+   box stretched to the full row width, ate every pixel, and collapsed the table
+   name beside it to zero. The row rendered as a wide empty box with no name in
+   it. Size the checkbox explicitly. */
+.stp-table input[type="checkbox"] {
+  margin: 0;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+}
+
+/* min-width: 0 so the name can ellipsis rather than forcing the row wider than
+   the pane - a flex item's automatic minimum size is its content otherwise. */
+.stp-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stp-note {
+  margin: 4px 0 4px 8px;
+  font-size: 12px;
+  color: var(--mgray);
+}
+
+.stp-error {
+  color: var(--red);
+}
+
+.stp-empty {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.stp-chosen {
+  padding: 10px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.stp-chosen + .stp-chosen {
+  margin-top: 10px;
+}
+
+/* A ticked table with no key column yet is an incomplete choice, and the modal
+   will refuse it - say so on the card rather than only in the error at submit. */
+.stp-chosen.needs-column {
+  border-color: var(--amber, #f59e0b);
+}
+
+.stp-chosen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stp-chosen-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dgray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The schema is context, not identity - present but not competing with the
+   table name for attention. */
+.stp-chosen-schema {
+  font-weight: 400;
+  color: var(--mgray);
+}
+
+.stp-chosen-label {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--mgray);
+}
+
+/* Below this the two panes stop being halves of anything - the tree gets the
+   height and the chosen tables stack underneath it. */
+@media (max-width: 768px) {
+  .stp-panes {
+    flex-direction: column;
+  }
+
+  .stp-tree,
+  .stp-selected {
+    height: 240px;
+  }
+}
+
+/* The rule reference table has been removed in favour of the example cards
+   below - search/filter now sits above the cards instead of the old table
+   toolbar. */
+.rules-placeholder-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* One row above the cards: search and dimension filter at the far left, the
+   Score Threshold legend at the far right. The search is a fixed, short width
+   rather than stretching to fill the row, so the filter sits right beside it.
+   The row keeps the shared .uploads-toolbar wrapping, so on a narrower layout
+   the legend drops onto its own line (still at the right) instead of
+   overflowing; the mobile stacking below 769px is unaffected. */
+@media (min-width: 769px) {
+  .rules-toolbar .search-input {
+    flex: 0 0 220px;
+    width: 220px;
+    min-width: 0;
+  }
+
+  /* An explicit width, not just flex-basis: auto - a <select> left to size
+     itself inside a nowrap flex row can claim far more space than its
+     content needs. */
+  .rules-toolbar .filter-select {
+    flex: 0 0 170px;
+    width: 170px;
+  }
+}
+
+/* Score Threshold sits at the right end of the toolbar (the auto margin takes
+   all the free space to its left) - a smaller variant of the shared
+   .score-grid/.score-card (also used on ValidatorJob) so three legend entries
+   read as a compact strip rather than a full-size grid. */
+.rules-score-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 0 1 auto;
+  margin-left: auto;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .rules-score-group {
+    flex: 1 1 100%;
+  }
+}
+
+/* The title under the toolbar keeps the 14px the old title row gave it, rather
+   than .card-title's default 20px. */
+.rules-placeholder-examples > .card-title {
+  margin-bottom: 14px;
+}
+
+.rules-score-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mgray);
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.score-grid.score-grid-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.score-card.score-card-compact {
+  flex: 0 0 auto;
+  min-width: 150px;
+  gap: 8px;
+  padding: 6px 16px;
+}
+
+.score-card.score-card-compact .dim {
+  font-size: 9px;
+  margin-bottom: 0;
+}
+
+.score-card.score-card-compact .val {
+  font-size: 13px;
+}
+
+.score-card.score-card-compact .rag {
+  font-size: 13px;
+}
+
+.rule-example-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  gap: 12px;
+  padding: 2px 2px 2px 0;
+}
+
+@media (max-width: 768px) {
+  .rule-example-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The table is the quick reference; these cards give analysts copyable,
+   concrete parameter examples without making every table row several screens
+   tall. */
+.rule-example {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface, #fff);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.rule-example:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.12), 0 8px 20px -6px rgba(29, 78, 216, 0.3);
+}
+
+.rule-example-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.rule-example dl {
+  margin: 0;
+}
+
+.rule-example dl > div {
+  margin-top: 8px;
+}
+
+.rule-example-row {
+  display: flex;
+  gap: 16px;
+}
+
+.rule-example-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-example dt {
+  color: var(--mgray);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rule-example dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  font-size: 12px;
+}
+
+.rule-example-note {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border2);
+  color: var(--mgray);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── The page behind a modal is inert ────────────────────────────
+   useScrollLock freezes the BODY, which is not the whole story: these pages are
+   full of their own scroll containers (.table-scroll, the profile grid, the
+   tree panes). With a dialog open, a wheel gesture over the backdrop still
+   reached the jobs table underneath and scrolled it - the overlay scrolled to
+   its own end and the browser then chained the remainder to whatever was
+   behind. The user closed the dialog and found the list somewhere else.
+
+   overscroll-behavior: contain stops that chaining at the overlay: the dialog's
+   own body still scrolls, and once it reaches its end the gesture stops there
+   rather than being handed to the page.
+
+   The cursor goes with it. Over the dimmed page there is nothing to click - the
+   overlay swallows the event - so the pointer should not keep changing shape
+   over the buttons and links it is covering, which reads as though they are
+   still live. The dialog's own controls set their own cursors as usual. */
+.modal-overlay {
+  overscroll-behavior: contain;
+  cursor: default;
+}
+
+/* The header's two controls - copy, then close. Copy sits first because it is
+   the action; close is the way out, and the way out belongs at the edge where
+   every other dialog in the app puts it. */
+.job-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* The tick that replaces the copy icon for a moment after a successful copy. */
+.job-error-copied {
+  color: var(--green, #10b981);
+}
+
+/* ── Dashboard: list beside bar chart, trend line across the bottom ──
+   The split row holds the two things that are lists of a fixed number of
+   items - recent runs and jobs by type - and the score trend takes a full-width
+   row of its own beneath them. A time axis is the one thing here that genuinely
+   reads better wide, where the other two do not.
+
+   Both halves are equal: the recent-runs columns are capped, so a wider share
+   would only add empty space to the right of Status, and the bar chart uses
+   every pixel it is given. */
+.dashboard-layout > .dashboard-main,
+.dashboard-layout > .dashboard-side {
+  flex: 1 1 0;
+}
+
+/* The two cards in the split row match each other's height, so the row reads as
+   one band rather than two cards of different sizes. The list scrolls inside
+   its own panel; the chart draws at its natural height and the card holds the
+   rest. */
+.dashboard-main > .dashboard-panel-lg,
+.dashboard-side > .dashboard-bar-card {
+  flex: 1 1 auto;
+  /* About six rows plus the header. With the trend line taking a band of its
+     own below, the split row no longer inherits the leftover height on a 1080p
+     screen - at 340px it settled on three visible rows, which is a preview
+     rather than a list. The floor costs a short page scroll on shorter screens
+     and buys a panel worth reading. */
+  min-height: 470px;
+}
+
+/* Full width beneath the split. `min-height: max-content`, not a shrinking
+   basis: a chart must never be squeezed below the size it draws at, or its axis
+   labels end up outside the card. */
+.dashboard-trend-card {
+  flex: 0 0 auto;
+  min-height: max-content;
+  margin-top: 16px;
+}
+
+/* ── Dashboard charts fill their cards ───────────────────────────
+   Every card in the dashboard row is sized by the row, but the charts inside
+   them drew at a fixed height - two 32px bars and a legend, about 320px - so a
+   470px card showed 150px of empty white beneath the legend.
+
+   The rule throughout: grow to fill, never shrink past what the chart draws.
+   Each step below flexes with an `auto` basis and a floor, so spare height is
+   distributed and a short card falls back to the natural size rather than
+   collapsing bars on top of their own labels. */
+.dashboard-bar-card,
+.dashboard-trend-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-bar-card > .stacked-chart-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The trend line is an SVG on a non-uniform viewBox, so it redraws at whatever
+   height it is given - it only needed releasing from its flat 220px. The floor
+   is where the y-axis labels would start colliding. */
+.dashboard-trend-card .trend-line-chart-wrapper {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 220px;
+}
+
+/* The plot area takes the height left after the description and the legend. */
+.dashboard-bar-card .stacked-chart-area {
+  flex: 1 1 auto;
+  /* Two bars, their gap and the axis labels - the point below which the chart
+     stops being readable. */
+  min-height: 150px;
+}
+
+
+/* Pinned to the bottom of the card, whatever height it has. */
+.stacked-chart-legend {
+  margin-top: auto;
+  padding-top: 24px;
+  flex-shrink: 0;
+}
+
+/* ── Jobs by Type: horizontal stacked bars ───────────────────────
+   One bar per job type, laid along the card's width. With only two categories
+   the upright columns this replaced spent most of the plot on empty space, and
+   put each category's name in a caption strip under a bar narrower than the
+   word itself.
+
+   Three columns per row - name, track, total - held on one shared grid so the
+   names, the bars' zero and the totals all line up, and so the grid lines and
+   the axis below can be inset to exactly the track column. */
+.hbar {
+  /* Wide enough for "Validation" at the label's own size - at 88px it
+     ellipsised, and a truncated category name is the one label a chart cannot
+     afford to lose. */
+  --hbar-gutter: 104px;
+  --hbar-total: 46px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* The floor where two bars and their axis are still readable, low enough that
+     the card's own chrome still fits around it in the shortest card this
+     appears in. */
+  min-height: 120px;
+}
+
+.hbar-desc {
+  margin-top: -4px;
+  margin-bottom: 20px;
+}
+
+.hbar-plot {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+}
+
+.hbar-grid {
+  position: absolute;
+  inset: 0 var(--hbar-total) 0 var(--hbar-gutter);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.hbar-grid-line {
+  width: 0;
+  border-left: 1px dashed var(--border2);
+}
+
+/* The zero line is the one the bars actually start from, so it is a solid rule
+   rather than another dash in the series. */
+.hbar-grid-line:first-child {
+  border-left-style: solid;
+  border-left-color: var(--border);
+}
+
+.hbar-rows {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+}
+
+.hbar-row {
+  display: grid;
+  grid-template-columns: var(--hbar-gutter) minmax(0, 1fr) var(--hbar-total);
+  align-items: center;
+}
+
+.hbar-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dgray);
+  padding-right: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The full-width track a bar grows inside. Its width IS the axis, so a stack of
+   `width: 60%` means 60% of the axis maximum - that is what makes the grid
+   lines readable as values. */
+.hbar-track {
+  position: relative;
+  min-width: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+/* A faint full-width rail behind each bar. Three jobs at once: it gives the bar
+   something to sit IN rather than float on, it shows the remaining distance to
+   the axis maximum, and it is what makes pale pill-coloured fills legible -
+   they are read against this tint rather than against white. */
+.hbar-track::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--lgray);
+  box-shadow: inset 0 0 0 1px var(--border2);
+}
+
+.hbar-stack {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-width: 6px;
+  /* Fully rounded, matching the pills it is made of - a 5px radius on a 24px
+     bar was neither square nor round. */
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* The fill is a pill's pale background. What separates one segment from the
+   next is a hairline of the card's own surface, not an outline - a dark ring on
+   every segment made each read as an empty box rather than a filled one.
+ *
+ * A hairline of the card's own surface between segments, so two adjacent pale
+ * fills read as two blocks rather than one gradient. border-right rather than a
+ * flex gap: the widths are percentages of the stack, and a gap would push their
+ * sum past 100% and clip the last segment. border-box keeps it inside. */
+.hbar-segment {
+  height: 100%;
+  flex-shrink: 0;
+  border-right: 2px solid var(--surface);
+}
+
+.hbar-segment:last-child {
+  border-right: 0;
+}
+
+.hbar-total {
+  padding-left: 14px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--dgray);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* The axis sits under the plot, inset to the track column so its labels line up
+   with the grid lines they belong to. */
+.hbar-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-left: var(--hbar-gutter);
+  margin-right: var(--hbar-total);
+  margin-top: 4px;
+  font-size: 11px;
+  color: #94A3B8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The first and last labels would otherwise hang half off each end of the
+   axis. */
+.hbar-axis-label:first-child {
+  margin-left: -2px;
+}
+
+.hbar-axis-label:last-child {
+  margin-right: -2px;
+}
+
+/* Above the bar it describes, anchored to the left so a short bar's tooltip
+   cannot be pushed off the card's right edge. */
+.hbar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  min-width: 150px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, .18);
+  pointer-events: none;
+}
+
+/* Status pills, not swatch-and-label - the same component the jobs tables use,
+   so a status reads identically wherever it appears. */
+/* Ruled off from the plot: it is a key to the chart, not another row of it. */
+.hbar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border2);
+}
+
+/* Narrow cards: the name gutter is the first thing to give, then the bars get
+   shorter. Below this the two-line stack is unavoidable, so the label moves
+   above its bar rather than squeezing it to nothing. */
+@media (max-width: 1024px) {
+  .hbar {
+    --hbar-gutter: 88px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hbar {
+    --hbar-gutter: 0px;
+    --hbar-total: 40px;
+  }
+
+  .hbar-row {
+    grid-template-columns: minmax(0, 1fr) var(--hbar-total);
+    grid-template-areas:
+      "label label"
+      "track total";
+    row-gap: 5px;
+  }
+
+  .hbar-label {
+    grid-area: label;
+    padding-right: 0;
+  }
+
+  .hbar-track {
+    grid-area: track;
+  }
+
+  .hbar-total {
+    grid-area: total;
+  }
+}
+
+/* ── Trend line tooltip (components/TrendLineChart.jsx) ──────────
+   The line showed a shape but no values: a reader could see the score fell on
+   Thursday without being able to say what it fell to, or how many runs that
+   average came from. Both are on the point now. */
+.trend-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, .18);
+  /* The pointer must reach the point underneath, not the box above it -
+     otherwise hovering the tooltip hides the tooltip. */
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Near either edge the tooltip anchors to that side instead of centring, so the
+   first and last points cannot push it outside the card. */
+.trend-tooltip.align-left {
+  left: 0;
+  transform: none;
+}
+
+.trend-tooltip.align-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.trend-tooltip .tooltip-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dgray);
+  margin-bottom: 6px;
+}
+
+.trend-tooltip .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.trend-tooltip .tooltip-status {
+  color: var(--mgray);
+}
+
+.trend-tooltip .tooltip-count {
+  font-weight: 600;
+  color: var(--dgray);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Tree icons and loading rows (SchemaTreePicker.jsx) ──────────
+   Icons carry the node type at a glance, the way a database browser does: an
+   open/closed folder for a schema, a grid for a table, columns for the key
+   picker. Tinted rather than inherited, so the shape is not the only difference
+   between a schema row and a table row. */
+.stp-icon {
+  flex-shrink: 0;
+}
+
+.stp-icon-schema {
+  color: var(--amber, #d99a2b);
+}
+
+.stp-icon-table {
+  color: var(--blue2);
+}
+
+.stp-icon-column {
+  color: var(--mgray);
+  vertical-align: -2px;
+  margin-right: 5px;
+}
+
+/* Placeholder rows while a schema's tables are in flight. They occupy the same
+   space the real rows will, so the list does not jump when the response lands -
+   which a centred spinner cannot do. */
+.stp-skeletons {
+  padding: 2px 0;
+}
+
+.stp-skeleton-row {
+  display: flex;
+  align-items: center;
+  /* Matches .stp-table's own padding and height, so the placeholders sit
+     exactly where the table rows will and the list does not shift by a few
+     pixels when the real rows replace them. */
+  padding: 6px 8px;
+  height: 32px;
+}
+
+/* .skeleton-cell brings the shimmer; only the row geometry is set here. */
+.stp-skeleton-row .skeleton-cell {
+  height: 12px;
+}
+
+/* ── Compact Actions column (ProfileMapper.jsx, Validator.jsx) ───
+   These two tables used .file-action-btns-lg, which up-sized the buttons to
+   38px with a 10px gap. That was written when the Actions column had slack to
+   fill; it does not any more - the id, name and description columns are all
+   capped and narrowing as the window does, so every pixel this column takes is
+   taken from them. With View Results now an icon like its neighbours, four
+   30px buttons and a 4px gap hold the same four actions in about 130px rather
+   than 225px.
+
+   The hit targets stay at 30px square, which is the size every other action
+   button in the app uses - compact, not small. */
+.file-action-btns-compact {
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.file-action-btns-compact .btn-icon-only {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+/* Compact dialogs (AlertModal, ConfirmDialog). Both carried an inline
+   `width: 420px`, which on a 360px phone overflowed the screen - and an inline
+   style cannot be answered by a stylesheet, so no media query could rescue it.
+   A class, and a width that can never exceed the viewport. */
+.modal-box-sm {
+  width: min(420px, 100vw - var(--space-5));
+}
+
+/* The sidebar's pin/expand control and its `.is-pinned` rules used to live
+   here. Removed on request - the rail has no expand/collapse affordance, and
+   its labels are revealed by hover alone (gated on `(hover: hover)` above).
+   The mobile drawer is unaffected: it is driven by Topbar's hamburger, not by
+   anything that was in this block. */
+
+/* ── Skip link (App.jsx) ──────────────────────────────────────────
+   WCAG 2.4.1: a keyboard user should be able to jump past the nav rail to the
+   page content rather than tabbing through every destination on every page.
+   Off-screen until focused. */
+.skip-link {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 400;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--blue);
+  color: #fff;
+  font-size: var(--text-base);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform .15s ease-out;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}
+
+/* .main is a programmatic focus target for the skip link, not an interactive
+   control. A ring around the entire page after using the skip link reads as an
+   error rather than as confirmation; the heading that follows is the real
+   landmark. Focus still lands here, so the next Tab continues into the content. */
+.main:focus {
+  outline: none;
+}
+
+/* ── Page height: fill the viewport ──────────────────────────────
+   .main is a flex column sized to the viewport (see its rule above). These
+   rules pass that height down to the page.
+
+   Every route's root <section> becomes the flex child that claims the leftover
+   height, and a column itself so its own children can do the same. Then exactly
+   one element per page carries .page-fill - the region that should absorb the
+   slack. It is an explicit class rather than a `:last-child` rule because the
+   element is not always last: on Rules.jsx the score-threshold legend sits
+   above the examples card and must keep its own natural height. */
+.main > section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  /* Without this a tall table sets the floor and the column cannot shrink,
+     which is what turns an internal scroll into a page scroll. */
+  min-height: 0;
+}
+
+/* Growth only. Deliberately does NOT set `display`: two of the six targets are
+   grids (.job-layout on ProfileMapperJob, .vr-grid on ValidatorJob) and forcing
+   flex here would collapse their column tracks. Those two are already internally
+   sized, so growing them is all that is needed. */
+.page-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The four list pages fill a card, and the chain from that card down to its
+   scroll region has to be flex columns the whole way or the new height pools at
+   the bottom of the card instead of reaching the table.
+
+   Scoped to the specific wrappers rather than a general `.page-fill > .card`,
+   which would also catch the cards sitting directly inside the two grids above
+   and change their internal layout. */
+.card.page-fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.profile-mapper-main.page-fill > .card,
+.profile-mapper-main.page-fill .profile-mapper-table {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The scroll region takes the height the card gained, so the extra space shows
+   as table rather than as empty card. The min-height floors set earlier still
+   hold on short viewports - flex grows a box, it does not shrink it past its
+   floor. */
+.card.page-fill > .tbl-scroll,
+.card.page-fill > .table-scroll,
+.card.page-fill > .profile-mapper-table-scroll,
+.profile-mapper-main.page-fill .profile-mapper-table-scroll {
+  flex: 1 1 auto;
+}
+
+/* Home reaches the same result through .dashboard-page/.dashboard-layout, which
+   predate this. Its own `min-height: calc(100vh - ... - 28px - 48px)` is gone:
+   that 28px was a hardcoded copy of .main's top padding, which stopped being
+   true when the padding became var(--gutter) (a 12-40px clamp), leaving the page
+   slightly taller than the viewport on a wide screen. .main owns the viewport
+   figure now, so the page just claims its share. */
+.dashboard-page {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ═══ LOV Upload Panel ═══════════════════════════════════════════ */
+
+.lov-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lov-panel--compact {
+  gap: 8px;
+}
+
+.lov-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lov-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lov-count-pill {
+  font-size: 11px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* LOV files are only needed by DQ8 rules, so the panel says so in the heading
+   rather than letting its presence in the job wizard imply it is required. */
+.lov-optional-pill {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface-2, transparent);
+  border: 1px solid var(--border);
+}
+
+.lov-sample-link {
+  font-size: 12px;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.lov-help {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.lov-help code {
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+/* ── LOV Dropzone ──────────────────────────────────────────────── */
+
+.lov-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: var(--bg);
+}
+
+.lov-panel--compact .lov-dropzone {
+  padding: 12px;
+}
+
+.lov-dropzone:hover {
+  border-color: var(--accent);
+  background: hsl(var(--accent-h, 220) 70% 55% / 0.04);
+}
+
+.lov-dropzone--active {
+  border-color: var(--accent);
+  background: hsl(var(--accent-h, 220) 70% 55% / 0.08);
+}
+
+.lov-dropzone--uploading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.lov-dropzone-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.lov-dropzone-content code {
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--bg-raised);
+}
+
+.lov-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+
+/* ── LOV File list ─────────────────────────────────────────────── */
+
+.lov-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lov-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  transition: background 0.15s;
+}
+
+.lov-file-row:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.lov-file-row:hover {
+  background: var(--bg-raised);
+}
+
+.lov-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lov-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lov-file-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.lov-file-meta--warn {
+  color: var(--amber);
+}
+
+.lov-delete-btn {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  padding: 4px;
+}
+
+.lov-delete-btn:hover {
+  color: var(--red);
+}
+
+/* ── LOV empty / loading ───────────────────────────────────────── */
+
+.lov-empty,
+.lov-list-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+/* ── LOV in NJM modal ──────────────────────────────────────────── */
+
+.njm-lov-section {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── LOV in ValidatorJob details ───────────────────────────────── */
+
+.vr-area-lov {
+  grid-column: 2;
+}
+
+.vr-lov-card {
+  padding: 16px;
+}
+
+/* ── LOV in Rules page ─────────────────────────────────────────── */
+
+.rules-lov-card {
+  padding: 20px;
+}
+
+/* ── Spin animation (shared) ───────────────────────────────────── */
+
+@keyframes lov-spin {
+  to { transform: rotate(360deg); }
+}
+
+.lov-panel .spin {
+  animation: lov-spin 1s linear infinite;
+}

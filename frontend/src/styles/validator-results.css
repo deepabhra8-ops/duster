@@ -1,0 +1,431 @@
+/**
+ * validator-results.css - the Validator Results page (ValidatorJob.jsx).
+ *
+ * Scoped under `.vr` on the page's <section>, the same containment approach
+ * new-job-modal.css uses, so nothing here reaches the other pages. It borrows
+ * their vocabulary rather than inventing one: the same --control-radius /
+ * --control-font tokens from app-chrome.css, the same card chrome, the same
+ * pills. What is new here is only what this page actually has and they do not -
+ * a breadcrumb, a score card with counts beside its gauge, the not-run banner,
+ * and the run-details rail.
+ */
+
+/* -- Header -------------------------------------------------- */
+
+.vr-header {
+  margin-bottom: 18px;
+}
+
+.vr-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  color: var(--mgray);
+}
+
+.vr-crumbs a {
+  color: var(--mgray);
+  text-decoration: none;
+}
+
+.vr-crumbs a:hover {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
+.vr-crumb-current {
+  color: var(--dgray);
+  font-weight: 600;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vr-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.vr-header-text h2 {
+  margin: 0;
+}
+
+.vr-header-text p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--mgray);
+  max-width: 68ch;
+}
+
+/* Right-aligned and bottom-anchored, so the status sits on the title's line and
+   the timestamp under it - the same reading order as the page's own heading and
+   subtitle on the left. */
+.vr-header-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.vr-header-time {
+  font-size: 12px;
+  color: var(--mgray);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- Page grid ----------------------------------------------- */
+
+/* Both columns in ONE grid, so each side card is placed against the main
+   section it belongs beside instead of being pushed down the page by whatever
+   the card above it happened to measure.
+ *
+ * The Download card sits in the score row and nowhere else, so it is exactly as
+ * tall as the four cards beside it (align-self: stretch is what does that). The
+ * not-run banner then spans BOTH columns on its own row - it is a statement
+ * about the whole run, not about the findings table, and a full-width strip
+ * says that where a column-width one read as a note attached to the card below
+ * it. Run Details stays level with the results card either way. */
+.vr-grid {
+  display: grid;
+  /* The rail was a flat 320px track, so it stayed 320px on a 4K display while
+     the results table took every extra pixel. clamp() lets it grow with the
+     page - still never wider than a quarter of it, still never below 260px. */
+  grid-template-columns: minmax(0, 1fr) clamp(260px, 22%, 420px);
+  grid-template-areas:
+    "scores  download"
+    "results details";
+  gap: 14px;
+  align-items: start;
+}
+
+.vr-grid.has-banner {
+  grid-template-areas:
+    "scores  download"
+    "banner  banner"
+    "results details";
+}
+
+.vr-area-scores {
+  grid-area: scores;
+}
+
+.vr-area-banner {
+  grid-area: banner;
+}
+
+.vr-area-results {
+  grid-area: results;
+  min-width: 0;
+}
+
+.vr-area-download {
+  grid-area: download;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The card inside the stretched cell has to stretch too, or the cell grows and
+   the card sits at the top of an empty box. */
+.vr-area-download > .card {
+  flex: 1 1 auto;
+}
+
+.vr-area-details {
+  grid-area: details;
+}
+
+/* The grid owns the spacing between sections now; these two carried their own
+   bottom margins from when they were stacked in one column. */
+.vr-grid .vr-score-row,
+.vr-grid .vr-banner {
+  margin-bottom: 0;
+}
+
+/* -- Score cards --------------------------------------------- */
+
+/* Auto-fit rather than a hard `repeat(4, ...)` plus two breakpoints that
+   stepped it to 2 then 1. The four gauges now reflow on their own floor -
+   4 across on a laptop, 2 on a tablet, 1 on a phone - and on an ultrawide they
+   simply share the extra width equally instead of the row being capped. */
+.vr-score-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+  gap: var(--gap-panel, 14px);
+  margin-bottom: var(--gap-panel, 14px);
+}
+
+.vr-score-card .card-title {
+  margin-bottom: 8px;
+}
+
+/* Gauge on the left, its two counts on the right. The gauge is allowed to
+   shrink (min-width: 0) while the counts hold their width, since a truncated
+   number is useless and a slightly smaller arc is not. */
+.vr-score-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.vr-score-body > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vr-score-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.vr-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vr-stat-icon {
+  color: var(--mgray);
+  flex-shrink: 0;
+}
+
+.vr-stat.is-fail .vr-stat-icon {
+  color: var(--red);
+}
+
+.vr-stat dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dgray);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.vr-stat dt {
+  margin-top: 1px;
+  font-size: 10.5px;
+  color: var(--mgray);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* -- Not-run banner ------------------------------------------ */
+
+.vr-banner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 14px;
+  padding: 13px 16px;
+  border: 1px solid #FDE68A;
+  border-left: 4px solid var(--orange);
+  border-radius: var(--radius-sm);
+  background: var(--lamber);
+  color: var(--amber);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.vr-banner-icon {
+  flex-shrink: 0;
+  color: var(--orange);
+}
+
+/* Pushed to the far edge so the sentence keeps its own measure rather than
+   being squeezed against the button. */
+.vr-banner-action {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: var(--white);
+}
+
+/* -- Results card -------------------------------------------- */
+
+/* The filter row above the tab strip. Its own row rather than a slot inside
+   .report-tabs-row: these controls narrow the rows in every tab, so they are
+   not part of choosing a tab.
+
+   Full width, with the search taking whatever the table picker leaves. Left
+   alone these two sat bunched at the left edge of a wide card with a gulf of
+   empty space beside them, which read as an unfinished row rather than a
+   deliberate one. */
+.vr .results-toolbar {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.vr .report-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.vr .report-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  /* Fills the row; the children below decide how that width is split. */
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+/* Holds its width - a table name is the thing being read here, and a picker
+   that stretches with the card just puts its label a long way from its arrow. */
+.vr .report-toolbar-actions > .filter-select {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 190px;
+}
+
+/* The grid's own search. Not .search-input: that one is sized for a page
+   toolbar (flex 1 1 260px) and would fight this row's layout.
+
+   This is the element that absorbs the leftover width, so the row reaches the
+   card's right edge at any card width without anything being centred or
+   stranded. min-width, not width, so it can still shrink on a narrow screen. */
+.vr .results-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+.vr .results-search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--mgray);
+  pointer-events: none;
+}
+
+.vr .results-search input {
+  width: 100%;
+  padding: 8px 12px 8px 33px;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  background: var(--white);
+}
+
+.vr .results-search input::placeholder {
+  color: #94A3B8;
+}
+
+.vr .results-search input:focus {
+  outline: none;
+  border-color: var(--blue2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.vr .results-grid-wrap {
+  margin-top: 14px;
+}
+
+/* -- Run details rail ---------------------------------------- */
+
+.vr-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.vr-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.vr-detail-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--mgray);
+}
+
+.vr-detail-text {
+  min-width: 0;
+}
+
+.vr-detail dt {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--mgray);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.vr-detail dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dgray);
+  word-break: break-word;
+}
+
+/* A qualifier that belongs to the value above it, not a value of its own. */
+.vr-detail-sub {
+  font-weight: 500;
+  color: var(--mgray);
+  font-size: 12px;
+}
+
+.vr-detail-mono {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--blue);
+}
+
+/* -- Narrow screens ------------------------------------------ */
+
+@media (max-width: 1024px) {
+  /* .vr-score-row's 2-column step used to be here; auto-fit covers it now. */
+
+  /* One column: the rail's 320px and the results grid cannot both fit, and a
+     squeezed table is worse than a rail that sits below it. */
+  .vr-grid,
+  .vr-grid.has-banner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "scores"
+      "banner"
+      "download"
+      "results"
+      "details";
+  }
+
+  .vr-area-download {
+    align-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .vr-banner {
+    flex-wrap: wrap;
+  }
+
+  .vr-banner-action {
+    margin-left: 0;
+  }
+
+  .vr .report-toolbar-actions > .filter-select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}

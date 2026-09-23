@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+.venv-tests/
+.venv-312/
+.venv-stable/
+.env
+.claude/
+# YAML (config files - but allow GitHub workflows)
+*.yaml
+*.yml
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
+
+# Uploads
+uploads/
+*/uploads/
+
+# Reports
+reports/
+*/reports/
+
+# Staging
+# staging/
+# */staging/
+
+# Jobs runtime folders
+dq_webapp/backend/jobs/
+
+# Generated files
+*.csv
+# *.xlsx
+*.parquet
+*.log
+
+# Node
+node_modules/
+
+# VSCode
+.vscode/
+
+# Cython build artifacts
+*.so
+*.c
+*.egg-info/
+build/
+dist/
+
+CHANGES.md
+
+.claude/
+.venv-test/
+.claude/
+
+# Cythonized engine wheel, built by glue/package_cython.sh into the repo root.
+*.whl
+
+runtime/jobs/
+
+docs

@@ -1,0 +1,310 @@
+/**
+ * notifications.css - the bell's popover and list (components/notifications/).
+ *
+ * The bell button, its icon and the unread badge live in global.css beside the other top bar
+ * controls; this file is everything that opens from it.
+ */
+
+/* Anchor for the popover. The top bar uses backdrop-filter, which makes IT the containing block
+   for any position: fixed descendant, so the panel is absolute against this wrapper instead of
+   fixed against the viewport. */
+.notification-menu {
+  position: relative;
+}
+
+.notification-btn:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 2px;
+}
+
+/* ── Panel ─────────────────────────────────────────────────── */
+.notification-panel {
+  position: absolute;
+  /* Clear of the BAR, not just of the bell. The bell (40px) is centred in the bar, so its bottom
+     edge is (bar - 40px) / 2 above the bar's; measured from the bell alone, "10px below" landed
+     the panel inside the bar, over its bottom border. */
+  top: calc(100% + (var(--topbar-h) - 40px) / 2 + 8px);
+  right: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(520px, calc(100vh - var(--topbar-h) - 24px));
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px -6px rgba(15, 39, 68, 0.18), 0 8px 16px -8px rgba(15, 39, 68, 0.1);
+  transform-origin: top right;
+  animation: menuPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notification-panel-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+
+.notification-panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.notification-panel-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* The scroll container. overscroll-behavior stops a scroll that reaches the end of the list from
+   carrying on into the page behind it. */
+.notification-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Text-style buttons: "Mark all as read", "Try again". */
+.notification-link-btn {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--blue2);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.notification-link-btn:hover:not(:disabled) {
+  background: var(--llblue);
+}
+
+/* The destructive one. Same quiet look at rest - it should not shout - but it turns red on hover
+   and focus so it does not read as just another blue link right beside "Mark all as read". */
+.notification-link-btn.is-danger:hover:not(:disabled) {
+  background: var(--lred);
+  color: var(--red);
+}
+
+.notification-link-btn:disabled {
+  color: var(--mgray);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.notification-link-btn:focus-visible,
+.notification-load-more:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 1px;
+}
+
+/* ── Items ─────────────────────────────────────────────────── */
+.notification-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-item {
+  /* Marker colour; the tone-* rules below override it. */
+  --dot: var(--blue2);
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--border2);
+  background: var(--surface);
+  font-family: var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.notification-item:hover {
+  background: var(--lgray);
+}
+
+/* Inset, because the panel clips its children and an outset ring would be cut off. */
+.notification-item:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: -2px;
+}
+
+/* Unread: tinted row, accent bar, filled marker, heavier title. Read: plain row, hollow marker. */
+.notification-item.is-unread {
+  background: var(--llblue);
+}
+
+.notification-item.is-unread:hover {
+  background: var(--lblue);
+}
+
+.notification-item.is-unread::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: var(--blue2);
+}
+
+/* The marker's colour follows the kind of notification; the words in the title carry the
+   meaning too, so colour is never the only signal. */
+.notification-item.tone-success {
+  --dot: var(--green);
+}
+
+.notification-item.tone-error {
+  --dot: var(--gauge-red);
+}
+
+.notification-item.tone-warn {
+  --dot: var(--yellow);
+}
+
+.notification-item-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--dot);
+}
+
+.notification-item.is-read .notification-item-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--dot);
+  opacity: 0.5;
+}
+
+.notification-item-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.notification-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notification-item-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13.5px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--dgray);
+}
+
+.notification-item.is-unread .notification-item-title {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.notification-item-time {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--mgray);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.notification-item-content {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--mgray);
+}
+
+.notification-item.is-unread .notification-item-content {
+  color: var(--dgray);
+}
+
+/* ── Footer, empty and error states ────────────────────────── */
+.notification-load-more {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-top: 1px solid var(--border2);
+  background: var(--lgray);
+  color: var(--blue2);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.notification-load-more:hover:not(:disabled) {
+  background: var(--llblue);
+}
+
+.notification-load-more:disabled {
+  color: var(--mgray);
+  cursor: default;
+}
+
+.notification-state {
+  margin: 0;
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--mgray);
+}
+
+.notification-inline-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  background: var(--lred);
+  color: var(--red);
+  font-size: 12.5px;
+}
+
+.notification-inline-error .notification-link-btn {
+  color: var(--red);
+}
+
+/* ≤md (768px): the bell is no longer near the right edge (the logo follows it), so a panel
+   anchored to the bell would run off the left of the screen. Un-anchor it from the bell and
+   let it span the top bar - which is itself position: fixed, so it is the anchor instead. */
+@media (max-width: 768px) {
+  .notification-menu {
+    position: static;
+  }
+
+  .notification-panel {
+    top: calc(100% + 8px);
+    right: var(--space-3);
+    left: var(--space-3);
+    width: auto;
+  }
+}

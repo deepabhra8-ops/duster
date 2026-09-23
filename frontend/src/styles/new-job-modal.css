@@ -1,0 +1,959 @@
+/**
+ * new-job-modal.css - the production-level look for the "New Job" wizards:
+ * the Validator's (NewValidatorJobModal.jsx) and the Profile Mapper's
+ * (NewProfileMapperJobModal.jsx). Both import this file; both put `njm` on
+ * their form. They are the same dialog shape doing two jobs, so they share one
+ * stylesheet rather than drifting into two lookalikes.
+ *
+ * Everything here is scoped under `.njm` (New Job Modal). That is deliberate,
+ * not decorative: global.css styles bare `label` as 11px UPPERCASE and bare
+ * `input/select/textarea` with its own border/padding, so a redesign that
+ * simply restyled those elements would drag every other form on the site with
+ * it. Scoping keeps the blast radius to this one modal while the rest of the
+ * app keeps the old chrome - and lets the same classes be lifted onto the
+ * Profile Mapper's modal later without a second rewrite.
+ *
+ * Tokens (--blue, --border, --dgray...) come from global.css; the handful of
+ * literal hexes below are tints (blue-50, green-50/200/700, slate-50) the token
+ * set has no equivalent for - --llblue/--lgreen are tuned for pills carrying
+ * dark text, not for large quiet panels.
+ */
+
+/* -- Shell --------------------------------------------------- */
+
+/* Overrides .wizard-box's fixed 520/640px: this form grows and shrinks with
+   the chosen source mode (the upload path adds a dropzone, a file row and a
+   results panel), so a fixed height either clipped it or left dead space. */
+/* The credential form is a two-column grid, which 660px leaves cramped. Only
+   this dialog opts in, via njm-wide on the box. */
+.njm.njm-wide.wizard-box {
+  width: min(720px, 100vw - 1.5rem);
+}
+
+.njm.wizard-box,
+.njm.new-profile-mapper-job-modal-box {
+  height: auto;
+  max-height: 88vh;
+  width: min(660px, 100vw - 1.5rem);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -12px rgba(15, 39, 68, .28), 0 0 0 1px rgba(15, 39, 68, .04);
+}
+
+/* global.css pins `.wizard-box > .modal-header/.wizard-footer` at flex 0 0 auto
+   so only the body scrolls; those class names are gone here, so the same rule
+   has to be restated against the new ones or a long form squeezes the header
+   and pushes the footer's actions off screen. */
+.njm .njm-header,
+.njm .njm-footer {
+  flex: 0 0 auto;
+}
+
+.njm .njm-body {
+  min-height: 0;
+}
+
+.njm .njm-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border2);
+}
+
+/* Optional identity block: an icon tile plus title and one line saying what the
+   dialog is for. The Profile Mapper's wizard uses it; the Validator's runs with
+   the bare title, so both centre correctly off align-items: flex-start above
+   plus this row's own centring. */
+.njm .njm-header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.njm .njm-header-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #DBEAFE;
+  color: var(--blue);
+}
+
+.njm .njm-subtitle {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--mgray);
+  line-height: 1.4;
+}
+
+.njm .njm-title {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dgray);
+  letter-spacing: -.01em;
+}
+
+/* Square, bordered close affordance rather than a bare glyph - at 32px it is a
+   real touch target, and the border keeps it visible against the white header. */
+.njm .njm-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--mgray);
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.njm .njm-close:hover {
+  background: var(--lgray);
+  color: var(--dgray);
+}
+
+.njm .njm-close:focus-visible {
+  outline: 2px solid var(--blue2);
+  outline-offset: 2px;
+}
+
+.njm .njm-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 18px 24px;
+}
+
+/* The rhythm of the form. 14px reads as separate fields without the airiness
+   18px gave, which pushed the source cards below the fold on a laptop. Kept
+   comfortably above the 6px inside a field, so label-to-input still groups more
+   tightly than field-to-field - that contrast is what stops a denser form
+   reading as a congested one. */
+.njm .njm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.njm .njm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border2);
+  background: var(--lgray);
+}
+
+/* These are <span>s, not <div>s - they sit inside inline-context wrappers, so
+   each has to be told to be a block or title and description run together on
+   one line. Grouped here rather than repeated in each rule below. */
+.njm .njm-source-text,
+.njm .njm-source-title,
+.njm .njm-source-desc,
+.njm .njm-dropzone-text,
+.njm .njm-dropzone-title,
+.njm .njm-dropzone-sub,
+.njm .njm-file-meta,
+.njm .njm-file-name,
+.njm .njm-file-size,
+.njm .njm-found-title,
+.njm .njm-count,
+.njm .njm-hint {
+  display: block;
+}
+
+/* -- Fields -------------------------------------------------- */
+
+.njm .njm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Beats global.css's uppercase/letter-spaced `label` - sentence case reads as
+   a form label here, not as a table header. */
+.njm .njm-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dgray);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* The asterisk lives in CSS, not in the label's text, so the element's
+   accessible name stays exactly "Name" / "Mapping Workbook" for assistive
+   tech (and for the tests that query by label text). */
+.njm .njm-label.is-required::after {
+  content: " *";
+  color: #DC2626;
+  font-weight: 700;
+}
+
+.njm .njm-field input[type="text"],
+.njm .njm-field textarea {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 13.5px;
+  font-family: var(--font-ui);
+  background: var(--white);
+}
+
+.njm .njm-field textarea {
+  min-height: 74px;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.njm .njm-field input::placeholder,
+.njm .njm-field textarea::placeholder {
+  color: #94A3B8;
+}
+
+.njm .njm-field input:focus,
+.njm .njm-field textarea:focus {
+  border-color: var(--blue2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+/* Right-aligned under the field it counts, where every character-capped input
+   on the web puts it - and tucked back against that input with a negative
+   margin, because the counter annotates the field above it rather than being
+   the next thing in the stack. */
+.njm .njm-count {
+  align-self: flex-end;
+  margin-top: -2px;
+  font-size: 11px;
+  color: var(--mgray);
+  font-variant-numeric: tabular-nums;
+}
+
+.njm .njm-hint {
+  font-size: 11.5px;
+  color: var(--mgray);
+  line-height: 1.45;
+}
+
+/* Hint on the left, character counter on the right, sharing one line under the
+   input. Two separate rows wasted a whole line of a dialog that already has to
+   fit a viewport, and put the counter further from the field it counts. */
+.njm .njm-field-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: -2px;
+}
+
+.njm .njm-field-foot .njm-hint {
+  min-width: 0;
+}
+
+.njm .njm-field-foot .njm-count {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+/* Muted qualifier in a label - "Description (Optional)". A span rather than
+   part of the label string so it can be toned down without the label losing it
+   from its accessible name. */
+.njm .njm-optional {
+  font-weight: 400;
+  color: var(--mgray);
+}
+
+/* -- Fields with a leading icon ------------------------------ */
+
+/* Wraps one input/select so a glyph can sit inside its left padding, and a
+   reveal button inside its right. Same idea as .njm-select-wrap above, but for
+   native controls rather than SearchableSelect. */
+.njm .njm-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.njm .njm-input-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  color: var(--mgray);
+  pointer-events: none;
+}
+
+.njm .njm-reveal {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--mgray);
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.njm .njm-reveal:hover {
+  background: var(--lgray);
+  color: var(--dgray);
+}
+
+/* A native select needs its own chevron once appearance is reset - the same one
+   app-chrome.css gives .filter-select, so every dropdown in the app agrees. */
+.njm .njm-input-wrap select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 16px 16px;
+}
+
+/* -- Credential grid ----------------------------------------- */
+
+/* Host/Port and Username/Password pair up naturally, so this is two columns
+   rather than the one-per-row stack the rest of the dialog uses. `.full` on a
+   field (DB_FIELD_CONFIGS marks the long ones - tokens, HTTP paths) still spans
+   both, which is why the grid is worth keeping over a flex wrap. */
+.njm .njm-db-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.njm .njm-db-grid .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.njm .njm-db-grid .form-group.full {
+  grid-column: 1 / -1;
+}
+
+/* Matches the fields the dialog declares itself - global.css's bare
+   `input/select/textarea` rule is a different border, radius and size. */
+.njm .njm-db-grid input,
+.njm .njm-db-grid select,
+.njm .njm-db-grid textarea,
+.njm .njm-field select {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 13.5px;
+  font-family: var(--font-ui);
+  background-color: var(--white);
+  color: var(--dgray);
+}
+
+.njm .njm-db-grid input:focus,
+.njm .njm-db-grid select:focus,
+.njm .njm-db-grid textarea:focus,
+.njm .njm-field select:focus {
+  outline: none;
+  border-color: var(--blue2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.njm .njm-db-grid input::placeholder,
+.njm .njm-db-grid textarea::placeholder {
+  color: #94A3B8;
+}
+
+/* Room for the leading glyph, and for the reveal button on a password field.
+ *
+ * These have to come AFTER the two rules above, not up with .njm-input-wrap
+ * where they started. Those rules set the `padding` SHORTHAND at the same
+ * specificity, so whichever is written last wins - and being last, they reset
+ * padding-left to 13px and dropped every input's text straight on top of its
+ * icon. Same trap for anything else that sets padding on these fields later. */
+.njm .njm-input-wrap input,
+.njm .njm-input-wrap select {
+  padding-left: 36px;
+}
+
+.njm .njm-input-wrap:has(.njm-reveal) input {
+  padding-right: 40px;
+}
+
+/* A checkbox must not stretch to the field width the rule above gives inputs. */
+.njm .njm-db-grid input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  accent-color: var(--blue2);
+  align-self: flex-start;
+}
+
+/* -- Test connection result ---------------------------------- */
+
+/* A result line, not a control - the Test button itself sits in the footer.
+   Neutral until a test has actually run, then it takes the outcome's colour so
+   pass and fail are distinguishable at a glance rather than by reading. */
+.njm .njm-test {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px 14px;
+  border: 1px solid var(--border2);
+  border-radius: 11px;
+  background: var(--lgray);
+}
+
+.njm .njm-test.is-ok {
+  border-color: #BBF7D0;
+  background: #F0FDF4;
+}
+
+.njm .njm-test.is-err {
+  border-color: #FECACA;
+  background: #FEF2F2;
+}
+
+.njm .njm-test-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  margin-top: 1px;
+  color: var(--blue);
+}
+
+.njm .njm-test.is-ok .njm-test-icon {
+  color: #16A34A;
+}
+
+.njm .njm-test.is-err .njm-test-icon {
+  color: var(--red);
+}
+
+.njm .njm-test-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--mgray);
+  line-height: 1.4;
+}
+
+.njm .njm-test.is-ok .njm-test-text {
+  color: #14532D;
+  font-weight: 600;
+}
+
+.njm .njm-test.is-err .njm-test-text {
+  color: #991B1B;
+  font-weight: 600;
+}
+
+/* The footer is space-between, so with three children this one lands in the
+   middle on its own - no extra layout needed. White so it reads as a secondary
+   action against the footer's grey, the same treatment Browse Files gets. */
+.njm .njm-test-btn {
+  background: var(--white);
+}
+
+/* -- Source cards (the radio group) -------------------------- */
+
+.njm .njm-source-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* A div, not a label: wrapping the input in a label would give the radio a
+   second accessible name ("Mapping Workbook") colliding with the file field's
+   own label of that name. The click handler does the job a label would. */
+.njm .njm-source-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border: 1.5px solid var(--border2);
+  border-radius: 11px;
+  background: var(--white);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--trans);
+}
+
+.njm .njm-source-card:hover {
+  border-color: #BFD4F5;
+  background: #FAFCFF;
+}
+
+.njm .njm-source-card.is-selected {
+  border-color: var(--blue2);
+  background: #EFF6FF;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .08);
+}
+
+.njm .njm-source-card:focus-within {
+  outline: 2px solid var(--blue2);
+  outline-offset: 2px;
+}
+
+.njm .njm-source-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #EEF2F7;
+  color: var(--navy2);
+  transition: var(--trans);
+}
+
+.njm .njm-source-card.is-selected .njm-source-icon {
+  background: #DBEAFE;
+  color: var(--blue);
+}
+
+.njm .njm-source-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.njm .njm-source-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dgray);
+  line-height: 1.3;
+}
+
+.njm .njm-source-desc {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--mgray);
+  line-height: 1.4;
+}
+
+/* A third, quieter line some cards carry - the formats a source accepts, or
+   what picking it leads to. Lighter than the description so the card still
+   reads as title-then-detail rather than three equal lines. */
+.njm .njm-source-note {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: #94A3B8;
+  line-height: 1.35;
+}
+
+/* The native radio, restyled rather than replaced - it stays a real focusable
+   input, so keyboard and screen-reader behaviour is the browser's, not ours. */
+.njm .njm-source-radio {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--blue2);
+  cursor: pointer;
+}
+
+/* -- Source type (horizontal radio pair) --------------------- */
+
+.njm .njm-radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 28px;
+}
+
+/* A real <label>, so its type is restated in full: global.css uppercases and
+   letter-spaces every bare `label` at 11px, which would read as a table header
+   rather than an option. */
+.njm .njm-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dgray);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+/* Sized and unpadded explicitly - global.css gives every bare `input`
+   width:100% and 9px 12px of padding, which would stretch a radio across the
+   row. The focus rule drops the box-shadow ring .njm-field puts on any focused
+   input: on a 17px radio it lingers as a rounded square after every click. The
+   global :focus-visible outline is untouched, so keyboard focus still shows. */
+.njm .njm-radio-option input {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--blue2);
+  cursor: pointer;
+}
+
+.njm .njm-radio-option input:focus {
+  box-shadow: none;
+}
+
+/* -- Dropzone ------------------------------------------------ */
+
+.njm .njm-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1.5px dashed #C7D7EE;
+  border-radius: 11px;
+  background: #F7FAFF;
+  transition: var(--trans);
+}
+
+.njm .njm-dropzone.is-dragging {
+  border-color: var(--blue2);
+  background: #EAF2FE;
+}
+
+.njm .njm-dropzone.is-busy {
+  opacity: .65;
+  pointer-events: none;
+}
+
+.njm .njm-dropzone-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: #DBEAFE;
+  color: var(--blue);
+}
+
+.njm .njm-dropzone-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.njm .njm-dropzone-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dgray);
+}
+
+.njm .njm-dropzone-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--mgray);
+}
+
+/* Visually hidden but still in the accessibility tree and still clickable
+   through its label - display:none would drop it out of both. */
+.njm .njm-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.njm .njm-browse {
+  flex-shrink: 0;
+  background: var(--white);
+  color: var(--dgray);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.njm .njm-browse:hover:not(:disabled) {
+  background: var(--lgray);
+  border-color: #94A3B8;
+}
+
+/* -- Picked file row ----------------------------------------- */
+
+.njm .njm-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 11px 14px;
+  border: 1px solid var(--border2);
+  border-radius: 11px;
+  background: var(--white);
+}
+
+.njm .njm-file-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.njm .njm-file-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.njm .njm-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dgray);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.njm .njm-file-size {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--mgray);
+}
+
+.njm .njm-file-ok {
+  flex-shrink: 0;
+  color: #16A34A;
+  display: inline-flex;
+}
+
+.njm .njm-file-remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--mgray);
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.njm .njm-file-remove:hover:not(:disabled) {
+  background: var(--lred);
+  color: var(--red);
+}
+
+/* -- Inspect result panel ------------------------------------ */
+
+.njm .njm-found {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid #BBF7D0;
+  border-radius: 11px;
+  background: #F0FDF4;
+}
+
+.njm .njm-found-icon {
+  flex-shrink: 0;
+  color: #16A34A;
+  display: inline-flex;
+  margin-top: 1px;
+}
+
+.njm .njm-found-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #14532D;
+}
+
+.njm .njm-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.njm .njm-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* Neutral variant for step 2, where the same table list is a reminder of what
+   still has to be matched rather than a success report. */
+.njm .njm-pill.is-neutral {
+  background: #E2E8F0;
+  color: var(--navy);
+}
+
+/* Stands in for the schema tree until a connection is chosen, so step 2 is
+   never an unexplained gap between the picker and the footer. */
+.njm .njm-waiting {
+  padding: 22px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 11px;
+  background: var(--lgray);
+  color: var(--mgray);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.njm .njm-step2-lead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dgray);
+}
+
+/* -- Connection select --------------------------------------- */
+
+/* SearchableSelect renders its own input; the database glyph is layered over
+   it and the input inset to make room, rather than forking that component. */
+.njm .njm-select-wrap {
+  position: relative;
+}
+
+/* This glyph needs a z-index and .wizard-loading-overlay needs a bigger one -
+   the two rules below are a pair, and changing either alone breaks something.
+   .metadata-combobox is itself positioned and comes LATER in the DOM than this
+   icon, so at equal (auto) z-index the combobox and its opaque white input
+   paint on top and the glyph disappears entirely. Raising the icon to 1 fixes
+   that, but 1 is also .wizard-loading-overlay's own z-index, and the overlay is
+   rendered EARLIER - so the icon would then float at full strength over the
+   dimmed "Loading schemas…" screen. Hence the overlay at 3 within this modal.
+   (.metadata-chevron gets away with no z-index only because it is a child of
+   .metadata-combobox rather than a sibling of it.) */
+.njm .njm-select-icon {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  transform: translateY(-50%);
+  z-index: 1;
+  color: var(--mgray);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.njm .wizard-loading-overlay {
+  z-index: 3;
+}
+
+.njm .njm-select-wrap .metadata-combobox input {
+  padding-left: 38px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  height: 44px;
+}
+
+/* -- Alerts -------------------------------------------------- */
+
+.njm .njm-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 11px 13px;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  background: #FEF2F2;
+  color: #991B1B;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.njm .njm-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* -- Inline spinner ------------------------------------------ */
+
+/* @keyframes spin already exists in global.css (the wizard spinner uses it). */
+.njm .njm-spin {
+  animation: spin .8s linear infinite;
+}
+
+/* -- Narrow screens ------------------------------------------ */
+
+@media (max-width: 768px) {
+  .njm.wizard-box,
+  .njm.new-profile-mapper-job-modal-box {
+    width: 100%;
+    max-height: 92vh;
+  }
+
+  .njm .njm-source-grid,
+  .njm .njm-db-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .njm .njm-header,
+  .njm .njm-body,
+  .njm .njm-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Stacked, so Browse Files is not squeezed to a sliver beside the copy. */
+  .njm .njm-dropzone {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .njm .njm-browse {
+    align-self: stretch;
+    justify-content: center;
+  }
+
+  /* Side-by-side Cancel/Next become half-width each rather than sitting at the
+     edges of a narrow sheet - the same treatment global.css gives
+     .wizard-footer, restated for this footer's own class. */
+  .njm .njm-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .njm .njm-footer .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

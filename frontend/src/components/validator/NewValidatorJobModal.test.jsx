@@ -19,7 +19,6 @@ vi.mock("../../api/api.js", () => ({
 import * as api from "../../api/api.js";
 import { ToastProvider } from "../../contexts/ToastContext.jsx";
 import NewValidatorJobModal from "./NewValidatorJobModal.jsx";
-import { ToastProvider } from "../../contexts/ToastContext.jsx";
 
 const WORKBOOK = new File(["x"], "map.xlsx", {
   type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -46,8 +45,6 @@ const create = () => {
 
 const goToTableStep = () => fireEvent.click(screen.getByRole("button", { name: /Next/ }));
 
-const pickDataSource = () => fireEvent.click(screen.getByRole("radio", { name: "Data Source" }));
-
 async function uploadWorkbook(tables = ["claim"]) {
   api.inspectProfileMapWorkbook.mockResolvedValue({
     ok: true,
@@ -58,7 +55,6 @@ async function uploadWorkbook(tables = ["claim"]) {
   });
 
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Claims DQ" } });
-  pickDataSource();
   fireEvent.click(screen.getByLabelText("Upload a mapping workbook"));
   fireEvent.change(screen.getByLabelText("Mapping Workbook"), {
     target: { files: [WORKBOOK] },
@@ -95,7 +91,6 @@ describe("guards before anything is created", () => {
     setup();
 
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Claims DQ" } });
-    pickDataSource();
     fireEvent.click(screen.getByLabelText("Upload a mapping workbook"));
     create();
 
@@ -165,7 +160,6 @@ describe("a rejected workbook keeps its reason on screen", () => {
     api.inspectProfileMapWorkbook.mockResolvedValue({ ok: false, error: reason });
 
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Claims DQ" } });
-    pickDataSource();
     fireEvent.click(screen.getByLabelText("Upload a mapping workbook"));
     fireEvent.change(screen.getByLabelText("Mapping Workbook"), {
       target: { files: [WORKBOOK] },
@@ -220,7 +214,6 @@ describe("the two-step wizard", () => {
 
   it("offers Next, not Create, on the upload path", () => {
     setup();
-    pickDataSource();
     fireEvent.click(screen.getByLabelText(/upload a mapping workbook/i));
 
     expect(screen.getByRole("button", { name: /Next/ })).toBeInTheDocument();
@@ -230,7 +223,6 @@ describe("the two-step wizard", () => {
   it("keeps a step-1 problem on step 1 rather than advancing", async () => {
     setup();
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Claims DQ" } });
-    pickDataSource();
     fireEvent.click(screen.getByLabelText(/upload a mapping workbook/i));
 
     create();
@@ -305,92 +297,5 @@ describe("arriving from a profile map's results page", () => {
     create();
 
     expect(await screen.findByText(/Select a completed profile map/)).toBeInTheDocument();
-  });
-});
-
-describe("the source type radio", () => {
-  const typeGroup = () => screen.getByRole("radiogroup", { name: "Source type" });
-  const flatFile = () => screen.getByRole("radio", { name: "Flat File" });
-  const dataSource = () => screen.getByRole("radio", { name: "Data Source" });
-
-  it("offers Flat File and Data Source, with Flat File picked", () => {
-    setup();
-
-    expect(typeGroup()).toContainElement(flatFile());
-    expect(typeGroup()).toContainElement(dataSource());
-    expect(flatFile()).toBeChecked();
-    expect(dataSource()).not.toBeChecked();
-  });
-
-  it("sits before the source cards", () => {
-    setup();
-
-    const cards = screen.getByRole("radiogroup", { name: "Choose a source" });
-
-    expect(
-      typeGroup().compareDocumentPosition(cards) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-  });
-
-  it("switches between the two options, one at a time", () => {
-    setup();
-
-    fireEvent.click(dataSource());
-    expect(dataSource()).toBeChecked();
-    expect(flatFile()).not.toBeChecked();
-
-    fireEvent.click(flatFile());
-    expect(flatFile()).toBeChecked();
-    expect(dataSource()).not.toBeChecked();
-  });
-
-  it("offers only the Profile Mapper Job card for Flat File", () => {
-    setup();
-
-    expect(screen.getByLabelText("From a Profile Mapper job")).toBeChecked();
-    expect(screen.queryByLabelText("Upload a mapping workbook")).not.toBeInTheDocument();
-    expect(screen.queryByText("Mapping Workbook")).not.toBeInTheDocument();
-    expect(screen.getByText("Select profile map")).toBeInTheDocument();
-  });
-
-  it("offers both cards for Data Source", () => {
-    setup();
-    pickDataSource();
-
-    expect(screen.getByLabelText("From a Profile Mapper job")).toBeInTheDocument();
-    expect(screen.getByLabelText("Upload a mapping workbook")).toBeInTheDocument();
-  });
-
-  it("drops the workbook path when Flat File is picked, and restores it on the way back", () => {
-    setup();
-    pickDataSource();
-    fireEvent.click(screen.getByLabelText("Upload a mapping workbook"));
-    expect(screen.getByText("Upload mapping workbook")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Next/ })).toBeInTheDocument();
-
-    fireEvent.click(flatFile());
-
-    expect(screen.queryByLabelText("Upload a mapping workbook")).not.toBeInTheDocument();
-    expect(screen.queryByText("Upload mapping workbook")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("From a Profile Mapper job")).toBeChecked();
-    expect(screen.getByRole("button", { name: "Create" })).toBeInTheDocument();
-
-    pickDataSource();
-
-    expect(screen.getByLabelText("Upload a mapping workbook")).toBeChecked();
-  });
-
-  it("validates as a profile-map run once Flat File is picked", async () => {
-    setup();
-    pickDataSource();
-    fireEvent.click(screen.getByLabelText("Upload a mapping workbook"));
-    fireEvent.click(flatFile());
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Claims DQ" } });
-
-    fireEvent.click(screen.getByRole("button", { name: "Create" }));
-
-    expect(await screen.findByText(/Select a completed profile map/)).toBeInTheDocument();
-    expect(screen.queryByText(/Choose a mapping workbook first/)).not.toBeInTheDocument();
-    expect(api.createDraftJob).not.toHaveBeenCalled();
   });
 });

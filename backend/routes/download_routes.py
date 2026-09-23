@@ -193,30 +193,6 @@ def download_staging(
     )
 
 
-@download_bp.get("/api/sample-csv")
-def sample_csv():
-    content = (
-        "CustomerID,Name,Email,Age,Country\n"
-        "1,Alice,alice@example.com,28,India\n"
-        "2,,bobexample.com,-2,USA\n"
-        "3,Charlie,,35,UK\n"
-        "4,David,david@example.com,200,Unknown\n"
-    )
-
-    buffer = io.BytesIO(
-        content.encode("utf-8")
-    )
-
-    buffer.seek(0)
-
-    logger.debug("Serving sample CSV")
-    return StreamingResponse(
-        buffer,
-        media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="sample_data.csv"'},
-    )
-
-
 @download_bp.get("/api/sample-lov")
 def sample_lov():
     content = (

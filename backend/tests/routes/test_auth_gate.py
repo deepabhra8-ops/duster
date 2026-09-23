@@ -20,7 +20,6 @@ PROTECTED = [
     ("POST", "/api/jobs/draft"),
     ("GET", "/api/job/some-id"),
     ("GET", "/api/job/some-id/download/report"),
-    ("GET", "/api/sample-csv"),
     ("POST", "/api/metadata"),
     ("GET", "/api/dashboard/summary"),
     ("GET", "/api/notifications"),

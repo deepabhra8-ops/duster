@@ -9,7 +9,7 @@ import ProgressBar from "../components/ProgressBar.jsx";
 import StatusPill from "../components/StatusPill.jsx";
 import JobErrorButton from "../components/JobErrorButton.jsx";
 import { PAGE_META } from "../constants/appConfig.js";
-import { DATABASE_TYPE_OPTIONS, SOURCE_TYPES, SOURCE_LABELS } from "../constants/sourceTypes.js";
+import { DATABASE_TYPE_OPTIONS } from "../constants/sourceTypes.js";
 import { cancelJob, deleteJob, startJob } from "../api/api.js";
 import { IconError } from "../components/Icons.jsx";
 import { derivePercent } from "../utils/jobProgress.js";
@@ -21,7 +21,6 @@ import { useToast } from "../hooks/useToast.js";
 const DB_TYPE_LABELS = Object.fromEntries(DATABASE_TYPE_OPTIONS.map((o) => [o.value, o.label]));
 
 function jobTypeLabel(job) {
-  if (job.sourceType === SOURCE_TYPES.FLAT_FILE || job.sourceType === "csv") return SOURCE_LABELS[SOURCE_TYPES.FLAT_FILE];
   return DB_TYPE_LABELS[job.databaseType] || job.databaseType || "-";
 }
 
@@ -148,7 +147,6 @@ export default function ProfileMapper() {
                 aria-label="Filter by database type"
               >
                 <option value="">All Database Types</option>
-                <option value={SOURCE_TYPES.FLAT_FILE}>{SOURCE_LABELS[SOURCE_TYPES.FLAT_FILE]}</option>
                 {DATABASE_TYPE_OPTIONS.filter((o) => o.value).map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}

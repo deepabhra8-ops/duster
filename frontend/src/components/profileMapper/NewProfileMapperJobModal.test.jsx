@@ -6,8 +6,9 @@ const { showToast } = vi.hoisted(() => ({ showToast: vi.fn() }));
 vi.mock("../../api/api.js", () => ({
   createDraftJob: vi.fn(),
   listConnectionSchemas: vi.fn(),
+  listConnectionTables: vi.fn(),
+  listConnectionColumns: vi.fn(),
   updateJobTables: vi.fn(),
-  uploadFile: vi.fn(),
   listConnections: vi.fn(),
 }));
 
@@ -18,8 +19,6 @@ vi.mock("../../hooks/useToast.js", () => ({
 import * as api from "../../api/api.js";
 import NewProfileMapperJobModal from "./NewProfileMapperJobModal.jsx";
 
-const csv = (name) => new File(["id,name\n1,a\n"], name, { type: "text/csv" });
-
 function setup() {
   const onCreated = vi.fn();
   render(<NewProfileMapperJobModal open onClose={vi.fn()} onCreated={onCreated} />);
@@ -27,128 +26,118 @@ function setup() {
   return { onCreated };
 }
 
-const pick = (...files) =>
-  fireEvent.change(screen.getByLabelText("Data Files"), { target: { files } });
-
+const goNext = () => fireEvent.click(screen.getByRole("button", { name: /Next/ }));
 const create = () => fireEvent.click(screen.getByRole("button", { name: "Create" }));
+
+async function pickConnection() {
+  fireEvent.focus(await screen.findByPlaceholderText(/Search saved connections/i));
+  fireEvent.click(await screen.findByText("Warehouse (postgresql)"));
+}
+
+async function pickTableAndColumn() {
+  await pickConnection();
+  fireEvent.click(await screen.findByRole("button", { name: /public/ }));
+  fireEvent.click(await screen.findByRole("checkbox"));
+
+  const column = await screen.findByPlaceholderText(/Search cde/i);
+  fireEvent.focus(column);
+  fireEvent.click(await screen.findByText("claim_id"));
+
+  await waitFor(() => expect(screen.getByDisplayValue("claim_id")).toBeInTheDocument());
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  api.listConnections.mockResolvedValue({ ok: true, data: { data: [] } });
+  api.listConnections.mockResolvedValue({
+    ok: true,
+    data: { data: [{ id: "c1", name: "Warehouse", db_type: "postgresql" }] },
+  });
+  api.listConnectionSchemas.mockResolvedValue({ ok: true, data: { schemas: ["public"] } });
+  api.listConnectionTables.mockResolvedValue({ ok: true, data: { tables: ["claim"] } });
+  api.listConnectionColumns.mockResolvedValue({ ok: true, data: { columns: ["claim_id"] } });
   api.createDraftJob.mockResolvedValue({ ok: true, data: { job_id: "job-1" } });
   api.updateJobTables.mockResolvedValue({ ok: true });
-  api.uploadFile.mockImplementation(async (file) => ({
-    ok: true,
-    data: { filename: `uuid_${file.name}` },
-  }));
 });
 
-describe("picking files", () => {
-  it("lists every picked file, across several picks", () => {
-    setup();
+describe("step 1 - details", () => {
+  it("requires a name before moving on", () => {
+    render(<NewProfileMapperJobModal open onClose={vi.fn()} onCreated={vi.fn()} />);
 
-    pick(csv("customers.csv"), csv("orders.csv"));
-    pick(csv("products.csv"));
+    goNext();
 
-    expect(screen.getByText("customers.csv")).toBeInTheDocument();
-    expect(screen.getByText("orders.csv")).toBeInTheDocument();
-    expect(screen.getByText("products.csv")).toBeInTheDocument();
+    expect(screen.getByText(/Name is required/)).toBeInTheDocument();
   });
 
-  it("refuses a second file with the same name, ignoring case", () => {
+  it("moves to table selection once named", () => {
     setup();
 
-    pick(csv("customers.csv"));
-    pick(csv("Customers.CSV"));
+    goNext();
 
-    expect(screen.getByText(/"Customers.CSV" is already added/)).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /^Remove / })).toHaveLength(1);
+    expect(screen.getByText(/Select Tables/)).toBeInTheDocument();
+    expect(screen.getByText("Select Saved Connection")).toBeInTheDocument();
   });
+});
 
-  it("keeps the valid files when the same selection also has a bad one", () => {
+describe("step 2 - connection and tables", () => {
+  it("requires a saved connection before creating", async () => {
     setup();
-
-    pick(csv("notes.txt"), csv("orders.csv"));
-
-    expect(screen.getByText(/"notes.txt" is not a .csv file/)).toBeInTheDocument();
-    expect(screen.getByText("orders.csv")).toBeInTheDocument();
-  });
-
-  it("removes only the file whose ✕ was clicked", () => {
-    setup();
-    pick(csv("customers.csv"), csv("orders.csv"));
-
-    fireEvent.click(screen.getByRole("button", { name: "Remove customers.csv" }));
-
-    expect(screen.queryByText("customers.csv")).not.toBeInTheDocument();
-    expect(screen.getByText("orders.csv")).toBeInTheDocument();
-  });
-
-  it("requires at least one file", async () => {
-    setup();
+    goNext();
 
     create();
 
-    expect(await screen.findByText(/Choose at least one CSV file/)).toBeInTheDocument();
+    expect(await screen.findByText(/Select a saved connection/)).toBeInTheDocument();
     expect(api.createDraftJob).not.toHaveBeenCalled();
   });
-});
 
-describe("creating the job", () => {
-  it("uploads every file and attaches each as its own table in one call", async () => {
+  it("requires at least one locked table with a CDE column", async () => {
+    setup();
+    goNext();
+    await pickConnection();
+
+    create();
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "error", title: "No table selected" })
+      )
+    );
+    expect(api.createDraftJob).not.toHaveBeenCalled();
+  });
+
+  it("creates the job and attaches the selected table", async () => {
     const { onCreated } = setup();
-    pick(csv("customers.csv"), csv("orders.csv"));
+    goNext();
+    await pickTableAndColumn();
 
     create();
 
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
-    expect(api.uploadFile).toHaveBeenCalledTimes(2);
-    expect(api.updateJobTables).toHaveBeenCalledTimes(1);
+    expect(api.createDraftJob).toHaveBeenCalledWith("Sales profile", "", "c1", "1");
     expect(api.updateJobTables).toHaveBeenCalledWith("job-1", [
-      { name: "customers", file: "uuid_customers.csv", primary_key: "" },
-      { name: "orders", file: "uuid_orders.csv", primary_key: "" },
+      { schema: "public", name: "claim", primary_key: "claim_id" },
     ]);
     expect(showToast).not.toHaveBeenCalled();
   });
 
-  it("names the file that failed to upload and keeps the others", async () => {
-    api.uploadFile.mockImplementation(async (file) =>
-      file.name === "orders.csv"
-        ? { ok: false, error: "File exceeds the 200 MB limit" }
-        : { ok: true, data: { filename: `uuid_${file.name}` } }
-    );
-    const { onCreated } = setup();
-    pick(csv("customers.csv"), csv("orders.csv"), csv("products.csv"));
+  it("loads the schemas of a picked connection", async () => {
+    setup();
+    goNext();
 
-    create();
+    await pickConnection();
 
-    await waitFor(() => expect(onCreated).toHaveBeenCalled());
-    expect(api.updateJobTables).toHaveBeenCalledWith("job-1", [
-      { name: "customers", file: "uuid_customers.csv", primary_key: "" },
-      { name: "products", file: "uuid_products.csv", primary_key: "" },
-    ]);
-    expect(showToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "warn",
-        title: "1 of 3 files weren't uploaded",
-        message: expect.stringContaining('"orders.csv"'),
-      })
-    );
+    await waitFor(() => expect(api.listConnectionSchemas).toHaveBeenCalledWith("c1"));
   });
+});
 
-  it("warns when the backend refuses the tables", async () => {
-    api.updateJobTables.mockResolvedValue({ ok: false, error: "More than one source table is named 'x'" });
-    const { onCreated } = setup();
-    pick(csv("customers.csv"));
+describe("stepping back and forward again", () => {
+  it("brings the chosen column back instead of loading forever", async () => {
+    setup();
+    goNext();
+    await pickTableAndColumn();
 
-    create();
+    fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Next/ }));
 
-    await waitFor(() => expect(onCreated).toHaveBeenCalled());
-    expect(showToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Job created, but files weren't attached",
-        message: expect.stringContaining("More than one source table"),
-      })
-    );
+    await waitFor(() => expect(screen.getByDisplayValue("claim_id")).toBeInTheDocument());
   });
 });

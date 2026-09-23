@@ -15,7 +15,6 @@ from core.config import (
     DEFAULT_PROJECT_NAME,
     DEFAULT_RUN_MODE,
     DEFAULT_SOURCE_TYPE,
-    RULES_MASTER_PATH,
 )
 from services.connection_service import connection_service
 from services.connectors import connector_registry
@@ -110,7 +109,6 @@ class ConfigBuilder:
                 "tables": tables,
             },
             "staging": staging_configuration,
-            "rules_master_file": RULES_MASTER_PATH.as_posix(),
             "profile_map_file": (
                 profile_map_path.as_posix()
                 if profile_map_path

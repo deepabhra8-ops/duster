@@ -10,7 +10,6 @@ load_dotenv(BASE_DIR / ".env", override=True)
 from core.config.paths_config import (
     ACCEL_PATH,
     ACCEL_SRC_PATH,
-    RULES_MASTER_PATH,
     RUNTIME_DIR,
     JOBS_DIR,
     UPLOADS_DIR,
@@ -70,7 +69,7 @@ from core.config.profile_map_config import (
 
 __all__ = [
     "BASE_DIR",
-    "ACCEL_PATH", "ACCEL_SRC_PATH", "RULES_MASTER_PATH", "RUNTIME_DIR",
+    "ACCEL_PATH", "ACCEL_SRC_PATH", "RUNTIME_DIR",
     "JOBS_DIR", "UPLOADS_DIR", "DATA_UPLOADS_DIR", "LOV_UPLOADS_DIR",
     "PROFILE_MAP_UPLOADS_DIR",
     "MAX_UPLOAD_SIZE_BYTES", "UPLOAD_KINDS", "UPLOAD_KIND_LABELS",

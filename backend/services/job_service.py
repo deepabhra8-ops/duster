@@ -248,7 +248,6 @@ class JobService:
                     "project": params.get("project_name", "–"),
                     "databaseType": params.get("databaseType") or job.get("connection_db_type", ""),
                     "connectionName": job.get("connection_name", ""),
-                    "sourceType": params.get("source_type", ""),
                     "progress": job.get("progress") or {"current": 0, "total": 0},
                     "created_by": job.get("created_by", ""),
                     "archived": (offset + index) >= JOB_ARCHIVE_THRESHOLD,
@@ -389,13 +388,10 @@ class JobService:
         if any(not isinstance(table, dict) for table in params.get("tables", [])):
             return "bad_tables"
 
-        source_type = params.get("source_type", "database")
+        resolved = config_builder.resolve_connection(params)
 
-        if source_type == "database":
-            resolved = config_builder.resolve_connection(params)
-
-            if not resolved.get("connectionDetails"):
-                return "no_connection"
+        if not resolved.get("connectionDetails"):
+            return "no_connection"
 
         if params.get("profile_map_source_job_id"):
             return None

@@ -65,7 +65,7 @@ def test_create_draft_without_connection():
     ) as create:
         response = asyncio.run(
             job_routes.create_draft(
-                _FakeRequest({"source_type": "flat_file"}), username="alice"
+                _FakeRequest({}), username="alice"
             )
         )
 
@@ -169,7 +169,7 @@ def test_create_draft_rejects_duplicate_table_names():
     with patch.object(job_routes.job_service, "create_draft_job") as create:
         response = asyncio.run(
             job_routes.create_draft(
-                _FakeRequest({"source_type": "flat_file", "tables": tables}),
+                _FakeRequest({"tables": tables}),
                 username="alice",
             )
         )

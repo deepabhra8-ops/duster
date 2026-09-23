@@ -145,8 +145,8 @@ export function listJobs(opts = {}) {
   });
 }
 
-export const createDraftJob = (name, description, connectionId, step = "1", sourceType = "database", profileMapFile = null, tables = null, lovFile = null) => {
-  const payload = { name, description, connection_id: connectionId, step, source_type: sourceType };
+export const createDraftJob = (name, description, connectionId, step = "1", profileMapFile = null, tables = null, lovFile = null) => {
+  const payload = { name, description, connection_id: connectionId, step };
   if (profileMapFile) payload.profile_map_file = profileMapFile;
   if (tables) payload.tables = tables;
   if (lovFile) payload.lov_file = lovFile;
@@ -202,8 +202,6 @@ export const downloadUrl = (jobId, kind) =>
   kind === "staging"
     ? `${API_BASE_URL}/job/${jobId}/staging/download`
     : `${API_BASE_URL}/job/${jobId}/download/${kind}`;
-
-export const sampleCsvUrl = () => `${API_BASE_URL}/sample-csv`;
 
 export const sampleLovUrl = () => `${API_BASE_URL}/sample-lov`;
 

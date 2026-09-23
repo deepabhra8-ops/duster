@@ -1,5 +1,3 @@
-import { SOURCE_TYPES } from "./sourceTypes.js";
-
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV ? "http://localhost:5050/api" : "/api");
@@ -95,30 +93,14 @@ export const STEPS = {
 };
 
 export const UPLOAD_KINDS = [
-  { value: "data", label: "Flat File Source (CSV)", filterLabel: "Flat File Source", accept: ".csv,.xlsx", multiple: true, sample: "csv" },
   { value: "lov", label: "LOV Reference (CSV)", filterLabel: "LOV", accept: ".csv", multiple: true, sample: "lov" },
   { value: "profile_map", label: "Mapping File (Excel .xlsx)", filterLabel: "Mapping File", accept: ".xlsx", multiple: false, sample: null },
 ];
 
-export const UPLOAD_KIND_LABELS = { data: "Flat File", lov: "LOV", profile_map: "Mapping" };
-export const UPLOAD_KIND_PILLS = { data: "pill-blue", lov: "pill-amber", profile_map: "pill-green" };
+export const UPLOAD_KIND_LABELS = { lov: "LOV", profile_map: "Mapping" };
+export const UPLOAD_KIND_PILLS = { lov: "pill-amber", profile_map: "pill-green" };
 
-export const UPLOAD_ALLOWED_EXT = { data: [".csv", ".xlsx"], lov: [".csv"], profile_map: [".xlsx"] };
+export const UPLOAD_ALLOWED_EXT = { lov: [".csv"], profile_map: [".xlsx"] };
 export const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
 
 export const STEP3_ONLY_SECTIONS = ["section-profile-map", "section-report-options"];
-
-export const DEFAULT_CONFIG = {
-  project_name: "SMART_DataHub",
-  run_mode: 1,
-  step: "1",
-  source_type: SOURCE_TYPES.FLAT_FILE,
-  databaseType: "",
-  connectionDetails: {},
-  connection_string: "",
-  chunk_size: 50000,
-  include_failed_rows: true,
-  profile_map_file: "",
-  tables: [],
-  lov_tables: {},
-};

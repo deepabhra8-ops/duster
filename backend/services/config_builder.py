@@ -14,7 +14,6 @@ from core.config import (
     DEFAULT_CHUNK_SIZE,
     DEFAULT_PROJECT_NAME,
     DEFAULT_RUN_MODE,
-    DEFAULT_SOURCE_TYPE,
 )
 from services.connection_service import connection_service
 from services.connectors import connector_registry
@@ -33,11 +32,6 @@ class ConfigBuilder:
     ) -> dict[str, Any]:
         job_dir = ensure_job_directory(job_id)
 
-        source_type = params.get(
-            "source_type",
-            DEFAULT_SOURCE_TYPE,
-        )
-
         run_mode = int(
             params.get(
                 "run_mode",
@@ -50,17 +44,9 @@ class ConfigBuilder:
             DEFAULT_PROJECT_NAME,
         )
 
-        data_dir = self._get_data_directory(params)
+        connection_string = self._build_connection_string(params)
 
-        connection_string = self._build_connection_string(
-            source_type,
-            params,
-        )
-
-        tables = self._build_tables(
-            source_type,
-            params,
-        )
+        tables = self._build_tables(params)
 
         profile_map_path = self.resolve_profile_map_path(
             job_id,
@@ -78,16 +64,22 @@ class ConfigBuilder:
 
         staging_configuration = self._build_staging_configuration(
             job_id,
-            source_type,
             run_mode,
             connection_string,
             params,
         )
 
-        accelerator_source_type = self._resolve_accelerator_source_type(
-            source_type,
-            params,
-        )
+        accelerator_source_type = self._resolve_accelerator_source_type(params)
+
+        resolved = self.resolve_connection(params)
+
+        source_db = {
+            "connection_string": connection_string,
+            **self._accelerator_credentials(
+                {**params, "databaseType": resolved["databaseType"]},
+                resolved["connectionDetails"],
+            ),
+        }
 
         configuration = {
             "job_id": job_id,
@@ -95,11 +87,7 @@ class ConfigBuilder:
             "run_mode": run_mode,
             "source": {
                 "type": accelerator_source_type,
-                "base_path": (
-                    data_dir.as_posix()
-                    if accelerator_source_type == "csv"
-                    else ""
-                ),
+                "base_path": "",
                 "chunk_size": int(
                     params.get(
                         "chunk_size",
@@ -107,6 +95,7 @@ class ConfigBuilder:
                     )
                 ),
                 "tables": tables,
+                "db": source_db,
             },
             "staging": staging_configuration,
             "profile_map_file": (
@@ -121,19 +110,6 @@ class ConfigBuilder:
             "lov_tables": lov_configuration,
             "lov_file": lov_file,
         }
-
-        if source_type == "database":
-            resolved = self.resolve_connection(params)
-
-            source_db = {
-                "connection_string": connection_string,
-                **self._accelerator_credentials(
-                    {**params, "databaseType": resolved["databaseType"]},
-                    resolved["connectionDetails"],
-                ),
-            }
-
-            configuration["source"]["db"] = source_db
 
         source_job_id = params.get("profile_map_source_job_id")
 
@@ -166,33 +142,14 @@ class ConfigBuilder:
 
     def _resolve_accelerator_source_type(
         self,
-        source_type: str,
         params: dict[str, Any],
     ) -> str:
-        if source_type in ("csv", "flat_file"):
-            return "csv"
+        connector = self._get_connector(params)
 
-        if source_type == "database":
-            connector = self._get_connector(params)
+        if connector is not None:
+            return connector.accelerator_source_type()
 
-            if connector is not None:
-                return connector.accelerator_source_type()
-
-        return source_type
-
-    def _get_data_directory(
-        self,
-        params: dict[str, Any],
-    ) -> Path:
-        from core.storage_layout import get_data_upload_dir
-
-        data_dir = get_data_upload_dir()
-        data_dir.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        return data_dir
+        return "database"
 
     @staticmethod
     def resolve_connection(params: dict[str, Any]) -> dict[str, Any]:
@@ -225,16 +182,12 @@ class ConfigBuilder:
 
     def _build_connection_string(
         self,
-        source_type: str,
         params: dict[str, Any],
     ) -> str:
         connection_string = params.get(
             "connection_string",
             "",
         )
-
-        if source_type != "database":
-            return connection_string
 
         resolved = self.resolve_connection(params)
 
@@ -258,7 +211,6 @@ class ConfigBuilder:
 
     def _build_tables(
         self,
-        source_type: str,
         params: dict[str, Any],
     ) -> list[dict[str, Any]]:
         logger.debug(
@@ -290,15 +242,6 @@ class ConfigBuilder:
                     if key.strip()
                 ],
             }
-
-            if source_type in (
-                "csv",
-                "flat_file",
-            ):
-                entry["file"] = table.get(
-                    "file",
-                    "",
-                )
 
             tables.append(entry)
 
@@ -343,7 +286,6 @@ class ConfigBuilder:
     def _build_staging_configuration(
         self,
         job_id: str,
-        source_type: str,
         run_mode: int,
         connection_string: str,
         params: dict[str, Any],
@@ -362,7 +304,6 @@ class ConfigBuilder:
 
         if (
             run_mode == 2
-            and source_type == "database"
             and supports_staging
         ):
             resolved = self.resolve_connection(params)

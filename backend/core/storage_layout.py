@@ -3,7 +3,6 @@ from pathlib import Path
 from core.config import (
     JOBS_DIR,
     UPLOADS_DIR,
-    DATA_UPLOADS_DIR,
     LOV_UPLOADS_DIR,
     PROFILE_MAP_UPLOADS_DIR,
     UPLOAD_KINDS,
@@ -23,7 +22,6 @@ def ensure_directories() -> None:
     )
 
     for upload_dir in (
-        DATA_UPLOADS_DIR,
         LOV_UPLOADS_DIR,
         PROFILE_MAP_UPLOADS_DIR,
     ):
@@ -65,7 +63,6 @@ def get_report_job_path(job_id: str) -> Path:
 
 def get_upload_dir(kind: str) -> Path:
     upload_dirs = {
-        "data": DATA_UPLOADS_DIR,
         "lov": LOV_UPLOADS_DIR,
         "profile_map": PROFILE_MAP_UPLOADS_DIR,
     }
@@ -115,10 +112,6 @@ def get_profile_map_upload_path(
 
 def get_lov_upload_dir() -> Path:
     return LOV_UPLOADS_DIR
-
-
-def get_data_upload_dir() -> Path:
-    return DATA_UPLOADS_DIR
 
 
 def get_profile_map_upload_dir() -> Path:

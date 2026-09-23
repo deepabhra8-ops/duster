@@ -27,7 +27,6 @@ import {
   updateJobTables,
 } from "../../api/api.js";
 import { preventEnterSubmit } from "../../utils/helpers.js";
-import { SOURCE_TYPES } from "../../constants/sourceTypes.js";
 import { rowsToTables } from "../../utils/profileMapperRows.js";
 import ModalPortal from "../ModalPortal.jsx";
 import LovUploadPanel from "../LovUploadPanel.jsx";
@@ -48,15 +47,9 @@ function formatBytes(bytes) {
   return `${(kb / 1024).toFixed(1)} MB`;
 }
 
-const SOURCE_TYPE_CHOICES = [
-  { value: SOURCE_TYPES.FLAT_FILE, label: "Flat File" },
-  { value: SOURCE_TYPES.DATABASE, label: "Data Source" },
-];
-
 const EMPTY_STATE = {
   name: "",
   description: "",
-  sourceType: SOURCE_TYPES.FLAT_FILE,
   step: 1,
   sourceMode: "job",
   profileMapJobId: "",
@@ -92,9 +85,7 @@ export default function NewValidatorJobModal({
   const { options: profileMapOptions, loading: loadingProfileMaps } = useCompletedProfileMapJobs(open);
   const { options: connectionOptions, loading: loadingConnections } = useSavedConnections(open);
 
-  const isFlatFile = state.sourceType === SOURCE_TYPES.FLAT_FILE;
-
-  const isUpload = state.sourceMode === "upload" && !isFlatFile;
+  const isUpload = state.sourceMode === "upload";
 
   const hasTableStep = isUpload;
   const onTableStep = state.step === 2;
@@ -304,7 +295,6 @@ export default function NewValidatorJobModal({
         state.description.trim(),
         state.connectionId,
         "3",
-        "database",
         state.uploadedMapFilename,
         null,
         state.lovFile || null
@@ -405,24 +395,6 @@ export default function NewValidatorJobModal({
               </div>
 
               <div className="njm-field">
-                <span className="njm-label">Source type</span>
-                <div className="njm-radio-row" role="radiogroup" aria-label="Source type">
-                  {SOURCE_TYPE_CHOICES.map((opt) => (
-                    <label key={opt.value} className="njm-radio-option">
-                      <input
-                        type="radio"
-                        name="sourceType"
-                        value={opt.value}
-                        checked={state.sourceType === opt.value}
-                        onChange={() => setState((s) => ({ ...s, sourceType: opt.value, error: "" }))}
-                      />
-                      <span>{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="njm-field">
                 <span className="njm-label is-required">Choose a source</span>
                 <div className="njm-source-grid" role="radiogroup" aria-label="Choose a source">
                   <div
@@ -451,33 +423,31 @@ export default function NewValidatorJobModal({
                     />
                   </div>
 
-                  {!isFlatFile ? (
-                    <div
-                      role="radio"
-                      aria-checked={isUpload}
-                      className={`njm-source-card${isUpload ? " is-selected" : ""}`}
-                      onClick={() => pickMode("upload")}
-                    >
-                      <span className="njm-source-icon" aria-hidden="true">
-                        <FileText size={20} />
+                  <div
+                    role="radio"
+                    aria-checked={isUpload}
+                    className={`njm-source-card${isUpload ? " is-selected" : ""}`}
+                    onClick={() => pickMode("upload")}
+                  >
+                    <span className="njm-source-icon" aria-hidden="true">
+                      <FileText size={20} />
+                    </span>
+                    <span className="njm-source-text">
+                      <span className="njm-source-title">Mapping Workbook</span>
+                      <span className="njm-source-desc">
+                        Upload an Excel workbook to map and validate
                       </span>
-                      <span className="njm-source-text">
-                        <span className="njm-source-title">Mapping Workbook</span>
-                        <span className="njm-source-desc">
-                          Upload an Excel workbook to map and validate
-                        </span>
-                      </span>
-                      <input
-                        className="njm-source-radio"
-                        type="radio"
-                        name="sourceMode"
-                        value="upload"
-                        aria-label="Upload a mapping workbook"
-                        checked={isUpload}
-                        onChange={(e) => pickMode(e.target.value)}
-                      />
-                    </div>
-                  ) : null}
+                    </span>
+                    <input
+                      className="njm-source-radio"
+                      type="radio"
+                      name="sourceMode"
+                      value="upload"
+                      aria-label="Upload a mapping workbook"
+                      checked={isUpload}
+                      onChange={(e) => pickMode(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 

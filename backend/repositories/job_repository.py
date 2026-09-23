@@ -243,11 +243,7 @@ class JobRepository:
                 if status:
                     query = query.filter(Job.status == status)
 
-                if db_type == "flat_file":
-                    query = query.filter(
-                        func.JSON_VALUE(Job.params, "$.source_type").in_(("flat_file", "csv"))
-                    )
-                elif db_type:
+                if db_type:
                     query = query.filter(
                         or_(
                             SavedConnection.db_type == db_type,

@@ -234,14 +234,9 @@ async def create_draft(
         body = body if isinstance(body, dict) else {}
 
         connection_id = body.get("connection_id") or None
-        source_type = body.get("source_type", "database")
-
-        if source_type not in ("database", "flat_file", "csv"):
-            source_type = "database"
 
         params: dict[str, Any] = {
             "step": str(body.get("step", "1")),
-            "source_type": source_type,
             "tables": [],
         }
 

@@ -74,22 +74,21 @@ describe("ProfileMapperJob - Rows Analyzed card", () => {
   });
 });
 
-describe("ProfileMapperJob - one tab per file", () => {
+describe("ProfileMapperJob - one tab per table", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchJob.mockResolvedValue({
       ok: true,
       data: {
         job_id: "job-1",
-        name: "Sales files",
+        name: "Sales tables",
         status: "done",
         has_profile: true,
-        params: { source_type: "flat_file" },
       },
     });
   });
 
-  it("labels each tab with its file's column count", async () => {
+  it("labels each tab with its table's column count", async () => {
     fetchProfileMap.mockResolvedValue({
       ok: true,
       data: {
@@ -108,7 +107,7 @@ describe("ProfileMapperJob - one tab per file", () => {
     expect(screen.getByRole("tab", { name: "orders (1)" })).toBeInTheDocument();
   });
 
-  it("names the file the run had to skip in a toast", async () => {
+  it("names the table the run had to skip in a toast", async () => {
     fetchProfileMap.mockResolvedValue({
       ok: true,
       data: {
@@ -124,7 +123,7 @@ describe("ProfileMapperJob - one tab per file", () => {
       expect(showToast).toHaveBeenCalledWith(
         expect.objectContaining({
           type: "warn",
-          title: "1 file couldn't be profiled",
+          title: "1 table couldn't be profiled",
           message: expect.stringContaining('"orders"'),
         })
       )
@@ -132,7 +131,7 @@ describe("ProfileMapperJob - one tab per file", () => {
     expect(screen.queryByRole("tab", { name: /orders/ })).not.toBeInTheDocument();
   });
 
-  it("stays quiet when every file profiled", async () => {
+  it("stays quiet when every table profiled", async () => {
     fetchProfileMap.mockResolvedValue({
       ok: true,
       data: { version: 1, rows: [makeRow("customers", 10, "id")], failed_tables: [] },

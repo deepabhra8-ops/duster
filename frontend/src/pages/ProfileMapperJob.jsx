@@ -4,7 +4,6 @@ import { fetchJob, fetchProfileMap, updateProfileMapCells, http, TRANSFER_TIMEOU
 import { useToast } from "../hooks/useToast.js";
 import { JOB_POLL_INTERVAL } from "../constants/appConfig.js";
 import { DQ_RULES } from "../constants/dqRules.js";
-import { SOURCE_TYPES } from "../constants/sourceTypes.js";
 import { fmtDate } from "../utils/helpers.js";
 import Pagination from "../components/Pagination.jsx";
 import Tabs from "../components/Tabs.jsx";
@@ -175,7 +174,6 @@ export default function ProfileMapperJob() {
   }, [jobId, showToast]);
 
   const hasRealProfile = job?.status === "done" && job?.has_profile;
-  const sourceNoun = job?.params?.source_type === SOURCE_TYPES.FLAT_FILE ? "file" : "table";
 
   useEffect(() => {
     setProfileMapDraftEdits({});
@@ -211,10 +209,10 @@ export default function ProfileMapperJob() {
         const plural = failed.length === 1 ? "" : "s";
         showToast({
           type: "warn",
-          title: `${failed.length} ${sourceNoun}${plural} couldn't be profiled`,
+          title: `${failed.length} table${plural} couldn't be profiled`,
           message:
             `${names} failed and ${failed.length === 1 ? "was" : "were"} skipped. ` +
-            `Results for the other ${sourceNoun}s are shown below.`,
+            `Results for the other tables are shown below.`,
         });
       }
     });
@@ -222,7 +220,7 @@ export default function ProfileMapperJob() {
     return () => {
       cancelled = true;
     };
-  }, [jobId, hasRealProfile, sourceNoun, showToast]);
+  }, [jobId, hasRealProfile, showToast]);
 
   const canDownloadProfileMap = job?.status === "done" && !profileMapLoading && !profileMapError;
 

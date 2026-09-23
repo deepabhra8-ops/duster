@@ -23,68 +23,10 @@ export const STORAGE_KEYS = {
   RECENT_JOBS: "dq_recent_jobs",
 };
 
-export const DEFAULT_ROUTE = "/home";
-
-import { createElement } from "react";
-import { LayoutDashboard, Library, Database } from "lucide-react";
-import { IconSettings, IconMap, IconActivity } from "../components/Icons.jsx";
-
-const IconDashboard = (props) => createElement(LayoutDashboard, { size: 20, ...props });
-
-export const NAV_SECTIONS = [
-  {
-    section: "",
-    items: [{ id: "home", label: "Dashboard", icon: IconDashboard }],
-  },
-  {
-    section: "",
-    items: [
-      { id: "profile-mapper", label: "Profile Mapper", icon: IconMap },
-      { id: "validator", label: "Validator", icon: IconActivity },
-    ],
-  },
-  {
-    section: "",
-    items: [
-      {
-        id: "discovery",
-        label: "Discovery",
-        icon: IconSettings,
-        accordion: [
-          {
-            id: "rule-catalog",
-            label: "Rule Catalog",
-            icon: Library,
-            items: [
-              { to: "/rules/catalog/dimension", label: "Dimension" },
-              { to: "/rules/catalog/rules", label: "Rules" },
-              { to: "/rules", label: "References", end: true },
-            ],
-          },
-          {
-            id: "data-catalog",
-            label: "Data Catalog",
-            icon: Database,
-            items: [
-              { to: "/data-catalog/assets", label: "Data Assets" },
-              { to: "/configure", label: "Connections" },
-              { to: "/data-catalog/glossary", label: "Glossary" },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-];
+export const DEFAULT_ROUTE = "/control-room";
 
 export const PAGE_META = {
-  home: { title: "DQ Job Summary", subtitle: "Overview and recent activity." },
-  configure: { title: "Connections", subtitle: "Saved database connections for your pipelines." },
-  "profile-mapper": { title: "Profile Mapper", subtitle: "Review and edit the profile map generated for your source data." },
-  validator: { title: "Validator", subtitle: "Review DQ Validator results for your pipeline runs." },
-  jobs: { title: "Job History", subtitle: "All pipeline runs this session. Click Log to re-view, Report to download." },
-  rules: { title: "DQ Rule Reference", subtitle: "All 11 rule categories, dimensions, and parameter syntax." },
-  "data-catalog": { title: "Data Catalog", subtitle: "Data assets, connections, and glossary." },
+  "control-room": { title: "Control Room", subtitle: "Fleet-level health, connections, and recent activity." },
 };
 
 export const STEPS = {

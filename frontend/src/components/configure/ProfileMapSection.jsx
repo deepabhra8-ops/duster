@@ -1,10 +1,3 @@
-/**
- * ProfileMapSection.jsx - Profile Map selector (Step 3 only).
- *
- * Lets the analyst pick a reviewed Source-DQ-Profile-Map.xlsx from the
- * uploaded mapping files, or leave blank to auto-generate from Step 1.
- * Visibility is controlled by the parent (rendered only when step === 3).
- */
 export default function ProfileMapSection({ value, profileMaps = [], onChange }) {
   return (
     <div className="card" id="section-profile-map">

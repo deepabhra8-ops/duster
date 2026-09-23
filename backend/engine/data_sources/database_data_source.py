@@ -1,5 +1,3 @@
-"""Database implementation of BaseDataSource: reads tables via Spark JDBC (or the BigQuery connector), using the configured connection string."""
-
 from __future__ import annotations
 
 from typing import Any, Iterator, Mapping
@@ -25,8 +23,6 @@ logger = get_logger(__name__)
 
 @register_source
 class DatabaseDataSource(BaseDataSource):
-    """Reads database tables as the data source, via Spark JDBC (or the BigQuery connector for BigQuery)."""
-
     source_type = "database"
 
     def __init__(
@@ -34,7 +30,6 @@ class DatabaseDataSource(BaseDataSource):
         config: Mapping[str, Any],
         context,
     ) -> None:
-        """Store config/context and defer engine creation until first use."""
         super().__init__(
             config=config,
             context=context,
@@ -46,7 +41,6 @@ class DatabaseDataSource(BaseDataSource):
         table_config: Mapping[str, Any],
         columns: list[str] | None = None,
     ) -> DataFrame:
-        """Read a table into a DataFrame, optionally projecting columns."""
         try:
             connection_string = self._get_connection_string()
 
@@ -77,8 +71,6 @@ class DatabaseDataSource(BaseDataSource):
         columns: list[str] | None = None,
         chunk_size: int = 0,
     ) -> Iterator[DataFrame]:
-        """Read a table as a single Spark DataFrame (Spark partitions its own reads; there's no
-        pandas-style chunked iteration to fall back to)."""
         yield self.read(
             table_config=table_config,
             columns=columns,
@@ -88,7 +80,6 @@ class DatabaseDataSource(BaseDataSource):
         self,
         table_config: Mapping[str, Any],
     ) -> bool:
-        """Return whether the configured table exists in the database."""
         try:
             engine = self._get_engine()
             inspector = inspect(engine)
@@ -109,7 +100,6 @@ class DatabaseDataSource(BaseDataSource):
         self,
         table_config: Mapping[str, Any],
     ) -> list[str]:
-        """Return the table's column names via SQLAlchemy inspection."""
         engine = self._get_engine()
 
         inspector = inspect(engine)
@@ -139,7 +129,6 @@ class DatabaseDataSource(BaseDataSource):
         self,
         table_config: Mapping[str, Any],
     ) -> int:
-        """Return the table's row count via a SELECT COUNT(*) query."""
         engine = self._get_engine()
 
         table_reference = self._build_table_reference(
@@ -155,21 +144,17 @@ class DatabaseDataSource(BaseDataSource):
             return int(result.scalar() or 0)
 
     def supports_columns_projection(self) -> bool:
-        """Database sources can read a subset of columns."""
         return True
 
     def supports_chunking(self) -> bool:
-        """Database sources support chunked reads."""
         return False
 
     def profiler_dependencies(self) -> Mapping[str, Any]:
-        """Expose the SQLAlchemy engine for profilers that need direct access."""
         return {
             "engine": self._get_engine(),
         }
 
     def validate_configuration(self) -> None:
-        """Validate that a connection string is configured."""
         try:
             connection_string = self._get_connection_string()
 
@@ -183,7 +168,6 @@ class DatabaseDataSource(BaseDataSource):
             raise
 
     def close(self) -> None:
-        """Dispose the SQLAlchemy engine, if one was created."""
         try:
             if self._engine is not None:
                 self._engine.dispose()
@@ -194,7 +178,6 @@ class DatabaseDataSource(BaseDataSource):
             raise
 
     def _get_engine(self) -> Engine:
-        """Return the lazily created SQLAlchemy engine, creating it on first use."""
         try:
             if self._engine is None:
                 connection_string = self._get_connection_string()
@@ -217,11 +200,9 @@ class DatabaseDataSource(BaseDataSource):
         return self._engine
 
     def _get_db_config(self) -> Mapping[str, Any]:
-        """Return the configured 'db' sub-config, if any."""
         return self.config.get("db", {})
 
     def _get_connection_string(self) -> str:
-        """Return the configured connection string."""
         database_config = self._get_db_config()
 
         connection_string = database_config.get(
@@ -242,7 +223,6 @@ class DatabaseDataSource(BaseDataSource):
         table_config: Mapping[str, Any],
         columns: list[str] | None,
     ) -> DataFrame:
-        """Read a table via Spark JDBC, using the dialect resolved from the connection string."""
         query = self._build_select_query(
             table_config=table_config,
             columns=columns,
@@ -264,7 +244,6 @@ class DatabaseDataSource(BaseDataSource):
         table_config: Mapping[str, Any],
         columns: list[str] | None,
     ) -> DataFrame:
-        """Read a table via Spark's BigQuery connector."""
         db_config = self._get_db_config()
 
         dataset_id = str(db_config.get("dataset_id", "")).strip()
@@ -295,7 +274,6 @@ class DatabaseDataSource(BaseDataSource):
         table_config: Mapping[str, Any],
         columns: list[str] | None = None,
     ):
-        """Build a SELECT query for a table, optionally projecting columns."""
         table_reference = self._build_table_reference(
             table_config
         )
@@ -317,7 +295,6 @@ class DatabaseDataSource(BaseDataSource):
         self,
         table_config: Mapping[str, Any],
     ) -> str:
-        """Build a quoted schema.table reference from the table config."""
         table_name = str(
             table_config.get("name", "")
         ).strip()
@@ -343,7 +320,6 @@ class DatabaseDataSource(BaseDataSource):
     def _quote_identifier(
         identifier: str,
     ) -> str:
-        """Quote a SQL identifier, escaping embedded quotes."""
         identifier = str(identifier).strip()
 
         if not identifier:

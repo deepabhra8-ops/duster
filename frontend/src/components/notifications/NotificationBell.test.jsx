@@ -1,12 +1,3 @@
-/**
- * The bell, its badge, the popover and the list - driven as a user would, against the real
- * provider. Only the network is faked: the API module, and EventSource (test/fakeEventSource.js).
- *
- * jsdom does no layout, so scrollHeight/clientHeight/scrollTop are all 0 unless a test sets them;
- * the infinite-scroll tests do, to say where in the list the user is.
- *
- * fireEvent rather than user-event: this repo does not depend on the latter.
- */
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -72,7 +63,6 @@ const openPanel = async () => {
   return screen.findByRole("dialog", { name: "Notifications" });
 };
 
-/** Resolves once the initial load has landed and the badge reflects it. */
 const settled = () => act(async () => { await Promise.resolve(); });
 
 beforeEach(() => {
@@ -115,7 +105,7 @@ describe("badge", () => {
     mount();
 
     await waitFor(() => expect(badge()).toHaveTextContent("99+"));
-    expect(bell()).toHaveAccessibleName("Notifications, 250 unread"); // the real number is not lost
+    expect(bell()).toHaveAccessibleName("Notifications, 250 unread");
   });
 
   it("is hidden from assistive tech, since the label and live region already say it", async () => {
@@ -228,7 +218,6 @@ describe("popover", () => {
     mount();
     await settled();
     await openPanel();
-    // The toast viewport lives outside the bell, exactly as ToastContext renders it.
     const viewport = document.createElement("div");
     viewport.className = "toast-viewport";
     const dismiss = document.createElement("button");
@@ -253,7 +242,6 @@ describe("popover", () => {
   });
 
   it("shows each notification's title, message, time and read state", async () => {
-    // Newest first, as the API returns it: a higher id is a newer notification.
     api.listNotifications.mockResolvedValue(
       page([
         n(9, {
@@ -332,8 +320,6 @@ describe("selecting a notification", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  /* The server refuses to store these; the client refuses to follow them anyway, because it is
-     the client that actually navigates. */
   it.each(["https://evil.example/phish", "//evil.example", "/\\evil.example", "javascript:alert(1)"])(
     "will not follow %s - it still marks it read, and stays put",
     async (link) => {
@@ -494,7 +480,6 @@ describe("clear all", () => {
 describe("infinite scroll", () => {
   const pane = (dialog) => dialog.querySelector(".notification-panel-body");
 
-  /** Say where the user is in the scroll pane - jsdom has no layout of its own. */
   const scrollTo = (el, { top, height = 1000, client = 300 }) => {
     Object.defineProperty(el, "scrollHeight", { value: height, configurable: true });
     Object.defineProperty(el, "clientHeight", { value: client, configurable: true });
@@ -502,11 +487,6 @@ describe("infinite scroll", () => {
     fireEvent.scroll(el);
   };
 
-  /**
-   * Serve pages by what was asked for, not by call order. More than one request asks for the first
-   * page (the mount load, then a refetch each time the panel opens), so a queue of one-shot
-   * answers would hand the later ones the wrong page.
-   */
   const serve = (first, more) =>
     api.listNotifications.mockImplementation(({ before } = {}) => (before ? more : Promise.resolve(first)));
 
@@ -522,7 +502,7 @@ describe("infinite scroll", () => {
     const dialog = await openPanel();
     await within(dialog).findAllByRole("listitem");
 
-    scrollTo(pane(dialog), { top: 650 }); // 1000 - 650 - 300 = 50px from the end
+    scrollTo(pane(dialog), { top: 650 });
 
     await waitFor(() => expect(within(dialog).getAllByRole("listitem")).toHaveLength(4));
     expect(api.listNotifications).toHaveBeenCalledWith({ limit: 20, before: 4 });
@@ -535,7 +515,7 @@ describe("infinite scroll", () => {
     const dialog = await openPanel();
     await within(dialog).findAllByRole("listitem");
 
-    scrollTo(pane(dialog), { top: 0 }); // 700px to go
+    scrollTo(pane(dialog), { top: 0 });
 
     expect(pagedRequests()).toHaveLength(0);
   });

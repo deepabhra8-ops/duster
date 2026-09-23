@@ -1,5 +1,3 @@
-"""CLI/programmatic entry point for Step 1: profiles the configured source via ProfilingEngine and writes the profile map."""
-
 from __future__ import annotations
 
 import argparse
@@ -20,15 +18,12 @@ logger = get_logger(__name__)
 
 
 class DQProfileMapper:
-    """Profiles a configured source and writes the resulting profile map."""
-
     def __init__(
         self,
         config: Mapping[str, Any],
         progress_callback: Callable[[int, int], None] | None = None,
         cancel_event: threading.Event | None = None,
     ) -> None:
-        """Build the execution context and engine components for this run."""
         try:
             self.config = config
             self.progress_callback = progress_callback
@@ -41,7 +36,6 @@ class DQProfileMapper:
             )
             self.engine = ProfilingEngine(context=self.context)
             self.writer = ProfileMapWriter()
-            # Filled by generate_profile_map(): table name -> why it was skipped.
             self.failed_tables: dict[str, str] = {}
             logger.debug("Initialized DQ profile mapper")
         except Exception:
@@ -49,12 +43,6 @@ class DQProfileMapper:
             raise
 
     def generate_profile_map(self) -> dict[str, Any]:
-        """Profile the configured tables and return the profile map, writing nothing.
-
-        Split out of run() so a caller that wants the result as data - the Glue job,
-        which stores rows in Postgres and lets the user export a workbook later,
-        after editing - doesn't have to produce and then re-read an .xlsx.
-        """
         try:
             profile_result, profile_map = self.engine.profile_and_build_map(
                 tables=self._get_tables(),
@@ -68,7 +56,6 @@ class DQProfileMapper:
             raise
 
     def run(self) -> Path:
-        """Profile the configured tables and write the profile map; returns the output path."""
         try:
             profile_map = self.generate_profile_map()
             output_path = self._get_output_path()
@@ -85,7 +72,6 @@ class DQProfileMapper:
             raise
 
     def _get_tables(self) -> list[Mapping[str, Any]]:
-        """Return the configured source table definitions."""
         source_config = self.config.get(
             "source",
             {},
@@ -104,7 +90,6 @@ class DQProfileMapper:
         return tables
 
     def _get_output_path(self) -> Path:
-        """Return the configured profile map output path, defaulting when unset."""
         configured_path = self.config.get(
             "profile_map_file",
             "",
@@ -132,7 +117,6 @@ class DQProfileMapper:
 def load_config(
     config_path: str | Path,
 ) -> dict[str, Any]:
-    """Load and parse a YAML pipeline configuration file."""
     path = Path(config_path)
 
     try:
@@ -160,7 +144,6 @@ def load_config(
 
 
 def main() -> None:
-    """CLI entry point: load --config and run DQProfileMapper against it."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

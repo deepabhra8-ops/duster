@@ -1,5 +1,3 @@
-"""Resolves and caches List of Values (LOV) CSV files used by the DQ8 rule."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -16,15 +14,12 @@ logger = get_logger(__name__)
 
 
 class LovProvider(BaseReferenceProvider):
-    """Loads and caches LOV values from configured CSV files."""
-
     provider_type = "lov"
 
     def __init__(
         self,
         context: ExecutionContext,
     ) -> None:
-        """Store the execution context and initialize the LOV cache."""
         super().__init__(context)
         self._cache: dict[str, list[str]] = {}
 
@@ -33,7 +28,6 @@ class LovProvider(BaseReferenceProvider):
         reference_name: str,
         reference_config: Mapping[str, Any] | None = None,
     ) -> list[str]:
-        """Return the LOV's values, loading and caching them from CSV on first use."""
         try:
             if reference_name in self._cache:
                 logger.debug("Loaded LOV '%s' from cache", reference_name)
@@ -44,8 +38,6 @@ class LovProvider(BaseReferenceProvider):
                 reference_config,
             )
 
-            # Spark reads the file so both local paths and s3:// URIs work natively,
-            # without needing a filesystem shim for object storage.
             from engine.core.spark_session import get_spark_session
             df_spark = (
                 get_spark_session().read
@@ -59,10 +51,6 @@ class LovProvider(BaseReferenceProvider):
                     f"LOV '{reference_name}' is empty."
                 )
 
-            # A LOV file is wide: every column is its own list, named by its
-            # header. One upload therefore covers every DQ8-checked column in a
-            # job, across as many tables as it likes. Single-column files still
-            # work - they simply have one column to choose from.
             column = self._select_column(
                 df_spark.columns,
                 reference_name,
@@ -70,22 +58,9 @@ class LovProvider(BaseReferenceProvider):
 
             header_name = str(column).strip()
 
-            # Selected by POSITION, not by name. Spark parses a column string as
-            # a dotted path, so select("Customer.CustomerName") asks for field
-            # CustomerName inside a struct called Customer and fails with
-            # UNRESOLVED_COLUMN - even though a column of exactly that name is
-            # sitting right there. LOV names are table-qualified by convention,
-            # so a dot is the normal case here, not an edge one. Renaming every
-            # column positionally sidesteps identifier parsing altogether, which
-            # back-tick quoting would not: the header is user-supplied text and
-            # may itself contain back-ticks, brackets or spaces.
             positional = self._positional_names(len(df_spark.columns))
             wanted = positional[df_spark.columns.index(column)]
 
-            # The column's distinct values, collected straight to Python. This
-            # used to go through toPandas(), which materialised the whole file
-            # as a pandas DataFrame on the driver purely to read one column out
-            # of it. The consumer (DQ8) only ever builds a set from these.
             values = [
                 str(row[0]).strip()
                 for row in (
@@ -123,7 +98,6 @@ class LovProvider(BaseReferenceProvider):
         reference_name: str,
         reference_config: Mapping[str, Any] | None = None,
     ) -> bool:
-        """Return whether the named LOV's CSV file can be resolved."""
         try:
             path = self._resolve_path(
                 reference_name,
@@ -141,7 +115,6 @@ class LovProvider(BaseReferenceProvider):
             return False
 
     def clear_cache(self) -> None:
-        """Clear all cached LOV values."""
         try:
             count = len(self._cache)
             self._cache.clear()
@@ -154,7 +127,6 @@ class LovProvider(BaseReferenceProvider):
         self,
         references: Mapping[str, Any],
     ) -> None:
-        """Load and cache multiple LOVs up front, skipping any that fail."""
         try:
             for reference_name, reference_config in references.items():
                 try:
@@ -175,7 +147,6 @@ class LovProvider(BaseReferenceProvider):
 
     @staticmethod
     def _positional_names(count: int) -> list[str]:
-        """Return placeholder column names that no Spark identifier parse can mangle."""
         return [f"lov_column_{index}" for index in range(count)]
 
     @staticmethod
@@ -183,12 +154,6 @@ class LovProvider(BaseReferenceProvider):
         columns: list[str],
         reference_name: str,
     ) -> str:
-        """Pick the column of a wide LOV file that a reference name refers to.
-
-        A single-column file falls back to its only column, so the
-        one-LOV-per-file uploads that predate wide files keep working even when
-        their header and the rule's parameter are spelled differently.
-        """
         matched = match_lov_name(columns, reference_name)
 
         if matched is not None:
@@ -204,18 +169,6 @@ class LovProvider(BaseReferenceProvider):
 
     @staticmethod
     def _as_location(configured_path: Any) -> str | Path | None:
-        """Return a readable location for a configured LOV, or None.
-
-        An s3:// URI is returned as the string it already is. It must NOT go
-        through pathlib: PurePosixPath collapses the "//" after the scheme, so
-        "s3://bucket/lov/x.csv" becomes "s3:/bucket/lov/x.csv" - which Spark
-        cannot read, and which no longer even satisfies the startswith("s3://")
-        guards that were meant to protect it. That silently turned every LOV on
-        an S3 deployment into a "check not run".
-
-        A local path is returned only if it actually exists, so the caller can
-        keep looking through its other sources.
-        """
         location = str(configured_path or "").strip()
 
         if not location:
@@ -233,7 +186,6 @@ class LovProvider(BaseReferenceProvider):
         reference_name: str,
         reference_config: Mapping[str, Any] | None,
     ) -> str | Path:
-        """Resolve an LOV's CSV location from its config, the context's lov_tables, or reference data."""
         if reference_config is not None:
             location = self._as_location(
                 reference_config.get(

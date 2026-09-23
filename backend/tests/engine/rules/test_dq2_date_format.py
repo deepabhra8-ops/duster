@@ -1,10 +1,3 @@
-"""DQ2 - date-format conformity, against a real Spark DataFrame.
-
-Interacts with the CSV reader's own date handling: a column the reader could
-cast losslessly arrives here already typed, while anything it refused to cast
-(mixed or ambiguous formats) arrives as text - which is exactly the case DQ2
-exists to report, so these tests drive it with strings.
-"""
 from __future__ import annotations
 
 import pytest
@@ -44,12 +37,9 @@ class TestConfiguredFormat:
             data, "d", parameters="%d/%m/%Y", context=context
         )
 
-        # The dd/mm value now conforms and the ISO one does not.
         assert _failing(data, result) == 1
 
     def test_a_real_date_that_does_not_exist_fails(self, spark, context):
-        """strptime rejects 2023-02-30 - a format check that only looked at the
-        shape of the string would wave it through."""
         data = spark.createDataFrame([("2023-02-30",)], ["d"])
 
         result = DQ2DateFormatRule().validate(data, "d", parameters="", context=context)
@@ -73,8 +63,6 @@ class TestEdgeCases:
         assert _failing(data, result) == 0
 
     def test_a_numeric_column_does_not_crash_the_rule(self, spark, context):
-        """Mixed/unexpected types must produce findings, not an exception that
-        takes the whole table's validation down."""
         data = spark.createDataFrame([(20230101,), (1,)], ["d"])
 
         result = DQ2DateFormatRule().validate(data, "d", parameters="", context=context)

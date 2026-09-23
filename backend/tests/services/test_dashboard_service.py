@@ -1,5 +1,3 @@
-"""Unit tests for dashboard job-count aggregation."""
-
 from __future__ import annotations
 
 from unittest.mock import MagicMock

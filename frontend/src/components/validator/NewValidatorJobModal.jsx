@@ -1,82 +1,3 @@
-/**
- * NewValidatorJobModal.jsx - "New Job" modal for the Validator page
- * (Validator.jsx).
- *
- * A validation run needs TWO things: a profile map (what to check) and a live
- * source connection (what to check it against). The two source modes differ only
- * in where those come from:
- *
- *   - "From a Profile Mapper job": pick a completed step-1 job and the backend
- *     (JobService.create_validator_draft) copies its params wholesale - connection,
- *     tables and all - and reads its profile-map rows fresh at start time, so
- *     later edits are picked up. The connection arrives for free, invisibly.
- *
- *   - "Upload a mapping workbook": the workbook supplies the map and nothing
- *     else. This mode used to stop there - it sent connection_id: null and a
- *     list of bare table-name STRINGS - so the job it created could never run:
- *     config_builder._build_tables calls table.get("name") on each entry and
- *     died with AttributeError, and with no connection there was no
- *     source.db/connection_string in the generated config either. It now
- *     collects a saved connection and real Schema/Table/Primary Key rows, the
- *     same way NewProfileMapperJobModal.jsx does, and converts them with the
- *     shared rowsToTables() so both pages put identical shapes on the wire.
- *
- * Reuse, not reinvention: SearchableSelect + useSavedConnections for the
- * connection, listConnectionSchemas for its schemas, and SchemaTreePicker
- * (+ useCatalog, which caches per level and coalesces in-flight requests) for
- * the rows. The third dropdown is relabelled "Primary Key" via columnLabel -
- * the profile mapper passes "CDE" there, since it is picking Critical Data
- * Elements; here the column feeds each table's primary_key.
- *
- * On the workbook's table names: after a successful inspect we seed one row per
- * table found, so the row count matches the work and the user is not clicking +
- * repeatedly, and we list the names above the grid so they know what to pick.
- * The table name is deliberately NOT pre-filled into the row. SchemaTreePicker
- * clears a row's Table whenever its Schema changes (correctly - the old table may
- * not exist in the new schema), so a pre-filled name would be wiped the moment the
- * user chose a schema, and the catalog needed to validate it lives inside that
- * component rather than here. Instead Create checks that every workbook table is
- * covered by a locked row and names the ones that are not, which is the part that
- * actually prevents a silently wrong job.
- *
- * A "Source type" radio (Flat File / Data Source) sits above the source cards
- * and decides which of them are offered: Flat File leaves only the Profile
- * Mapper Job card, because the workbook path collects a database connection and
- * tables and creates a "database" job. See `isUpload` for how the two combine.
- * The type itself is not sent to the API.
- *
- * The modal-box is a real <form> (onSubmit={handleCreate}, Create is
- * type="submit") - handleCreate calls e.preventDefault() first, since a real
- * <form> submit would otherwise navigate/reload the page. Enter-to-submit is
- * deliberately turned back off via onKeyDown={preventEnterSubmit} (helpers.js) -
- * Create is the only way to submit.
- *
- * On success it closes and calls onCreated() (Validator.jsx reloads its list -
- * the new "draft" row shows up right there) rather than navigating to
- * /validator/:jobId.
- *
- * ── Presentation ────────────────────────────────────────────────────────────
- * The chrome is styled by styles/new-job-modal.css, scoped under the `.njm`
- * class on the form; nothing below changes what is sent to the API. Three
- * choices there are load-bearing rather than cosmetic:
- *
- *   - The two source modes are cards (icon + title + description) whose radio
- *     is a real <input type="radio"> carrying an aria-label with the old,
- *     longer wording. The card is a <div role="radio"> with a click handler,
- *     NOT a <label> wrapping the input: a wrapping label would give the radio
- *     a second accessible name of "Mapping Workbook", which is also the file
- *     field's label, and getByLabelText("Mapping Workbook") would then be
- *     ambiguous. The click handler does what the label would have done.
- *
- *   - The file <input> is visually hidden (clip-path, not display:none, so it
- *     stays focusable and in the accessibility tree) and driven by the Browse
- *     Files button plus drag-and-drop on the dropzone. Both funnel into the
- *     one ingestFile() path, so a dropped file and a browsed file are
- *     inspected identically.
- *
- *   - Required markers are CSS ::after content, not label text, so each
- *     field's accessible name stays exactly what it was.
- */
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -112,19 +33,13 @@ import ModalPortal from "../ModalPortal.jsx";
 import LovUploadPanel from "../LovUploadPanel.jsx";
 import "../../styles/new-job-modal.css";
 
-/** Job names are shown untruncated in the jobs tables, so they are capped here
- *  rather than ellipsised there - the column is sized to fit this length. */
 export const NAME_MAX_LENGTH = 32;
 
 const NAME_PLACEHOLDER = "e.g. Orders DQ Validation - Sep 2026";
 const DESCRIPTION_PLACEHOLDER = "Briefly describe what this validation run covers…";
 
-/** Advisory only - the real limit is the server's. Stated in the dropzone so a
- *  rejection is not the first time the user hears about a ceiling. */
 const MAX_UPLOAD_MB = 50;
 
-/** Bytes -> the "248 KB" shown beside a picked file. Kept local: it is two
- *  lines and nothing else in the app formats file sizes yet. */
 function formatBytes(bytes) {
   if (!bytes && bytes !== 0) return "";
   if (bytes < 1024) return `${bytes} B`;
@@ -133,10 +48,6 @@ function formatBytes(bytes) {
   return `${(kb / 1024).toFixed(1)} MB`;
 }
 
-/** The two kinds of source a run can read from, shown as the "Source type" radio.
- *  Values reuse SOURCE_TYPES so they line up with the source_type a Profile
- *  Mapper job already carries; the labels are this dialog's own ("Data Source",
- *  not SOURCE_LABELS' "Database Connection"). */
 const SOURCE_TYPE_CHOICES = [
   { value: SOURCE_TYPES.FLAT_FILE, label: "Flat File" },
   { value: SOURCE_TYPES.DATABASE, label: "Data Source" },
@@ -145,25 +56,12 @@ const SOURCE_TYPE_CHOICES = [
 const EMPTY_STATE = {
   name: "",
   description: "",
-  /* Which kind of source the "Source type" radio has picked. It decides which
-     source cards are offered (see isUpload) and is not sent to the API. */
   sourceType: SOURCE_TYPES.FLAT_FILE,
-  /* 1 = identity and source; 2 = the connection, and which of its tables to
-     validate with their primary keys. Only the "upload a workbook" path has a
-     step 2: picking an existing profile mapper run already carries its
-     connection AND its tables, so that path creates from step 1 and never sees
-     a second screen. */
   step: 1,
-  sourceMode: "job", // "job" or "upload"
+  sourceMode: "job",
   profileMapJobId: "",
   uploadedMapFilename: "",
-  /* The one LOV file this job validates against - the server's stored name,
-     same as uploadedMapFilename. Empty on every open: LOVs belong to the job
-     they were uploaded for, so nothing carries over from an earlier one. */
   lovFile: "",
-  /* What the user recognises - their own filename and its size. Distinct from
-     uploadedMapFilename, which is the server's stored name and the only one
-     that goes back over the wire. */
   pickedFileName: "",
   pickedFileSize: 0,
   uploadedTables: [],
@@ -173,13 +71,6 @@ const EMPTY_STATE = {
   loadingSchemas: false,
   saving: false,
   error: "",
-  // Kept separate from `error` on purpose. `error` is transient form feedback that
-  // any later action may clear; whether the server accepted the workbook is
-  // durable state that must survive picking a connection or toggling the mode.
-  // Sharing one field meant choosing a connection wiped the upload's real failure
-  // message, leaving only a later "upload a workbook first" - while the file input
-  // still displayed the chosen filename, so the UI contradicted itself and the
-  // actual reason was gone.
   uploadError: "",
   inspecting: false
 };
@@ -188,19 +79,12 @@ export default function NewValidatorJobModal({
   open,
   onClose,
   onCreated,
-  /** Pre-selects a completed Profile Mapper job. Set when the user arrives from
-   *  that job's results page, so they are not asked to find in a dropdown the
-   *  job they were just looking at. */
   initialSourceJobId = "",
 }) {
   const [state, setState] = useState(EMPTY_STATE);
-  /* Presentation-only, so not in `state`: whether a file is currently being
-     dragged over the dropzone. */
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Applied when the modal opens, not on every render: the user must stay free
-  // to change the selection afterwards.
   useEffect(() => {
     if (!open || !initialSourceJobId) return;
     setState((s) => ({ ...s, sourceMode: "job", profileMapJobId: initialSourceJobId }));
@@ -210,26 +94,11 @@ export default function NewValidatorJobModal({
 
   const isFlatFile = state.sourceType === SOURCE_TYPES.FLAT_FILE;
 
-  /* The workbook path collects a database connection and tables and creates a
-     "database" job, so it is a Data Source option and Flat File does not offer
-     it. Derived from both fields rather than resetting sourceMode when Flat File
-     is picked: the choice (and any workbook already uploaded) is still there if
-     the user switches back, and there is no state in which the workbook section
-     shows without its card. */
   const isUpload = state.sourceMode === "upload" && !isFlatFile;
 
-  /* A run picked from the dropdown brings its own tables with it - there is
-     nothing left to choose, so Create is offered straight away. */
   const hasTableStep = isUpload;
   const onTableStep = state.step === 2;
 
-  /* The preconditions that belong to step 1 - identity and source. Shared with
-     handleCreate rather than restated there: the "job" path submits from step 1,
-     so the same checks have to run whether the user pressed Next or Create, and
-     two copies would drift into two different messages for one problem.
-     Step 2's own preconditions - the connection and the tables - live in
-     validateStepTwo below, so a problem is always reported on the screen that
-     can fix it. */
   function validateStepOne() {
     if (!state.name.trim()) return "Name is required";
 
@@ -238,9 +107,6 @@ export default function NewValidatorJobModal({
     }
 
     if (!state.uploadedMapFilename) {
-      // Distinguishes "you haven't picked a file" from "the file you picked was
-      // rejected" - the file input shows a filename in both cases, so without
-      // this the message looks wrong to anyone staring at a chosen file.
       return state.uploadError
         ? "This workbook was not accepted - see the error under Mapping Workbook. Fix it or choose another file."
         : "Choose a mapping workbook first";
@@ -249,8 +115,6 @@ export default function NewValidatorJobModal({
     return "";
   }
 
-  /** Step 2, upload path only: the connection to read from, and the live tables
-   *  behind the workbook's sheet names. */
   function validateStepTwo() {
     if (!state.connectionId) {
       return "Select the saved connection this profile map should be validated against";
@@ -294,9 +158,6 @@ export default function NewValidatorJobModal({
     setState((s) => ({ ...s, sourceMode, step: 1, error: "" }));
   }
 
-  /** The single ingest path - the hidden input's onChange and the dropzone's
-   *  onDrop both land here, so a dropped workbook is treated exactly like a
-   *  browsed one instead of taking a second, subtly different route. */
   async function ingestFile(file) {
     if (!file) return;
 
@@ -314,7 +175,6 @@ export default function NewValidatorJobModal({
     const result = await inspectProfileMapWorkbook(file);
 
     if (!result.ok) {
-      // Stored as uploadError so it stays on screen until another file is picked.
       setState((s) => ({
         ...s,
         inspecting: false,
@@ -330,8 +190,6 @@ export default function NewValidatorJobModal({
       inspecting: false,
       uploadedMapFilename: result.data.filename,
       uploadedTables: tableNames,
-      // One row per table the workbook describes, so the grid already has the
-      // right shape. See the header comment for why the names aren't pre-filled.
       rows: tableNames.length
         ? tableNames.map(() => ({ ...EMPTY_ROW }))
         : [{ ...EMPTY_ROW }]
@@ -349,8 +207,6 @@ export default function NewValidatorJobModal({
     ingestFile(e.dataTransfer?.files?.[0]);
   }
 
-  /** Clears the picked workbook and everything derived from it. The seeded rows
-   *  go too: they exist only because that workbook named that many tables. */
   function clearFile() {
     if (fileInputRef.current) fileInputRef.current.value = "";
     setState((s) => ({
@@ -365,8 +221,6 @@ export default function NewValidatorJobModal({
     }));
   }
 
-  /** One blank row per table the workbook names, so the grid opens at the right
-   *  size. See the header comment for why the names are not pre-filled. */
   function seedRows() {
     return state.uploadedTables.length
       ? state.uploadedTables.map(() => ({ ...EMPTY_ROW }))
@@ -379,14 +233,6 @@ export default function NewValidatorJobModal({
       return;
     }
 
-    // Rows are cleared on every change of connection, not just on clearing it.
-    // A row names a schema and a table in the connection it was picked from;
-    // carried into a different database those names are at best meaningless and
-    // at worst silently valid, since `public`/`dbo` exist in most of them - so
-    // the job would read the wrong table under a name that looked right.
-    // Now that this picker sits on the same screen as the tree, switching
-    // connections with tables already ticked is an ordinary thing to do rather
-    // than something only reachable by going back a step.
     setState((s) => ({
       ...s,
       connectionId,
@@ -414,7 +260,6 @@ export default function NewValidatorJobModal({
     }));
   }
 
-  /** Workbook tables with no locked row covering them - the silent-mismatch guard. */
   function uncoveredTables(rows, expected) {
     const picked = new Set(
       rows.filter((r) => r.locked && r.schema && r.table).map((r) => r.table.toLowerCase())
@@ -423,14 +268,12 @@ export default function NewValidatorJobModal({
   }
 
   async function handleCreate(e) {
-    e.preventDefault(); // this is a real <form onSubmit>; without this the browser would navigate/reload on submit
+    e.preventDefault();
 
     const name = state.name.trim();
 
     const stepOneError = validateStepOne();
     if (stepOneError) {
-      // Send the user back to the screen the problem is on, rather than
-      // reporting a missing connection over a table tree.
       setState((s) => ({ ...s, step: 1, error: stepOneError }));
       return;
     }
@@ -470,9 +313,6 @@ export default function NewValidatorJobModal({
       error = res.error;
 
       if (ok) {
-        // Attached separately, exactly as the Profile Mapper does - rowsToTables
-        // produces the {schema, name, primary_key} objects config_builder expects,
-        // instead of the bare strings this modal used to send.
         const tables = rowsToTables(state.rows);
         if (tables.length) {
           const attached = await updateJobTables(res.data.job_id, tables);
@@ -493,8 +333,6 @@ export default function NewValidatorJobModal({
     onCreated?.();
   }
 
-  // Freeze the page behind the overlay - see the hook for why a plain
-  // body overflow:hidden is not enough (nesting, scrollbar layout shift).
   useScrollLock(open);
 
   if (!open) return null;
@@ -530,9 +368,6 @@ export default function NewValidatorJobModal({
             </button>
           </div>
 
-          {/* Direct child of .wizard-box, not of .wizard-body: the overlay is
-              position:absolute against .wizard-box so it covers the footer's
-              Create button too, rather than leaving it clickable mid-fetch. */}
           {state.loadingSchemas ? (
             <div className="wizard-loading-overlay">
               <span className="wizard-loading-spinner" aria-hidden="true" />
@@ -571,9 +406,6 @@ export default function NewValidatorJobModal({
 
               <div className="njm-field">
                 <span className="njm-label">Source type</span>
-                {/* A plain <label> around each input, unlike the source cards
-                    below: the text is two short words, so it makes a clean
-                    accessible name and none of the card workarounds apply. */}
                 <div className="njm-radio-row" role="radiogroup" aria-label="Source type">
                   {SOURCE_TYPE_CHOICES.map((opt) => (
                     <label key={opt.value} className="njm-radio-option">
@@ -592,9 +424,6 @@ export default function NewValidatorJobModal({
 
               <div className="njm-field">
                 <span className="njm-label is-required">Choose a source</span>
-                {/* radiogroup + role="radio" on the cards: the clickable surface
-                    is the whole card, so it has to announce itself as the option
-                    rather than as a plain box that happens to contain a radio. */}
                 <div className="njm-source-grid" role="radiogroup" aria-label="Choose a source">
                   <div
                     role="radio"
@@ -602,12 +431,6 @@ export default function NewValidatorJobModal({
                     className={`njm-source-card${!isUpload ? " is-selected" : ""}`}
                     onClick={() => pickMode("job")}
                   >
-                    {/* A profile map is the rulebook a profiling run produced
-                        and an analyst then reviewed and saved - a checked-off
-                        list of rules per column. The database cylinder that was
-                        here said "a database", which is the one thing this
-                        option is NOT: the connection comes with the job, it is
-                        not what you are picking. */}
                     <span className="njm-source-icon" aria-hidden="true">
                       <ClipboardCheck size={20} />
                     </span>
@@ -617,9 +440,6 @@ export default function NewValidatorJobModal({
                         Select from an existing profile mapper job
                       </span>
                     </span>
-                    {/* aria-label keeps the original, fuller wording as this
-                        radio's accessible name - the visible title is only two
-                        words and would not stand alone out of context. */}
                     <input
                       className="njm-source-radio"
                       type="radio"
@@ -631,7 +451,6 @@ export default function NewValidatorJobModal({
                     />
                   </div>
 
-                  {/* Data Source only - Flat File is left with the card above. */}
                   {!isFlatFile ? (
                     <div
                       role="radio"
@@ -664,7 +483,6 @@ export default function NewValidatorJobModal({
 
               {!isUpload ? (
                 <div className="njm-field">
-                  {/* No htmlFor: SearchableSelect owns its own input and takes no id. */}
                   <span className="njm-label is-required">Select profile map</span>
                   <SearchableSelect
                     value={state.profileMapJobId}
@@ -681,9 +499,6 @@ export default function NewValidatorJobModal({
               ) : (
                 <>
                   <div className="njm-field">
-                    {/* The visible text is the instruction; the input's own
-                        aria-label stays "Mapping Workbook" so nothing that
-                        queried it by that name has to change. */}
                     <label className="njm-label is-required" htmlFor="val-job-upload">
                       Upload mapping workbook
                     </label>
@@ -786,9 +601,6 @@ export default function NewValidatorJobModal({
                       </div>
                     ) : null}
 
-                    {/* Sits with the field it belongs to, and survives every later
-                        action, so the reason a workbook was refused cannot vanish
-                        behind an unrelated click. */}
                     {state.uploadError && !state.inspecting && (
                       <div className="njm-alert" role="alert">
                         <AlertTriangle size={16} aria-hidden="true" />
@@ -800,9 +612,6 @@ export default function NewValidatorJobModal({
                 </>
               )}
 
-              {/* The one LOV file this job validates against - optional, and
-                  only used by DQ8 rules. Scoped to this job: nothing uploaded
-                  for an earlier job is offered here. */}
               <LovUploadPanel
                 compact
                 className="njm-lov-section"
@@ -813,20 +622,9 @@ export default function NewValidatorJobModal({
               />
             </div>
 
-            {/* Step 2, upload path only. Rendered only while it is on screen, so
-                the tree is not walking a catalog behind a hidden pane.
-
-                The connection lives here rather than on step 1 because it is
-                what the tree below is a view OF: picking a database and then
-                browsing it are one task, and splitting them across two screens
-                meant changing your mind about the connection was a Back, a
-                re-pick and a Next. */}
             {onTableStep ? (
               <div className="njm-stack">
                 {tableCount > 0 ? (
-                  /* The workbook names the tables it expects; uncoveredTables()
-                     rejects a job that misses one, so showing them here is what
-                     makes that check followable rather than a surprise. */
                   <div>
                     <div className="njm-step2-lead">
                       <Table2 size={15} aria-hidden="true" />
@@ -841,9 +639,6 @@ export default function NewValidatorJobModal({
                 ) : null}
 
                 <div className="njm-field">
-                  {/* No htmlFor: SearchableSelect owns its own input and takes no
-                      id, so a htmlFor here would point at nothing. Same as the
-                      profile mapper's connection field. */}
                   <span className="njm-label is-required">Source Connection</span>
                   <div className="njm-select-wrap">
                     <span className="njm-select-icon" aria-hidden="true">
@@ -900,8 +695,6 @@ export default function NewValidatorJobModal({
             )}
 
             {hasTableStep && !onTableStep ? (
-              /* type="button" so Enter and this click both advance rather than
-                 submitting a job whose tables have not been chosen yet. */
               <button
                 key="btn-next"
                 type="button"

@@ -1,5 +1,3 @@
-"""Infers likely DQ rule IDs for a column from its name and dtype, seeding the profile map's suggested rules."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -40,15 +38,12 @@ LOV_KEYWORDS = (
 
 
 class RuleInference:
-    """Infers a column's likely DQ rule IDs from its name and dtype."""
-
     def infer(
         self,
         data: DataFrame,
         column_name: str,
         column_profile: Mapping[str, Any] | None = None,
     ) -> list[str]:
-        """Infer rule IDs for one column, building its profile if not supplied."""
         try:
             if column_name not in data.columns:
                 logger.debug(
@@ -92,7 +87,6 @@ class RuleInference:
         column_name: str,
         dtype: str,
     ) -> list[str]:
-        """Infer rule IDs for one column from already-computed profile stats - no DataFrame read needed."""
         try:
             inferred_rules = self._infer_rules(
                 column_name=column_name,
@@ -116,7 +110,6 @@ class RuleInference:
         data: DataFrame,
         profiles: Mapping[str, Mapping[str, Any]] | None = None,
     ) -> dict[str, list[str]]:
-        """Infer rule IDs for every column in a DataFrame."""
         try:
             profiles = profiles or {}
 
@@ -142,7 +135,6 @@ class RuleInference:
         column_name: str,
         dtype: str,
     ) -> list[str]:
-        """Map a column's name keywords and dtype to a deduplicated list of rule IDs."""
         rules = ["DQ1"]
 
         col_lower = column_name.lower()
@@ -184,7 +176,6 @@ class RuleInference:
         data: DataFrame,
         column_name: str,
     ) -> dict[str, Any]:
-        """Build a lightweight column profile (dtype, counts, min/max) for rule inference, in one aggregate query."""
         try:
             column = col(column_name)
 

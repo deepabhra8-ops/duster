@@ -1,12 +1,3 @@
-/**
- * ReportSheetGrid - how a check that could not run is presented.
- *
- * The regression: a rule that cannot execute (no reference list, no configured
- * columns, a crash) reports an all-pass mask, whose score is 1.0. The grid used
- * to render that as "100.0%", telling the customer a check had passed when it
- * had never run. It must read NOT RUN instead, and must keep showing a real
- * percentage for checks that did run.
- */
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -83,8 +74,6 @@ describe("a check that ran", () => {
 
 describe("backward compatibility", () => {
   it("treats a row with no status key as a real result", () => {
-    // Summaries stored by an engine build that predates the status field must
-    // keep rendering their scores rather than all turning into NOT RUN.
     const legacy = { ...okRow, score: 0.97 };
     delete legacy.status;
 

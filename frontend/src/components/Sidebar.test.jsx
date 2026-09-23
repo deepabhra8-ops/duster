@@ -1,21 +1,3 @@
-/**
- * Sidebar / Topbar mobile drawer.
- *
- * Below the `md` breakpoint the rail translates off-canvas (global.css), so
- * the hamburger in the Topbar is the only way to reach navigation - and, since
- * AccountMenu lives inside the rail, the only way to reach sign-out. Before
- * this existed the rail was `display: none` under 700px with nothing put in
- * its place, which left no way to change page but to type a URL.
- *
- * jsdom applies no media queries and has no viewport, so these tests cannot
- * assert the rail is visually off-canvas - that part is CSS and is verified by
- * eye. What they do pin is the wiring the CSS depends on: that the open state
- * reaches both components, that every documented way of dismissing the drawer
- * is connected, and that the button describes itself correctly to a screen
- * reader in both states. Those are the parts that silently rot.
- *
- * fireEvent rather than user-event: this repo does not depend on the latter.
- */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -27,9 +9,6 @@ vi.mock("./AccountMenu.jsx", () => ({
   default: () => <div data-testid="account-menu" />,
 }));
 
-/* Topbar renders the bell, which needs the notifications provider and a router. These tests are
-   about the drawer toggle, not notifications (see NotificationBell.test.jsx), so it is stubbed
-   the same way AccountMenu is. */
 vi.mock("./notifications/NotificationBell.jsx", () => ({
   default: () => <div data-testid="notification-bell" />,
 }));
@@ -66,8 +45,6 @@ describe("Sidebar drawer", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  /* AccountMenu is rendered inside the rail, so a drawer that did not carry it
-     would take sign-out off screen with it - the original bug. */
   it("keeps the account menu inside the rail", () => {
     renderSidebar({ open: true });
 
@@ -81,17 +58,10 @@ describe("Sidebar drawer", () => {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
 
-    /* Discovery opens an inline accordion rather than going to a route of its
-       own, so it is a button, not a link - see the "Discovery accordion"
-       describe block below. */
     expect(screen.getByRole("button", { name: "Discovery" })).toBeInTheDocument();
   });
 });
 
-/* The rail's expand toggle and the Discovery accordion nested inside it -
-   replaces the old second-tier SubNav panel (see git history), so these pin
-   the behaviour that used to live there: the catalog links are reachable,
-   just nested in the rail now instead of beside it. */
 describe("Sidebar expand toggle", () => {
   it("starts collapsed, with labels hidden from assistive tech", () => {
     const { container } = renderSidebar();
@@ -166,7 +136,6 @@ describe("Discovery accordion", () => {
   });
 });
 
-/* WCAG 2.4.3 - focus must follow the drawer, not be stranded behind it. */
 describe("Sidebar drawer focus management", () => {
   it("moves focus into the rail when it opens", () => {
     const opener = document.createElement("button");
@@ -255,8 +224,6 @@ describe("Topbar drawer toggle", () => {
     expect(onMenuClick).toHaveBeenCalledTimes(1);
   });
 
-  /* aria-controls above points at this id; if the rail ever loses it the
-     association breaks silently. */
   it("points at the id the sidebar actually carries", () => {
     const { container } = renderSidebar();
 

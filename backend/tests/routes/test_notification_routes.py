@@ -1,9 +1,3 @@
-"""Notification endpoints, driven through TestClient so the real routing is what runs.
-
-Auth is overridden to a fixed user: the gate itself is covered by test_auth_gate.py.
-Services are patched, so no database is touched. The stream is the exception to
-"driven through TestClient" - see the note on that class.
-"""
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -81,8 +75,6 @@ class TestCreate:
         )
 
     def test_the_requester_comes_from_the_session_never_the_body(self, client):
-        """A body `username` is only a request to notify someone else, which the service
-        then allows or refuses. It must never be able to stand in for who is asking."""
         with patch.object(notification_routes.notification_service, "create", return_value={}) as create:
             client.post("/api/notifications", json={**self.BODY, "username": "bob", "requester": "admin"})
 
@@ -180,8 +172,6 @@ class TestMarkAllRead:
         mark_all.assert_called_once_with("alice")
 
     def test_is_not_swallowed_by_the_id_route(self, client):
-        """'read-all' shares a prefix with '/{id}'. It must be routed, not read as an id (which
-        would 404) nor rejected as a wrong method (405)."""
         with patch.object(
             notification_routes.notification_service, "mark_all_read", return_value={"updated": 0, "unread_count": 0}
         ):
@@ -200,8 +190,6 @@ class TestClearAll:
         clear.assert_called_once_with("alice")
 
     def test_the_user_comes_from_the_session_never_the_request(self, client):
-        """There is nothing in the request that could name another user - but prove a hostile
-        query string or body cannot smuggle one in."""
         with patch.object(
             notification_routes.notification_service, "clear_all", return_value={"deleted": 0, "unread_count": 0}
         ) as clear:
@@ -226,14 +214,7 @@ async def _fake_stream(*_args, **_kwargs):
 
 
 class TestStream:
-    """The endpoint's wiring. The stream's own behaviour is in test_notification_stream.py.
-
-    TestClient buffers a whole response before handing it back, so a real, endless stream
-    would hang it; the generator is replaced with a finite one to let the wiring be checked.
-    """
-
     def _get(self, cookie="live"):
-        # No dependency override here: the real require_auth_no_slide must run.
         client = TestClient(create_app())
         client.cookies.set("dq_session", cookie)
 
@@ -259,8 +240,6 @@ class TestStream:
         latest_id.assert_called_once_with("alice")
 
     def test_authenticating_the_stream_does_not_slide_the_session(self):
-        """The property the separate router exists for. get() extends the session's expiry;
-        if the stream used it, an idle open tab would keep the session alive forever."""
         with patch.object(
             auth_service_module.session_repository, "peek", return_value="alice"
         ) as peek, patch.object(

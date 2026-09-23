@@ -1,5 +1,3 @@
-"""HTTP endpoints for LOV (List of Values) management: listing uploaded LOV files and deleting them."""
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -15,14 +13,6 @@ lov_bp = APIRouter()
 
 @lov_bp.get("/api/lovs")
 def list_lovs():
-    """Return every uploaded LOV file and the LOV names each one defines.
-
-    Each entry: { file, display_name, lovs: [{ name, values_count }] }.
-    `file` is the stored filename (UUID-prefixed) that delete takes,
-    `display_name` is the name the user uploaded it under,
-    and `lovs` is one entry per column in the CSV - a LOV file is wide, so a
-    single upload can define every LOV a job's DQ8 rules reference.
-    """
     try:
         files = lov_service.list_lov_files()
         logger.debug("Listed %d LOV files", len(files))
@@ -38,7 +28,6 @@ def list_lovs():
 
 @lov_bp.get("/api/lovs/{filename}")
 def get_lov(filename: str):
-    """Return one LOV file's entry - same shape as a row of the list."""
     try:
         entry = lov_service.get_lov_file(filename)
 
@@ -60,7 +49,6 @@ def get_lov(filename: str):
 
 @lov_bp.delete("/api/lovs/{filename}")
 def delete_lov(filename: str):
-    """Delete a single LOV CSV by its stored filename, local or in S3."""
     try:
         deleted = lov_service.delete_lov_file(filename)
 

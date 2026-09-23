@@ -1,5 +1,3 @@
-"""HTTP server and CORS settings."""
-
 import os
 
 

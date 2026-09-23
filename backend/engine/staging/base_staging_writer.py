@@ -1,5 +1,3 @@
-"""Defines the BaseStagingWriter contract for writing passing (curated) rows to a staging destination."""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -15,15 +13,12 @@ logger = get_logger(__name__)
 
 
 class BaseStagingWriter(ABC):
-    """Base class for a writer that persists curated rows to a staging destination."""
-
     staging_type: str = ""
 
     def __init__(
         self,
         context: ExecutionContext,
     ) -> None:
-        """Store the execution context."""
         try:
             self.context = context
             logger.debug(
@@ -46,7 +41,6 @@ class BaseStagingWriter(ABC):
         data: DataFrame,
         staging_config: Mapping[str, Any],
     ) -> Any:
-        """Write a table's curated rows to the staging destination; implemented by each staging type."""
         error = (
             f"Staging writer '{type(self).__name__}' does not "
             "implement write()."
@@ -63,7 +57,6 @@ class BaseStagingWriter(ABC):
         self,
         staging_config: Mapping[str, Any],
     ) -> bool:
-        """Return whether this writer supports the given staging config; True by default."""
         try:
             logger.debug(
                 "Default support check passed for staging type '%s'",
@@ -81,7 +74,6 @@ class BaseStagingWriter(ABC):
         self,
         staging_config: Mapping[str, Any],
     ) -> None:
-        """Validate staging-specific configuration; no-op by default."""
         try:
             logger.debug(
                 "No base configuration validation required for "
@@ -96,7 +88,6 @@ class BaseStagingWriter(ABC):
             raise
 
     def metadata(self) -> Mapping[str, Any]:
-        """Return descriptive metadata about this staging writer."""
         try:
             metadata = {
                 "staging_type": self.staging_type,

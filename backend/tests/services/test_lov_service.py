@@ -1,10 +1,3 @@
-"""Unit tests for LovService: discovering LOV names required by DQ8 rules from a profile
-map workbook, discovering available LOV CSV files, and reconciling the two.
-
-extract_required_lovs() is pure openpyxl file reading (no Spark). discover_lov_files() and
-build_lov_configuration() read CSV headers via the shared Spark session, so only those are
-marked `spark`.
-"""
 from __future__ import annotations
 
 import pytest
@@ -33,7 +26,7 @@ def test_extract_required_lovs_finds_dq8_lov_names(tmp_path):
         profile_map,
         rows=[
             ["DQ1,DQ8", "CountryList|extra"],
-            ["DQ1", ""],  # no DQ8 here - must be ignored
+            ["DQ1", ""],
             ["DQ8", "StatusList"],
         ],
     )
@@ -82,7 +75,6 @@ def test_discover_lov_files_uses_the_csv_column_headers_as_the_lov_names(tmp_pat
 
 @pytest.mark.spark
 def test_discover_lov_files_maps_every_column_of_a_wide_file(tmp_path, spark):
-    """One upload can define every LOV a job needs - one column per LOV."""
     lov_dir = tmp_path / "lov"
     lov_dir.mkdir()
     lov_file = lov_dir / "job_lovs.csv"
@@ -123,7 +115,6 @@ def test_discover_lov_files_ignores_non_csv_files(tmp_path, spark):
 
 
 def test_discover_lov_files_returns_empty_for_a_missing_directory(tmp_path):
-    """No Spark call is ever reached - the is_dir() check short-circuits first."""
     missing_dir = tmp_path / "does_not_exist"
     assert LovService().discover_lov_files(missing_dir) == {}
 

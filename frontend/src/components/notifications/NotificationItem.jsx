@@ -1,13 +1,3 @@
-/**
- * NotificationItem.jsx - one row in the bell's notification list.
- *
- * A button, not a link, because selecting it does two things - marks it read, and follows its
- * link if it has one that stays inside the app - and the panel decides which (see
- * NotificationPanel.handleSelect).
- *
- * Read and unread differ in weight, tint and a leading marker, and ALSO in text for assistive
- * technology: colour and weight alone would leave a screen-reader user unable to tell them apart.
- */
 import { classNames, fmtDate, fmtRelativeTime } from "../../utils/helpers.js";
 import { notificationTone } from "../../utils/notifications.js";
 

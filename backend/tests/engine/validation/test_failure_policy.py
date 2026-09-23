@@ -1,4 +1,3 @@
-"""Unit tests for FailurePolicy: which rules' failures propagate to a row's failed-row mask."""
 from __future__ import annotations
 
 import pytest
@@ -24,6 +23,4 @@ def test_every_other_rule_propagates(policy, rule_id):
 
 
 def test_an_unrecognized_rule_id_defaults_to_propagating(policy):
-    """Only the explicit DQ10/DQ11 exclusion list opts out - anything else, known or not,
-    defaults to counting toward the row's failed status."""
     assert policy.should_propagate("DQ99_NOT_A_REAL_RULE") is True

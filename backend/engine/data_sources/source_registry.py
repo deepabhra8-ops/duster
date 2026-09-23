@@ -1,5 +1,3 @@
-"""Registry mapping a source type string to its registered BaseDataSource class."""
-
 from __future__ import annotations
 
 from threading import RLock
@@ -14,8 +12,6 @@ logger = get_logger(__name__)
 
 
 class SourceRegistry:
-    """Thread-safe registry of BaseDataSource classes keyed by source type."""
-
     def __init__(self) -> None:
         self._sources: dict[str, Type[BaseDataSource]] = {}
         self._lock = RLock()
@@ -25,7 +21,6 @@ class SourceRegistry:
         self,
         source_class: Type[BaseDataSource],
     ) -> Type[BaseDataSource]:
-        """Register a data source class under its source_type."""
         source_type = self._get_source_type(source_class)
 
         with self._lock:
@@ -54,7 +49,6 @@ class SourceRegistry:
         self,
         source_type: str,
     ) -> None:
-        """Remove a registered data source type."""
         normalized_type = self._normalize_source_type(source_type)
 
         with self._lock:
@@ -79,7 +73,6 @@ class SourceRegistry:
         config: dict,
         context: ExecutionContext,
     ) -> BaseDataSource:
-        """Instantiate the registered data source for a source type."""
         normalized_type = self._normalize_source_type(source_type)
 
         with self._lock:
@@ -108,7 +101,6 @@ class SourceRegistry:
         self,
         source_type: str,
     ) -> bool:
-        """Return whether a source type is registered."""
         normalized_type = self._normalize_source_type(source_type)
 
         with self._lock:
@@ -118,18 +110,15 @@ class SourceRegistry:
         return result
 
     def all(self) -> dict[str, Type[BaseDataSource]]:
-        """Return all registered source classes keyed by source type."""
         with self._lock:
             return dict(self._sources)
 
     def source_types(self) -> list[str]:
-        """Return all registered source type names."""
         with self._lock:
             return list(self._sources.keys())
 
     @log_and_reraise(logger, "Failed to clear registered data sources")
     def clear(self) -> None:
-        """Remove all registered data sources."""
         with self._lock:
             count = len(self._sources)
             self._sources.clear()
@@ -139,7 +128,6 @@ class SourceRegistry:
     def _get_source_type(
         source_class: Type[BaseDataSource],
     ) -> str:
-        """Return a source class's normalized source_type, or raise if it's missing."""
         source_type = getattr(
             source_class,
             "source_type",
@@ -158,7 +146,6 @@ class SourceRegistry:
     def _normalize_source_type(
         source_type: str,
     ) -> str:
-        """Normalize a source type string for lookup."""
         if not isinstance(source_type, str):
             raise TypeError(
                 "source_type must be a string."
@@ -171,7 +158,6 @@ class SourceRegistry:
         self,
         source: BaseDataSource,
     ) -> BaseDataSource:
-        """Register the class of an already-created data source instance."""
         self.register(type(source))
         logger.debug(
             "Registered data source instance '%s'",
@@ -186,5 +172,4 @@ default_source_registry = SourceRegistry()
 def register_source(
     source_class: Type[BaseDataSource],
 ) -> Type[BaseDataSource]:
-    """Class-decorator that registers a data source with the default registry."""
     return default_source_registry.register(source_class)

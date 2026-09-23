@@ -1,14 +1,3 @@
-"""JobRepository.transition against a real database, not a mock.
-
-The whole point of this method is what SQL does when two writers race, so a
-mock cannot test it - it would just return whatever it was told to. These run
-the real ORM statement against an in-memory SQLite database.
-
-The jobs table is created with explicit DDL rather than Base.metadata.create_all
-because the model declares Postgres JSONB/UUID columns that SQLite has no
-equivalent for. Only the columns transition() actually touches are needed, and
-naming them here also documents exactly what it depends on.
-"""
 from __future__ import annotations
 
 import threading
@@ -36,10 +25,6 @@ CREATE TABLE jobs (
 
 @pytest.fixture
 def session_factory(tmp_path):
-    # A file-backed database, not ":memory:". An in-memory SQLite database is
-    # private to the connection that opened it, so the worker threads in the
-    # concurrency tests below would each get their own empty one and the race
-    # under test would never actually happen.
     engine = create_engine(
         f"sqlite:///{tmp_path / 'test.db'}",
         connect_args={"check_same_thread": False},
@@ -105,7 +90,6 @@ class TestTransition:
                 text("SELECT error_message FROM jobs WHERE job_id = 'j1'")
             ).scalar()
 
-        # 'error' is mapped onto the error_message column.
         assert message == "it broke"
 
     def test_an_unknown_field_is_ignored_rather_than_raising(self, repository, session_factory):
@@ -117,9 +101,6 @@ class TestTransition:
 class TestTerminalStatesAreProtected:
     @pytest.mark.parametrize("terminal", ["done", "error", "cancelled"])
     def test_a_finished_job_is_not_reopened(self, repository, session_factory, terminal):
-        """Both the request thread and the background job-runner thread write
-        this row. Without the status guard a late write could resurrect a job
-        that had already finished or been cancelled."""
         _insert(session_factory, status=terminal)
 
         assert repository.transition("j1", {"queued", "running"}, "done") is False
@@ -128,8 +109,6 @@ class TestTerminalStatesAreProtected:
 
 class TestConcurrency:
     def test_only_one_of_many_racing_callers_wins(self, repository, session_factory):
-        """The reason this method exists. Ten threads ask to move the same draft
-        to queued; exactly one may be told it did."""
         _insert(session_factory, status="draft")
 
         results = []
@@ -155,7 +134,6 @@ class TestConcurrency:
     def test_racing_transitions_to_different_states_produce_one_outcome(
         self, repository, session_factory
     ):
-        """A cancel and a completion arriving together must not both apply."""
         _insert(session_factory, status="running")
 
         results = {}

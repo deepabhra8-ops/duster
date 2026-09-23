@@ -1,5 +1,3 @@
-"""Filesystem layout constants: where the app's source, rules, and runtime data live."""
-
 from core.config import BASE_DIR
 
 

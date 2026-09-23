@@ -1,6 +1,3 @@
-"""Unit tests for ConnectionService: resolving a connection string/testing from raw job
-params, and delegating validation/testing to the connector registry.
-"""
 from __future__ import annotations
 
 import pytest
@@ -52,8 +49,6 @@ def test_validate_connection_details_reports_missing_fields(service):
 
 
 def test_validate_connection_details_returns_empty_for_an_unknown_type(service):
-    """Unlike build_connection_string(), this degrades gracefully instead of raising -
-    callers use it to decide whether to even attempt a connection."""
     assert service.validate_connection_details("not_a_real_db", {}) == []
 
 

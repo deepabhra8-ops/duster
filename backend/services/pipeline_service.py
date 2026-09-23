@@ -1,5 +1,3 @@
-"""Builds job configuration and runs the DQ pipeline in-process."""
-
 from __future__ import annotations
 
 import traceback
@@ -20,8 +18,6 @@ logger = get_logger(__name__)
 
 
 class PipelineService:
-    """Builds job configuration and runs the DQ engine for a job."""
-
     def run_job(
         self,
         job_id: str,
@@ -30,12 +26,6 @@ class PipelineService:
         log_job: Callable[[str, str], None],
         repository: JobRepository,
     ) -> None:
-        """Run a job end to end: build its config, then run the engine in-process.
-
-        Blocking - see JobService.submit_job(), which is what request handlers
-        call instead: it hands this off to a background thread so the browser
-        isn't left waiting on the whole run.
-        """
         current = repository.get(job_id)
 
         if current and current.get("status") == "cancelled":
@@ -48,9 +38,6 @@ class PipelineService:
         try:
             config = config_builder.build(job_id, params)
 
-            # A redacted copy on disk for audit/debugging - never the real
-            # connection_string/service_account_json. The run below executes off
-            # the `config` object built above, not a re-read of this file.
             self._write_config(get_job_config_path(job_id), redact_secrets(config))
 
             step = str(params.get("step", "1"))
@@ -79,7 +66,6 @@ class PipelineService:
         config_path: Path,
         config: dict[str, Any],
     ) -> None:
-        """Write the pipeline configuration to disk as YAML (for audit/debugging)."""
         config_path.parent.mkdir(
             parents=True,
             exist_ok=True,

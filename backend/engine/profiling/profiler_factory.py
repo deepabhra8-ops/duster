@@ -1,5 +1,3 @@
-"""Builds a profiler instance for a source type, wiring in the dependencies its data source exposes."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -18,13 +16,10 @@ logger = get_logger(__name__)
 
 
 class ProfilerFactory:
-    """Creates profiler instances, supplying dependencies from the data source being profiled."""
-
     def __init__(
         self,
         registry: ProfilerRegistry | None = None,
     ) -> None:
-        """Store the profiler registry to create instances from."""
         try:
             self.registry = (
                 registry
@@ -41,7 +36,6 @@ class ProfilerFactory:
         context: ExecutionContext,
         source: BaseDataSource,
     ) -> BaseProfiler:
-        """Create a profiler for a source type, passing through the source's declared dependencies."""
         try:
             dependencies: dict[str, Any] = dict(
                 source.profiler_dependencies()

@@ -1,5 +1,3 @@
-"""Calculates rule, dimension, and overall DQ scores as pass_rows/total_rows averages, and resolves a rule's dimension/category."""
-
 from __future__ import annotations
 
 from typing import Mapping
@@ -13,14 +11,11 @@ logger = get_logger(__name__)
 
 
 class ValidationScorer:
-    """Computes rule/dimension/overall DQ scores and resolves rule dimension/category metadata."""
-
     def __init__(
         self,
         context: ExecutionContext,
         rule_registry: RuleRegistry,
     ) -> None:
-        """Store the execution context and rule registry used to resolve rule metadata."""
         try:
             self.context = context
             self.rule_registry = rule_registry
@@ -34,7 +29,6 @@ class ValidationScorer:
         total_rows: int,
         invalid_count: int,
     ) -> float:
-        """Return pass_rows/total_rows for one rule, or 1.0 when there are no rows."""
         try:
             if total_rows <= 0:
                 return 1.0
@@ -52,7 +46,6 @@ class ValidationScorer:
         rule_id: str,
         context: ExecutionContext | None = None,
     ) -> str:
-        """Return a rule's configured DQ dimension, or 'Other' if unresolvable."""
         execution_context = (
             context
             or self.context
@@ -80,7 +73,6 @@ class ValidationScorer:
         rule_id: str,
         context: ExecutionContext | None = None,
     ) -> str:
-        """Return a rule's configured category, or 'Other' if unresolvable."""
         execution_context = (
             context
             or self.context
@@ -112,7 +104,6 @@ class ValidationScorer:
         rule_id: str,
         score: float,
     ) -> None:
-        """Append a rule's score to its dimension's score list."""
         try:
             dimension = self.get_dimension(
                 rule_id=rule_id,
@@ -133,7 +124,6 @@ class ValidationScorer:
             list[float],
         ],
     ) -> dict[str, float]:
-        """Average each dimension's rule scores; an empty dimension defaults to 1.0."""
         try:
             result = {
                 dimension: (
@@ -157,7 +147,6 @@ class ValidationScorer:
             float,
         ],
     ) -> float:
-        """Average the dimension scores into an overall score, or 1.0 when there are none."""
         try:
             if not dimension_scores:
                 return 1.0
@@ -182,7 +171,6 @@ class ValidationScorer:
         dict[str, float],
         float,
     ]:
-        """Calculate both the per-dimension scores and the overall score in one call."""
         try:
             dimension_scores = (
                 self.calculate_dimension_scores(

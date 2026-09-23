@@ -1,19 +1,3 @@
-/**
- * SchemaTreePicker - the database-browser tree that replaced the
- * row-of-dropdowns table picker.
- *
- * The rows it emits are the contract: both New Job modals and rowsToTables()
- * read {schema, table, column, locked}, and the modals gate "create" on at
- * least one row with locked set. A tree that emitted a different shape would
- * build drafts that can never run, which is the failure the old picker's lock
- * toggle existed to prevent - so that shape is pinned here.
- *
- * The five-table ceiling is pinned too, at the interaction rather than at a
- * constant: what matters is that the sixth table cannot be ticked, and that
- * unticking one lets another in again.
- *
- * fireEvent rather than user-event: this repo does not depend on the latter.
- */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -22,11 +6,6 @@ const TABLES = {
   staging: ["stg_donation_behavior_modeling"],
 };
 
-/* `loaded: true` is part of the contract, not decoration: the tree renders
-   loading skeletons instead of rows until the catalog says the fetch has landed,
-   because "not asked yet" and "asked, and empty" are different answers and only
-   this flag separates them. A mock without it describes a catalog that never
-   resolves. */
 vi.mock("../../hooks/useCatalog.js", () => ({
   useCatalog: () => ({
     loadTables: vi.fn(),
@@ -50,8 +29,6 @@ import SchemaTreePicker, { MAX_TABLES } from "./SchemaTreePicker.jsx";
 
 const SCHEMAS = ["public", "staging"];
 
-/** Renders with the parent's state wired up, the way the modals use it, and
- *  hands back a reader for the rows currently emitted. */
 function renderPicker(initial = [{ schema: "", table: "", column: "", locked: false }]) {
   const state = { rows: initial };
   const onChange = vi.fn((rows) => {
@@ -121,7 +98,6 @@ describe("SchemaTreePicker", () => {
     TABLES.public.slice(0, MAX_TABLES).forEach(tick);
     expect(state.rows).toHaveLength(MAX_TABLES);
 
-    // The sixth is disabled rather than silently inert when clicked.
     const sixth = screen.getByRole("checkbox", { name: TABLES.public[MAX_TABLES] });
     expect(sixth).toBeDisabled();
 
@@ -134,8 +110,6 @@ describe("SchemaTreePicker", () => {
     expand("public");
     TABLES.public.slice(0, MAX_TABLES).forEach(tick);
 
-    // Already-selected tables stay tickable at the limit - otherwise there is
-    // no way back out of a full selection.
     tick(TABLES.public[0]);
     expect(state.rows).toHaveLength(MAX_TABLES - 1);
 
@@ -170,8 +144,6 @@ describe("SchemaTreePicker", () => {
   });
 
   it("shows loading placeholders, not an empty state, before the fetch lands", async () => {
-    // A catalog that has not resolved yet: no items, not loading either, which
-    // is the one-frame gap between expanding a schema and the request starting.
     vi.resetModules();
     vi.doMock("../../hooks/useCatalog.js", () => ({
       useCatalog: () => ({

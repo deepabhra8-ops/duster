@@ -1,48 +1,3 @@
-/**
- * ConnectionWizardModal.jsx - 2-step "Create/Edit connection" wizard for
- * the Connections manager (Connections.jsx).
- *
- * Step 1: Name and Description - who this connection is, nothing else.
- * Step 2: the database type AND the dynamic connection fields it selects
- *         (DatabaseFields, `enhanced`, the same component the old Configure
- *         page's Source Connection card uses) + Test Connection, then Save.
- *
- * The type used to sit on step 1. It belongs here instead: every field on this
- * screen exists because of it, so choosing it on the previous screen meant
- * changing your mind cost a Back, a re-pick and a Next - with the fields you
- * were looking at replaced on the way past.
- *
- * Presentation comes from styles/new-job-modal.css (the `njm` class), shared
- * with the Profile Mapper and Validator New Job wizards so all three dialogs
- * read as one thing. `njm-wide` is this modal's own width: the credential
- * fields are a two-column grid, which the 660px the others use leaves cramped.
- *
- * Edit mode: pass `editingConnection` (the row from the table - id, name,
- * db_type, description; never connection_details, which the list endpoint
- * never returns) to prefill Name/Description/Database Type on open, then
- * fetch its decrypted details via GET /api/connections/{id}/reveal (same
- * endpoint the New Job wizard already uses right after picking a saved
- * connection - see that route's own docstring on why this isn't a new
- * exposure) to prefill step 2's fields. `.wizard-loading-overlay` (shared
- * with NewProfileMapperJobModal.jsx) covers the modal while that reveal is
- * in flight. Save then PATCHes (updateConnection) instead of POSTing
- * (createConnection); either way, on success it calls `onSaved` with the
- * server's updated/created non-secret row. Passing `editingConnection={null}`
- * (or omitting it) is create mode.
- *
- * Saving does no catalog work. It used to: creating a connection ran a schema
- * query server-side and blocked the whole viewport behind a
- * `.fullscreen-loading-overlay` reading "Saving connection and reading
- * schemas...", so the user waited on a catalog read to finish a step that only
- * needed an insert. The stored schema list also went stale - a schema added to
- * the source afterwards never appeared until someone pressed refresh.
- *
- * Schemas are now read live when a connection is actually picked for a
- * profiling or validation job, exactly like tables and columns already were
- * (see migration 007 and SavedConnectionService.list_schemas). Saving is a
- * plain insert, so the button's own "Saving..." state is all the feedback it
- * needs and the blocking overlay is gone.
- */
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -69,13 +24,8 @@ import {
 } from "../../api/api.js";
 import "../../styles/new-job-modal.css";
 
-/** Shown as the Name field's hint. Short on purpose: it sits under the input
- *  permanently rather than behind a tooltip, so it has to earn its line. */
 const NAMING_GUIDANCE_SHORT = "Give a unique and meaningful name for this connection.";
 
-/** Caps that match the other New Job wizards, so the counters mean the same
- *  thing everywhere. Both are UI-side only - neither column is length-limited
- *  server-side, so these truncate nothing that was previously storable. */
 const NAME_MAX_LENGTH = 64;
 const DESCRIPTION_MAX_LENGTH = 200;
 
@@ -84,13 +34,12 @@ const EMPTY_STATE = { step: 1, name: "", description: "", dbType: "", details: {
 export default function ConnectionWizardModal({ open, onClose, onSaved, editingConnection = null }) {
   const [state, setState] = useState(EMPTY_STATE);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState(null); // { ok, msg }
+  const [testResult, setTestResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const isEditing = Boolean(editingConnection);
 
-  /* Prefill from the known list row, then fetch its decrypted details. */
   useEffect(() => {
     if (!open || !editingConnection) return;
 
@@ -133,8 +82,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
     onClose();
   }
 
-  /* Step 1 is identity only now - the database type moved to step 2, beside
-     the fields it decides. */
   function goNext() {
     if (!state.name.trim()) {
       setState((s) => ({ ...s, error: "Name is required" }));
@@ -152,12 +99,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
     setTestResult(null);
   }
 
-  /**
-   * Runs the same check handleTest does (missing-fields, then the real
-   * test-connection call) and reports through the same `testResult` box, but
-   * returns the outcome instead of just displaying it - so handleSave can gate
-   * on it without duplicating the logic.
-   */
   async function runConnectionTest() {
     const required = DB_REQUIRED_FIELDS[state.dbType] || [];
     const missing = required.filter((f) => !String(state.details[f] ?? "").trim());
@@ -183,9 +124,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
   }
 
   async function handleSave() {
-    /* Guards the type here because step 1 no longer can. Without it a
-       connection could be saved with db_type "" - accepted by the form, then
-       unusable by every job that later picks it. */
     if (!state.dbType) {
       setState((s) => ({ ...s, step: 2, error: "Select a database type" }));
       return;
@@ -195,14 +133,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
     setState((s) => ({ ...s, error: "" }));
     setTestResult(null);
 
-    /* Wrong credentials used to save fine - the "Test Connection" button was
-       purely optional, so a user who never pressed it (or who fixed a typo
-       after the last successful test) could save something no job could ever
-       actually connect to. Every save now re-runs the same test the button
-       does; on failure nothing is written to either endpoint and the modal
-       stays open exactly as it does after a manual failed test, so the user
-       can fix the details and try again (or Cancel to discard) rather than
-       silently getting a broken connection either way - new or edited. */
     const testOutcome = await runConnectionTest();
     if (!testOutcome.ok) {
       setSaving(false);
@@ -227,7 +157,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
       return;
     }
 
-    // Create mode: a plain insert. No catalog read - see the header comment.
     const { ok, data, error } = await createConnection(
       state.name.trim(),
       state.dbType,
@@ -240,16 +169,10 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
       return;
     }
 
-    // Saving does no catalog work at all now - schemas are read live when the
-    // connection is picked for a job, like tables and columns. That removes the
-    // "fetching schemas" wait from a step that never needed it, and with it the
-    // warning toast for a schema read that failed without invalidating the save.
     onSaved(data?.data);
     reset();
   }
 
-  // Freeze the page behind the overlay - see the hook for why a plain
-  // body overflow:hidden is not enough (nesting, scrollbar layout shift).
   useScrollLock(open);
 
   if (!open) return null;
@@ -299,10 +222,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
                     onChange={(e) => setState((s) => ({ ...s, name: e.target.value, error: "" }))}
                   />
                   <span className="njm-field-foot">
-                    {/* The naming guidance used to hide behind an ℹ️ tooltip next
-                        to the label. It is one short sentence and it is advice
-                        you want BEFORE typing, so it reads as the field's hint
-                        instead of something to go hunting for. */}
                     <span className="njm-hint">{NAMING_GUIDANCE_SHORT}</span>
                     <span className="njm-count">
                       {state.name.length}/{NAME_MAX_LENGTH}
@@ -331,11 +250,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
               </div>
             ) : (
               <div className="njm-stack">
-                {/* The database type opens step 2 rather than closing step 1:
-                    every field below it exists BECAUSE of it, so the two belong
-                    on one screen. Choosing a type on the previous screen meant
-                    changing your mind cost a Back, a re-pick and a Next, with
-                    the fields you were looking at replaced on the way. */}
                 <div className="njm-field">
                   <label className="njm-label is-required" htmlFor="conn-db-type">Select Database</label>
                   <span className="njm-input-wrap">
@@ -374,10 +288,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
                         enhanced
                       />
 
-                      {/* The outcome only - the button that produces it lives in
-                          the footer with the other actions, since testing is one
-                          of the three things you can do from this screen rather
-                          than a field in the form. */}
                       <div className={`njm-test${testResult ? (testResult.ok ? " is-ok" : " is-err") : ""}`}>
                         <span className="njm-test-icon" aria-hidden="true">
                           {testResult ? (
@@ -422,8 +332,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
               </button>
             )}
 
-            {/* Between Back and Save: it is the step you take before committing,
-                so it reads left-to-right in the order you would do them. */}
             {state.step === 2 && state.dbType ? (
               <button
                 type="button"
@@ -448,9 +356,6 @@ export default function ConnectionWizardModal({ open, onClose, onSaved, editingC
             ) : (
               <button type="button" className="btn btn-primary" disabled={saving || loadingDetails} onClick={handleSave}>
                 {saving ? <Loader2 size={15} className="njm-spin" aria-hidden="true" /> : null}
-                {/* Save always tests first now - testResult is still null for the
-                    part of `saving` spent on that check, and set (ok either way)
-                    by the time the actual create/update call is in flight. */}
                 {saving ? (testResult ? "Saving…" : "Testing…") : isEditing ? "Save" : "Save & Connect"}
               </button>
             )}

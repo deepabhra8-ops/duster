@@ -1,29 +1,7 @@
-/**
- * login.css - the sign-in screen (pages/Login.jsx).
- *
- * New class names (`auth-*`) rather than the old `login-*` ones. global.css
- * carries TWO competing `.login-*` blocks, one overriding the other, and
- * reworking the page through them would have meant fighting that cascade at
- * every rule. Those blocks are now dead - nothing renders those classes - and
- * are left in place rather than deleted so this change stays presentational.
- *
- * Tokens come from global.css. The literal hexes are tints (blue/green/violet
- * 50-600) with no token equivalent, used for the three feature tiles and the
- * card's own icon.
- */
-
-/* -- Shell --------------------------------------------------- */
-
-/* Two panels, brand then form. The form column is fixed-ish and the brand
-   column takes the rest, so the card keeps a comfortable measure on a very wide
-   monitor instead of stretching with it. */
 .auth-screen {
   position: relative;
   overflow: hidden;
   min-height: 100vh;
-  /* dvh where supported: on a phone 100vh counts the browser's collapsing
-     toolbars, so a page sized to it is taller than the screen actually is and
-     scrolls by exactly that much. The vh line above stays as the fallback. */
   min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(420px, 46%);
@@ -36,12 +14,6 @@
     var(--bg);
 }
 
-/* -- Brand column -------------------------------------------- */
-
-/* Left-aligned in its column, not centred in it. margin-left:auto pushed the
-   whole block toward the card, so on a wide monitor the headline floated in the
-   middle of the page with a gulf of empty space to its left - the page's own
-   side padding is the margin it should sit against. */
 .auth-brand {
   position: relative;
   z-index: 1;
@@ -55,9 +27,6 @@
   padding-right: clamp(16px, 3vw, 56px);
 }
 
-/* A short accent bar above the headline and again above the strapline - the
-   two ends of the column, so it reads as one block rather than three stacked
-   ones. */
 .auth-rule {
   display: block;
   width: 46px;
@@ -87,8 +56,6 @@
   line-height: 1.5;
   max-width: 34ch;
 }
-
-/* -- Feature list -------------------------------------------- */
 
 .auth-features {
   list-style: none;
@@ -166,8 +133,6 @@
   color: #94A3B8;
 }
 
-/* -- Form column --------------------------------------------- */
-
 .auth-panel {
   position: relative;
   z-index: 1;
@@ -187,14 +152,9 @@
   border: 1px solid var(--border2);
   border-radius: 18px;
   box-shadow: 0 24px 60px -20px rgba(15, 39, 68, .22), 0 0 0 1px rgba(15, 39, 68, .02);
-  /* Tightened so the whole card clears a 768px-tall window without scrolling -
-     every step below is part of that budget, not independent taste. */
   padding: clamp(22px, 3vw, 30px) clamp(20px, 3vw, 34px);
 }
 
-/* The logo's own row, ruled off from the sign-in block below it, so the card
-   reads as "whose app this is" then "what you are doing" rather than as three
-   stacked marks. */
 .auth-card-brand {
   display: flex;
   justify-content: center;
@@ -251,8 +211,6 @@
   line-height: 1.45;
 }
 
-/* -- Fields -------------------------------------------------- */
-
 .auth-field {
   display: flex;
   flex-direction: column;
@@ -260,7 +218,6 @@
   margin-top: 15px;
 }
 
-/* Beats global.css's uppercase, letter-spaced bare `label`. */
 .auth-field label {
   font-size: 13px;
   font-weight: 600;
@@ -285,8 +242,6 @@
   pointer-events: none;
 }
 
-/* Written after the wrap so the padding shorthand here cannot undo the inset
-   the icon needs - the two are set together for exactly that reason. */
 .auth-field input {
   width: 100%;
   padding: 11px 14px 11px 42px;
@@ -374,11 +329,6 @@
   color: var(--mgray);
 }
 
-/* -- Responsive ---------------------------------------------- */
-
-/* The brand column goes first. Everything in it is presentation - none of it is
-   needed to sign in - so below this width the page is just the card, with the
-   logo lifted above it so it still says whose product this is. */
 @media (max-width: 1024px) {
   .auth-screen {
     grid-template-columns: minmax(0, 1fr);
@@ -390,9 +340,6 @@
     display: none;
   }
 
-  /* justify-items: center above makes this column shrink to its content, and
-     the card's width:100% then resolves against that shrunk box instead of the
-     viewport - so it came out ~100px narrower than its own max-width. */
   .auth-panel {
     width: 100%;
   }
@@ -419,10 +366,6 @@
   }
 }
 
-/* A short viewport (a laptop with devtools open, or landscape on a phone) must
-   scroll rather than crush the column to nothing. */
-/* Below this the card genuinely cannot fit, so the page scrolls from the top
-   rather than centring and clipping equally at both ends. */
 @media (max-height: 640px) {
   .auth-screen {
     align-items: flex-start;

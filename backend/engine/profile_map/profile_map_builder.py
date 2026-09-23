@@ -1,5 +1,3 @@
-"""Builds profile-map rule configuration from profiling results, inferred rules, and any existing configuration to preserve."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -17,8 +15,6 @@ logger = get_logger(__name__)
 
 
 class ProfileMapBuilder:
-    """Builds per-table rule configuration from profiling results and inferred rules."""
-
     def build(
         self,
         profile_result: ProfileRunResult,
@@ -26,7 +22,6 @@ class ProfileMapBuilder:
         existing_configuration: Mapping[str, TableRuleConfiguration]
         | None = None,
     ) -> dict[str, TableRuleConfiguration]:
-        """Build rule configuration for every profiled table."""
         try:
             inferred_rules = inferred_rules or {}
             existing_configuration = existing_configuration or {}
@@ -64,7 +59,6 @@ class ProfileMapBuilder:
         inferred_rules: Mapping[str, list[str]] | None = None,
         existing_configuration: TableRuleConfiguration | None = None,
     ) -> TableRuleConfiguration:
-        """Build rule configuration for one table, preserving existing per-column settings."""
         try:
             inferred_rules = inferred_rules or {}
 
@@ -195,7 +189,6 @@ class ProfileMapBuilder:
         inferred_rules: Mapping[str, Mapping[str, list[str]]]
         | None = None,
     ) -> dict[str, TableRuleConfiguration]:
-        """Build rule configuration directly from a table-name-keyed profile mapping."""
         try:
             result = ProfileRunResult(
                 project_name="",
@@ -215,7 +208,6 @@ class ProfileMapBuilder:
     def _get_primary_key_columns(
         profile: TableProfileResult,
     ) -> set[str]:
-        """Return the table's configured primary-key column names."""
         try:
             table_config = profile.metadata.get(
                 "table_config",
@@ -245,7 +237,6 @@ class ProfileMapBuilder:
     def _index_existing_columns(
         configuration: TableRuleConfiguration | None,
     ) -> dict[str, list[RuleConfiguration]]:
-        """Index an existing table configuration's columns by name."""
         try:
             if configuration is None:
                 return {}
@@ -262,7 +253,6 @@ class ProfileMapBuilder:
     def _default_parameters(
         column_profile: Any,
     ) -> str:
-        """Return the default rule parameters for a newly profiled column."""
         return ""
 
     @staticmethod
@@ -270,7 +260,6 @@ class ProfileMapBuilder:
         column_profile: Any,
         existing: RuleConfiguration | None,
     ) -> dict[str, Any]:
-        """Build a column's profile-map metadata, merging in any existing metadata."""
         try:
             metadata = {
                 "dtype": column_profile.dtype,

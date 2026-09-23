@@ -1,5 +1,3 @@
-"""DQ9: flags values that don't exist in a configured reference table's column (a foreign-key check)."""
-
 from __future__ import annotations
 
 from pyspark.sql import DataFrame
@@ -14,8 +12,6 @@ from engine.rules.rule_registry import register_rule
 
 @register_rule
 class DQ9ForeignKeyRule(BaseRule):
-    """Validates that a column's values exist in a configured reference table's column."""
-
     rule_id = "DQ9"
     rule_name = "Data Integrity / Foreign Key Validation"
     dimension = "Consistency"
@@ -29,7 +25,6 @@ class DQ9ForeignKeyRule(BaseRule):
         parameters: str,
         context: ExecutionContext,
     ) -> RuleResult:
-        """Fail values not found in the reference table's column; missing config/data skips the check."""
         reference_table = RuleParameterParser.get(
             parameters,
             position=0,
@@ -70,10 +65,6 @@ class DQ9ForeignKeyRule(BaseRule):
             for row in reference_data.select(reference_column).dropna().collect()
         }
 
-        # Broadcast the (already-collected, driver-side) reference set once instead of
-        # letting the UDF closure carry it - a plain closure gets re-serialized and shipped
-        # to executors per task; a broadcast variable is shipped once and reused by every
-        # task on every executor for the rest of this rule's execution.
         broadcast_values = get_spark_session().sparkContext.broadcast(
             reference_values
         )
@@ -94,7 +85,6 @@ class DQ9ForeignKeyRule(BaseRule):
 
     @staticmethod
     def _safe_strip(value) -> str:
-        """Return a stripped string, or '' for null-like values."""
         if DQ9ForeignKeyRule._is_null_like(value):
             return ""
 
@@ -102,7 +92,6 @@ class DQ9ForeignKeyRule(BaseRule):
 
     @staticmethod
     def _is_null_like(value) -> bool:
-        """Return whether a value should be treated as null (None, NaN, or blank)."""
         if value is None:
             return True
 
@@ -113,18 +102,6 @@ class DQ9ForeignKeyRule(BaseRule):
 
 
 class _ExistsInReference:
-    """Per-row foreign-key membership check for DQ9.
-
-    Built as a module-level callable rather than a closure so Spark can pickle
-    it: the deployed engine is Cythonised, and a nested `def` there is not a
-    types.FunctionType, so cloudpickle falls back to pickling by qualified name
-    and fails with "Can't pickle local object". See _RangeCheck in
-    engine/rules/dq5_range.py for the full explanation.
-
-    Holds the Spark broadcast variable, not the value set: that is the whole
-    point of broadcasting, and a broadcast is designed to be shipped with a task.
-    """
-
     def __init__(self, broadcast_values) -> None:
         self.broadcast_values = broadcast_values
 

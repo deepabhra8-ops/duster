@@ -1,5 +1,3 @@
-"""Discovers, filters, sorts, and paginates uploaded file metadata for UploadService."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -18,10 +16,7 @@ logger = get_logger(__name__)
 
 
 class UploadFileLister:
-    """Discover, filter, sort, and paginate uploaded files."""
-
     def list_all(self) -> list[dict[str, Any]]:
-        """Return metadata for all uploaded files across every upload kind."""
         try:
             files = []
 
@@ -44,7 +39,6 @@ class UploadFileLister:
         self,
         kind: str,
     ) -> list[dict[str, Any]]:
-        """Return uploaded-file metadata for one upload kind."""
         try:
             self._validate_kind(kind)
             result = self._list_kind_files(kind)
@@ -65,7 +59,6 @@ class UploadFileLister:
         file_type: str = "",
         include_archived: bool = False,
     ) -> list[dict[str, Any]]:
-        """Filter uploaded files by type, filename search, and archive status."""
         try:
             filtered = list(files)
 
@@ -109,7 +102,6 @@ class UploadFileLister:
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ) -> list[dict[str, Any]]:
-        """Sort uploaded files by filename or created_at."""
         try:
             self._validate_sort_options(
                 sort_by=sort_by,
@@ -145,7 +137,6 @@ class UploadFileLister:
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict[str, Any]], int, int]:
-        """Return one page of already-filtered and sorted files."""
         try:
             if page < 1:
                 raise ValueError(
@@ -188,7 +179,6 @@ class UploadFileLister:
     def get_simple_file_lists(
         self,
     ) -> dict[str, list[str]]:
-        """Return sorted filename lists grouped by upload kind."""
         try:
             simple_files = {}
 
@@ -213,7 +203,6 @@ class UploadFileLister:
         sort_order: str = "desc",
         include_archived: bool = False,
     ) -> dict[str, Any]:
-        """List uploads through discovery, filtering, sorting, and pagination in one call."""
         try:
             files = self.list_all()
 
@@ -261,7 +250,6 @@ class UploadFileLister:
     def _list_kind_files(
         kind: str,
     ) -> list[dict[str, Any]]:
-        """Discover files belonging to one upload kind."""
         upload_dir = ensure_directory(
             get_upload_dir(kind)
         )
@@ -284,7 +272,6 @@ class UploadFileLister:
         path: Any,
         kind: str,
     ) -> dict[str, Any] | None:
-        """Build metadata for a single uploaded file."""
         try:
             stat = path.stat()
 
@@ -313,7 +300,6 @@ class UploadFileLister:
     def _get_filenames_for_kind(
         kind: str,
     ) -> list[str]:
-        """Return sorted filenames for one upload kind."""
         upload_dir = ensure_directory(
             get_upload_dir(kind)
         )
@@ -328,7 +314,6 @@ class UploadFileLister:
         files: list[dict[str, Any]],
         file_type: str,
     ) -> list[dict[str, Any]]:
-        """Filter files by upload kind."""
         return [
             item
             for item in files
@@ -340,7 +325,6 @@ class UploadFileLister:
         files: list[dict[str, Any]],
         search_term: str,
     ) -> list[dict[str, Any]]:
-        """Filter files by case-insensitive filename search."""
         return [
             item
             for item in files
@@ -351,7 +335,6 @@ class UploadFileLister:
     def _exclude_archived(
         files: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Return only files that are not marked as archived."""
         return [
             item
             for item in files
@@ -362,7 +345,6 @@ class UploadFileLister:
     def _get_sort_key(
         sort_by: str,
     ):
-        """Return the key function for a supported sort field."""
         if sort_by == "filename":
             return lambda item: item[
                 "filename"
@@ -376,7 +358,6 @@ class UploadFileLister:
     def _validate_kind(
         kind: str,
     ) -> None:
-        """Validate an upload kind."""
         if kind not in UPLOAD_KINDS:
             raise ValueError(
                 f"Unsupported upload kind: {kind}"
@@ -387,7 +368,6 @@ class UploadFileLister:
         sort_by: str,
         sort_order: str,
     ) -> None:
-        """Validate supported sorting options."""
         supported_sort_fields = {
             "filename",
             "created_at",

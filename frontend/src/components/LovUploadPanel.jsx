@@ -1,22 +1,3 @@
-/**
- * LovUploadPanel.jsx - LOV (List of Values) upload panel.
- *
- * A LOV belongs to the job it was created with, not to the upload area. The
- * panel therefore has two shapes, chosen by whether `onChange` is passed:
- *
- *   - Job mode (`onChange` given, e.g. NewValidatorJobModal): the job's single
- *     LOV file. It starts empty for every new job - LOVs uploaded for earlier
- *     jobs are deliberately not offered, since validating against someone
- *     else's reference list is worse than not validating at all. Uploading a
- *     second file replaces the first.
- *   - Reference mode (no `onChange`, e.g. the Rules page): format help and the
- *     sample download only, with no file list, because there is no job here for
- *     a file to belong to.
- *
- * A LOV file is *wide*: every column is an independent list named by its
- * header, so the one file a job carries can cover every DQ8-checked column
- * across as many tables as it likes.
- */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Download,
@@ -28,14 +9,6 @@ import {
 import { getLov, sampleLovUrl, uploadFile } from "../api/api.js";
 import { useToast } from "../hooks/useToast.js";
 
-/**
- * @param {object} props
- * @param {string|null}  [props.value]      - Stored filename of the job's LOV
- * @param {Function}     [props.onChange]   - (filename|null) => void; enables job mode
- * @param {boolean}      [props.readOnly=false] - Hides upload/remove controls
- * @param {boolean}      [props.compact=false]  - More compact layout
- * @param {string}       [props.className=""]   - Additional CSS classes
- */
 export default function LovUploadPanel({
   value = null,
   onChange = null,
@@ -53,7 +26,6 @@ export default function LovUploadPanel({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  /* ── Describe the job's file ───────────────────────────────── */
   useEffect(() => {
     let cancelled = false;
 
@@ -69,7 +41,6 @@ export default function LovUploadPanel({
         setEntry(res.ok ? res.data?.data || null : null);
       })
       .catch(() => {
-        /* the row falls back to the filename alone */
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -80,13 +51,10 @@ export default function LovUploadPanel({
     };
   }, [value]);
 
-  /* ── Upload ────────────────────────────────────────────────── */
   const handleUpload = useCallback(
     async (selected) => {
       if (!selected || selected.length === 0) return;
 
-      // One LOV per job. A multi-file drop is refused outright rather than
-      // silently keeping whichever happened to land last.
       if (selected.length > 1) {
         showToast({
           type: "error",
@@ -158,7 +126,6 @@ export default function LovUploadPanel({
     e.target.value = "";
   };
 
-  /* ── Drag & drop ───────────────────────────────────────────── */
   const onDragOver = (e) => {
     e.preventDefault();
     setDragOver(true);
@@ -170,9 +137,6 @@ export default function LovUploadPanel({
     handleUpload(Array.from(e.dataTransfer.files));
   };
 
-  /* ── Remove ────────────────────────────────────────────────── */
-  // Detaches the file from the job rather than deleting it from storage: the
-  // job may not exist yet, and another job may already be using the same file.
   const handleRemove = useCallback(() => {
     onChange?.(null);
     showToast({
@@ -184,7 +148,6 @@ export default function LovUploadPanel({
 
   const canEdit = !readOnly && typeof onChange === "function";
 
-  /* ── Render ────────────────────────────────────────────────── */
   return (
     <div className={`lov-panel ${compact ? "lov-panel--compact" : ""} ${className}`}>
       <div className="lov-panel-header">
@@ -205,7 +168,6 @@ export default function LovUploadPanel({
         )}
       </div>
 
-      {/* Help text */}
       <p className="lov-help">
         Only needed for <strong>DQ8</strong> rules, and one file covers the whole
         job: each <strong>column header</strong> is a LOV name - the same value
@@ -215,7 +177,6 @@ export default function LovUploadPanel({
         just leaves the rest of its column blank.
       </p>
 
-      {/* Upload zone - only while the job has no file yet */}
       {canEdit && !value && (
         <div
           className={`lov-dropzone ${dragOver ? "lov-dropzone--active" : ""} ${uploading ? "lov-dropzone--uploading" : ""}`}
@@ -253,7 +214,6 @@ export default function LovUploadPanel({
         </div>
       )}
 
-      {/* The job's file */}
       {jobMode &&
         (value ? (
           <div className="lov-file-list">

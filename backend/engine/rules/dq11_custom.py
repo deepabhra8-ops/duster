@@ -1,5 +1,3 @@
-"""DQ11: evaluates a configured Spark SQL row expression as a custom pass/fail condition."""
-
 from __future__ import annotations
 
 from pyspark.sql import DataFrame
@@ -14,8 +12,6 @@ from engine.rules.rule_registry import register_rule
 
 @register_rule
 class DQ11CustomRule(BaseRule):
-    """Validates rows against a configured custom filter/condition expression pair."""
-
     rule_id = "DQ11"
     rule_name = "Custom Row Expression"
     dimension = "Custom"
@@ -29,8 +25,6 @@ class DQ11CustomRule(BaseRule):
         parameters: str,
         context: ExecutionContext,
     ) -> RuleResult:
-        """Apply the condition expression to rows matching the filter expression (Spark SQL syntax);
-        an invalid expression skips the check."""
         params = RuleParameterParser.parse(parameters)
 
         filter_expr = (

@@ -1,5 +1,3 @@
-"""Registry mapping a staging type string to its registered BaseStagingWriter class."""
-
 from __future__ import annotations
 
 from threading import RLock
@@ -14,8 +12,6 @@ logger = get_logger(__name__)
 
 
 class StagingWriterRegistry:
-    """Thread-safe registry of BaseStagingWriter classes keyed by staging type."""
-
     def __init__(self) -> None:
         self._writers: dict[str, Type[BaseStagingWriter]] = {}
         self._lock = RLock()
@@ -24,7 +20,6 @@ class StagingWriterRegistry:
         self,
         writer_class: Type[BaseStagingWriter],
     ) -> Type[BaseStagingWriter]:
-        """Register a staging writer class under its staging_type."""
         try:
             staging_type = self._get_staging_type(
                 writer_class
@@ -56,7 +51,6 @@ class StagingWriterRegistry:
         self,
         staging_type: str,
     ) -> None:
-        """Remove a registered staging writer type."""
         try:
             normalized_type = self._normalize_staging_type(
                 staging_type
@@ -85,7 +79,6 @@ class StagingWriterRegistry:
         staging_type: str,
         context: ExecutionContext,
     ) -> BaseStagingWriter:
-        """Instantiate the registered staging writer for a staging type."""
         try:
             normalized_type = self._normalize_staging_type(
                 staging_type
@@ -122,7 +115,6 @@ class StagingWriterRegistry:
         self,
         staging_type: str,
     ) -> bool:
-        """Return whether a staging type is registered."""
         try:
             normalized_type = self._normalize_staging_type(
                 staging_type
@@ -145,7 +137,6 @@ class StagingWriterRegistry:
             raise
 
     def all(self) -> dict[str, Type[BaseStagingWriter]]:
-        """Return all registered staging writer classes keyed by staging type."""
         try:
             with self._lock:
                 writers = dict(self._writers)
@@ -162,7 +153,6 @@ class StagingWriterRegistry:
             raise
 
     def staging_types(self) -> list[str]:
-        """Return all registered staging type names."""
         try:
             with self._lock:
                 staging_types = list(self._writers.keys())
@@ -179,7 +169,6 @@ class StagingWriterRegistry:
             raise
 
     def clear(self) -> None:
-        """Remove all registered staging writers."""
         try:
             with self._lock:
                 count = len(self._writers)
@@ -199,7 +188,6 @@ class StagingWriterRegistry:
     def _get_staging_type(
         writer_class: Type[BaseStagingWriter],
     ) -> str:
-        """Return a writer class's normalized staging_type, or raise if it's missing."""
         staging_type = getattr(
             writer_class,
             "staging_type",
@@ -224,7 +212,6 @@ class StagingWriterRegistry:
     def _normalize_staging_type(
         staging_type: str,
     ) -> str:
-        """Normalize a staging type string for lookup."""
         if not isinstance(staging_type, str):
             raise TypeError(
                 "staging_type must be a string."
@@ -236,7 +223,6 @@ class StagingWriterRegistry:
         self,
         writer: BaseStagingWriter,
     ) -> BaseStagingWriter:
-        """Register the class of an already-created staging writer instance."""
         try:
             self.register(type(writer))
             logger.debug(
@@ -258,7 +244,6 @@ default_staging_writer_registry = StagingWriterRegistry()
 def register_staging_writer(
     writer_class: Type[BaseStagingWriter],
 ) -> Type[BaseStagingWriter]:
-    """Class-decorator that registers a staging writer with the default registry."""
     return default_staging_writer_registry.register(
         writer_class
     )

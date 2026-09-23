@@ -1,4 +1,3 @@
-"""DQ10 - composite-key uniqueness."""
 from __future__ import annotations
 
 import pytest
@@ -20,8 +19,6 @@ def _failing(data, result):
 
 class TestSingleColumn:
     def test_every_row_of_a_duplicated_key_fails(self, spark, context):
-        """Both copies are flagged: which one is the 'real' record is not
-        something the rule can decide."""
         data = spark.createDataFrame([("a",), ("b",), ("a",)], ["claim_id"])
 
         result = DQ10UniquenessRule().validate(
@@ -51,12 +48,9 @@ class TestCompositeKey:
             data, "claim_id", parameters="claim_id,line_no", context=context
         )
 
-        # ("a","1") appears twice; ("a","2") is unique.
         assert _failing(data, result) == 2
 
     def test_the_column_list_may_sit_in_the_second_parameter(self, spark, context):
-        """The profile map's parameter cell carries the column list in position
-        1 when a first positional value is present."""
         data = spark.createDataFrame([("a",), ("a",)], ["claim_id"])
 
         result = DQ10UniquenessRule().validate(
@@ -77,8 +71,6 @@ class TestCompositeKey:
 
 class TestNulls:
     def test_a_row_with_a_null_in_the_key_is_exempt(self, spark, context):
-        """A null key is a completeness problem, which DQ1 reports - treating
-        two nulls as duplicates of each other would double-report it."""
         data = spark.createDataFrame([(None,), (None,)], "claim_id: string")
 
         result = DQ10UniquenessRule().validate(
@@ -102,8 +94,6 @@ class TestNulls:
 
 class TestNoParameters:
     def test_no_parameters_uses_the_selected_rule_column(self, spark, context):
-        """A single-field uniqueness rule needs no parameter: the rule's
-        selected column is its key."""
         data = spark.createDataFrame([("a",), ("a",)], ["claim_id"])
 
         result = DQ10UniquenessRule().validate(
@@ -114,8 +104,6 @@ class TestNoParameters:
         assert _failing(data, result) == 2
 
     def test_columns_absent_from_the_data_are_ignored(self, spark, context):
-        """A profile map naming a column the source no longer has must not
-        crash the run."""
         data = spark.createDataFrame([("a",), ("a",)], ["claim_id"])
 
         result = DQ10UniquenessRule().validate(

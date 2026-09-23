@@ -1,14 +1,3 @@
-/**
- * ProfileMapperJob - "Rows Analyzed" summary card.
- *
- * The regression: profileMapRows holds one row per column per applicable rule,
- * flattened across every table the job profiled (Tables/Columns/Detected Rules
- * already sum or dedupe across that full list). Rows Analyzed instead read
- * `profileMapRows[0]["Total Count"]` - whichever table happened to appear
- * first in the flattened list - so a job profiling a 30-row Customer table
- * and a 2291-row OrderInfo table showed "30" regardless of which tab was
- * active. This test pins the fix: sum each distinct table's row count once.
- */
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -69,7 +58,6 @@ describe("ProfileMapperJob - Rows Analyzed card", () => {
       data: {
         version: 1,
         rows: [
-          // "Customer" (30 rows) happens to appear first in the flattened list.
           makeRow("Customer", 30, "CustomerID"),
           makeRow("OrderInfo", 2291, "OrderID"),
           makeRow("OrderInfo", 2291, "CustomerID"),
@@ -79,9 +67,6 @@ describe("ProfileMapperJob - Rows Analyzed card", () => {
 
     render(<ProfileMapperJob />);
 
-    // Query fresh on every retry - the page swaps its whole skeleton subtree
-    // for the real one once `job` loads, which would leave a node captured
-    // beforehand pointing at a detached element.
     await waitFor(() => {
       const card = screen.getByText("Rows Analyzed").closest(".summary-card");
       expect(card).toHaveTextContent("2,321");

@@ -1,7 +1,3 @@
-"""Unit tests for DQ5RangeRule's pure static helpers (parsing/comparison logic used inside
-its per-value Spark UDF) - these run identically with or without Spark, so they're tested
-directly rather than through a full DataFrame.
-"""
 from __future__ import annotations
 
 import pytest

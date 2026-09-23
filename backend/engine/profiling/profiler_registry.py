@@ -1,5 +1,3 @@
-"""Registry mapping a profiler type string to its registered BaseProfiler class."""
-
 from __future__ import annotations
 
 from threading import RLock
@@ -14,8 +12,6 @@ logger = get_logger(__name__)
 
 
 class ProfilerRegistry:
-    """Thread-safe registry of BaseProfiler classes keyed by profiler type."""
-
     def __init__(self) -> None:
         self._profilers: dict[str, Type[BaseProfiler]] = {}
         self._lock = RLock()
@@ -24,7 +20,6 @@ class ProfilerRegistry:
         self,
         profiler_class: Type[BaseProfiler],
     ) -> Type[BaseProfiler]:
-        """Register a profiler class under its profiler_type."""
         try:
             profiler_type = self._get_profiler_type(
                 profiler_class
@@ -52,7 +47,6 @@ class ProfilerRegistry:
         self,
         profiler_type: str,
     ) -> None:
-        """Remove a registered profiler type."""
         try:
             normalized_type = self._normalize_profiler_type(
                 profiler_type
@@ -79,7 +73,6 @@ class ProfilerRegistry:
         context: ExecutionContext,
         **dependencies: Any,
     ) -> BaseProfiler:
-        """Instantiate the registered profiler for a profiler type."""
         try:
             normalized_type = self._normalize_profiler_type(
                 profiler_type
@@ -110,7 +103,6 @@ class ProfilerRegistry:
         self,
         profiler_type: str,
     ) -> bool:
-        """Return whether a profiler type is registered."""
         try:
             normalized_type = self._normalize_profiler_type(
                 profiler_type
@@ -128,7 +120,6 @@ class ProfilerRegistry:
     def all(
         self,
     ) -> dict[str, Type[BaseProfiler]]:
-        """Return all registered profiler classes keyed by profiler type."""
         try:
             with self._lock:
                 profilers = dict(self._profilers)
@@ -141,7 +132,6 @@ class ProfilerRegistry:
     def profiler_types(
         self,
     ) -> list[str]:
-        """Return all registered profiler type names."""
         try:
             with self._lock:
                 profiler_types = list(self._profilers.keys())
@@ -152,7 +142,6 @@ class ProfilerRegistry:
             raise
 
     def clear(self) -> None:
-        """Remove all registered profilers."""
         try:
             with self._lock:
                 count = len(self._profilers)
@@ -166,7 +155,6 @@ class ProfilerRegistry:
     def _get_profiler_type(
         profiler_class: Type[BaseProfiler],
     ) -> str:
-        """Return a profiler class's normalized profiler_type, or raise if it's missing."""
         profiler_type = getattr(
             profiler_class,
             "profiler_type",
@@ -190,7 +178,6 @@ class ProfilerRegistry:
     def _normalize_profiler_type(
         profiler_type: str,
     ) -> str:
-        """Normalize a profiler type string for lookup."""
         if not isinstance(profiler_type, str):
             raise TypeError(
                 "profiler_type must be a string."
@@ -202,7 +189,6 @@ class ProfilerRegistry:
         self,
         profiler: BaseProfiler,
     ) -> BaseProfiler:
-        """Register the class of an already-created profiler instance."""
         try:
             self.register(type(profiler))
             logger.debug(
@@ -221,7 +207,6 @@ default_profiler_registry = ProfilerRegistry()
 def register_profiler(
     profiler_class: Type[BaseProfiler],
 ) -> Type[BaseProfiler]:
-    """Class-decorator that registers a profiler with the default registry."""
     return default_profiler_registry.register(
         profiler_class
     )

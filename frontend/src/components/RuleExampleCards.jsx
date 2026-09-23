@@ -1,8 +1,3 @@
-/**
- * RuleExampleCards.jsx - static list of the DQ rule "Examples and expected
- * results" cards. Lives in the Rules page's second placeholder box, alongside
- * the rule table in the first.
- */
 export default function RuleExampleCards({ examples }) {
   if (examples.length === 0) {
     return <p className="hint">No rule examples match your search.</p>;

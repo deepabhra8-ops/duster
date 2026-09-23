@@ -1,18 +1,3 @@
-/**
- * Rules.jsx - DQ Rule Reference page.
- *
- * Source of rules: there is no rules API in the backend or API layer, so
- * rules load from constants/dqRules.js (DQ_RULES). If a rules endpoint is
- * added later, swap the `loadRules` body to call it - the rest of the page
- * (search / filter) is source-agnostic.
- *
- * Features: search, dimension filter, plus the score-threshold legend.
- *
- * The dimension filter lives in the URL (/rules/:dimension), not in state: the
- * second-tier sidebar links to those routes, and the toolbar dropdown navigates
- * to them, so the two controls cannot disagree. An unknown dimension in the URL
- * falls back to the full list.
- */
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import RuleExampleCards from "../components/RuleExampleCards.jsx";
@@ -21,7 +6,6 @@ import { PAGE_META } from "../constants/appConfig.js";
 import { IconCheck, IconWarning, IconError } from "../components/Icons.jsx";
 import LovUploadPanel from "../components/LovUploadPanel.jsx";
 
-/** Rules source - constants today; swap for an API call if one is added. */
 function loadRules() {
   return DQ_RULES;
 }
@@ -45,8 +29,6 @@ export default function Rules() {
     });
   }, [allRules, search, dimension]);
 
-  // After every hook: a URL naming a dimension that does not exist is not a
-  // page of its own, so send it to the full list rather than an empty one.
   if (dimensionParam && !dimension) return <Navigate to="/rules" replace />;
 
   const meta = PAGE_META.rules;
@@ -59,7 +41,6 @@ export default function Rules() {
       </header>
 
       <div className="card rules-placeholder-examples">
-        {/* Toolbar */}
         <div className="uploads-toolbar rules-toolbar">
           <input
             type="text"
@@ -84,7 +65,6 @@ export default function Rules() {
             ))}
           </select>
 
-          {/* Score thresholds legend, at the right end of the toolbar */}
           <div className="rules-score-group">
             <span className="rules-score-label">Score Threshold</span>
             <div className="score-grid score-grid-compact">

@@ -1,42 +1,9 @@
-/**
- * Sidebar.jsx - Left navigation rail.
- *
- * Navigation is driven by real routes (React Router NavLink) so the URL,
- * browser back/forward, and the active-item highlight all stay in sync.
- *
- * An icon-only rail by default. A toggle revealed on hover of the brand mark
- * (`.sb-brand-toggle`) expands it to show item labels and the brand wordmark
- * - `expanded` state below, local to this component. The mobile drawer
- * (`open`/`onClose`) is a separate, always-fully-shown mode; see its own doc
- * comment further down.
- *
- * One item, Discovery, is not a route link - it has an `accordion` (see
- * constants/appConfig.js) and opens inline, directly beneath itself, instead
- * of going anywhere on its own. That replaces the old second-tier side panel
- * (SubNav): its two catalog sections (Rule Catalog, Data Catalog) now nest
- * inside the rail rather than living beside it.
- *
- * The DQ brand badge sits at the head of the rail, above the first nav item.
- *
- * Below the `md` breakpoint the rail is an off-canvas drawer instead - see the
- * `open`/`onClose` props and App.jsx's AuthenticatedLayout. The drawer is
- * always effectively expanded (no hover to reveal a toggle on touch), so
- * `expanded` is inert there - the CSS that shows labels and the Discovery
- * accordion in the drawer is keyed off `.sidebar.is-open`, not `.expanded`.
- */
 import { useEffect, useRef, useState } from "react";
 import { NavLink, matchPath, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { NAV_SECTIONS } from "../constants/appConfig.js";
 import AccountMenu from "./AccountMenu.jsx";
 
-/**
- * An item's `icon` is an image path (starts with "/") or an emoji fallback.
- * Image icons render as a masked <span> (not <img>) - global.css uses
- * -webkit-mask/mask with the image as the mask source and `currentColor` as
- * the fill, so hover/active color changes apply to single-color source SVGs
- * without needing pre-colored variants per state.
- */
 function NavIcon({ icon: Icon }) {
   if (typeof Icon === "string" && Icon.startsWith("/")) {
     return (
@@ -61,12 +28,6 @@ function NavIcon({ icon: Icon }) {
   );
 }
 
-/**
- * One catalog nested inside the Discovery accordion (Rule Catalog / Data
- * Catalog) - its own trigger and a downward list of leaf links. Starts open
- * when the current route is one of its own links, same auto-open behaviour
- * the old SubNav accordion had, and otherwise follows the user.
- */
 function DiscoverySection({ section, pathname }) {
   const Icon = section.icon;
   const hasActiveItem = section.items.some((link) => matchPath(link.to, pathname));
@@ -106,12 +67,6 @@ function DiscoverySection({ section, pathname }) {
   );
 }
 
-/**
- * The Discovery rail item. Unlike a plain NavLink it is a `<button>` that
- * opens its accordion in place rather than navigating anywhere itself -
- * clicking it expands the rail first if it was collapsed (there is nowhere
- * for the accordion to show otherwise), then opens.
- */
 function DiscoveryItem({ item, expanded, onExpand }) {
   const { pathname } = useLocation();
   const isDescendantActive = item.accordion.some((section) =>
@@ -157,21 +112,11 @@ function DiscoveryItem({ item, expanded, onExpand }) {
   );
 }
 
-/**
- * `open` / `onClose` drive the mobile drawer only (see App.jsx's
- * AuthenticatedLayout). Above the `md` breakpoint the rail is always on
- * screen and both props are inert - the CSS that reads `.is-open` is scoped
- * inside the drawer media query.
- */
 export default function Sidebar({ open = false, onClose }) {
   const navRef = useRef(null);
   const lastFocused = useRef(null);
   const [expanded, setExpanded] = useState(false);
 
-  /* Focus management for the drawer (WCAG 2.4.3). Opening moves focus into the
-     rail so a keyboard or screen-reader user lands on the navigation they just
-     asked for; closing returns it to whatever opened it, rather than dumping
-     focus at the top of the document. */
   useEffect(() => {
     if (open) {
       lastFocused.current = document.activeElement;
@@ -182,8 +127,6 @@ export default function Sidebar({ open = false, onClose }) {
     }
   }, [open]);
 
-  /* Tab is confined to the drawer while it is open - behind it the page is
-     covered by the scrim and is not meant to be reachable. */
   function onKeyDown(e) {
     if (!open || e.key !== "Tab") return;
     const focusables = navRef.current?.querySelectorAll(
@@ -203,9 +146,6 @@ export default function Sidebar({ open = false, onClose }) {
 
   return (
     <>
-      {/* Tap-to-dismiss backdrop. Rendered at every width but only made
-          visible/interactive inside the drawer breakpoint, so it can animate
-          rather than pop in. */}
       <div
         className={`sidebar-scrim${open ? " is-open" : ""}`}
         onClick={onClose}
@@ -219,11 +159,6 @@ export default function Sidebar({ open = false, onClose }) {
         role="navigation"
         aria-label="Main navigation"
       >
-        {/* Brand mark above the first nav item. Deliberately not a link: the
-            Dashboard item just below and the topbar logo already go home, and a
-            third stop would only add to the tab order and the drawer's focus
-            trap. An <img>, not a NavIcon - the badge is multi-coloured, and the
-            masked-span technique NavIcon uses would flatten it to one colour. */}
         <div className="sb-brand">
           <img
             className="sb-brand-logo"

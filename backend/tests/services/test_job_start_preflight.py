@@ -1,13 +1,3 @@
-"""A step-3 draft must be refused before it is queued for wasted engine work.
-
-start_draft_job() only ever checked that `tables` was non-empty. A validation run
-needs two more things - a live source connection and a profile map - and a draft
-missing either was accepted, queued, and only then failed, with a message that
-named neither cause. POST /api/run already ran an equivalent rulebook pre-flight;
-the draft path never got one.
-
-The repository is injected; no database involved.
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -45,8 +35,6 @@ def service():
 
 @pytest.fixture(autouse=True)
 def resolvable_connection(monkeypatch, tmp_path):
-    """By default the connection resolves and the profile map exists on disk,
-    so each test can break exactly one precondition."""
     from services import job_service as module
 
     monkeypatch.setattr(
@@ -94,7 +82,6 @@ class TestIncompleteDraftsAreRefused:
         assert _start(service, _draft(tables=[])) == "no_tables"
 
     def test_table_entries_that_are_not_objects(self, service):
-        # The exact shape the Validator's upload flow used to persist.
         assert _start(service, _draft(tables=["claim"])) == "bad_tables"
 
     def test_a_connection_that_no_longer_resolves(self, service, monkeypatch):
@@ -128,7 +115,6 @@ class TestIncompleteDraftsAreRefused:
 
         _start(service, _draft(profile_map_file=""))
 
-        # The point of the whole check: no run gets queued for a job that can't work.
         assert submitted == []
         service.repository.transition.assert_not_called()
 

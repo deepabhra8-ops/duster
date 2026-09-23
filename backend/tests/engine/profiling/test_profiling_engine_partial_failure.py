@@ -1,10 +1,3 @@
-"""One table failing must not throw away the tables that profiled fine.
-
-Spark-free counterpart to test_profiling_engine_parallel.py: the source and the
-profiler are fakes, so this pins the engine's bookkeeping - which tables are kept,
-which are recorded as failed, and when the run as a whole still fails - without a
-JVM.
-"""
 from __future__ import annotations
 
 import pytest
@@ -80,7 +73,6 @@ def test_the_good_tables_are_kept_and_the_bad_one_is_recorded():
     result = engine.profile(_tables("customers", "orders", "products"))
 
     assert set(result.tables) == {"customers", "products"}
-    # Only the first line survives - a Spark trace would swamp the UI.
     assert result.failed_tables == {"orders": "orders.csv not found"}
 
 

@@ -1,21 +1,9 @@
-"""Reading LOV values out of a CSV with Spark.
-
-The bug these cover: the column was selected by name, and Spark parses a column
-string as a dotted path. A LOV headed "Customer.CustomerName" - the normal,
-table-qualified form - made select() look for a field CustomerName inside a
-struct Customer and fail with UNRESOLVED_COLUMN, even though a column of exactly
-that name was present. LovProvider swallows the error to a warning, so DQ8
-reported "check not run" against a perfectly good reference list.
-"""
-
 import pytest
 
 from engine.reference_data.lov_provider import LovProvider
 
 
 class _Context:
-    """The parts of ExecutionContext that LovProvider actually reads."""
-
     def __init__(self, lov_tables):
         self._lov_tables = lov_tables
         self.reference_data = {}
@@ -43,7 +31,6 @@ def test_positional_names_are_generated_per_column():
 
 @pytest.mark.spark
 def test_a_table_qualified_header_can_be_read(tmp_path, spark):
-    """The reported case: a dotted header that Spark would parse as a path."""
     lov = tmp_path / "customer_lovs.csv"
     lov.write_text(
         "Customer.CustomerName\n"
@@ -63,7 +50,6 @@ def test_a_table_qualified_header_can_be_read(tmp_path, spark):
 
 @pytest.mark.spark
 def test_the_right_column_of_a_wide_file_is_read(tmp_path, spark):
-    """Every column is its own list; picking one must not shift the values."""
     lov = tmp_path / "job_lovs.csv"
     lov.write_text(
         "policy.status,claim.status,customer.gender\n"
@@ -86,7 +72,6 @@ def test_the_right_column_of_a_wide_file_is_read(tmp_path, spark):
 
 @pytest.mark.spark
 def test_blank_cells_in_a_ragged_column_are_not_values(tmp_path, spark):
-    """A shorter list leaves trailing blanks; they must not become allowed values."""
     lov = tmp_path / "ragged.csv"
     lov.write_text("a.short,b.long\nX,1\n,2\n,3\n")
 
@@ -98,7 +83,6 @@ def test_blank_cells_in_a_ragged_column_are_not_values(tmp_path, spark):
 
 @pytest.mark.spark
 def test_a_header_with_spaces_and_brackets_can_be_read(tmp_path, spark):
-    """Headers are user-supplied text, so nothing may depend on quoting them."""
     lov = tmp_path / "odd.csv"
     lov.write_text("Customer [Legacy].Full Name\nAda Lovelace\n")
 

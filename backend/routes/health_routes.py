@@ -1,5 +1,3 @@
-"""HTTP endpoint for checking whether the backend is running and reachable."""
-
 from fastapi import APIRouter
 
 from core.config import ACCEL_PATH
@@ -14,7 +12,6 @@ health_bp = APIRouter()
 
 @health_bp.get("/api/health")
 def health():
-    """Return backend health information."""
     try:
         result = {
             "ok": True,

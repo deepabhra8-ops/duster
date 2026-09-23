@@ -1,13 +1,3 @@
-"""Unit tests for MetadataScanService - per-level catalog lookups.
-
-The service deliberately does not walk a whole catalog: schemas, then one schema's
-tables, then one table's columns, each fetched only when opened. These tests pin
-that boundary, since regressing to a full walk is exactly what made saving a
-connection slow on a large database.
-
-No real database is touched: the SQLAlchemy path goes through a patched engine
-cache and inspector, the connector path through a stub connector.
-"""
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -27,7 +17,6 @@ def service() -> MetadataScanService:
 
 
 def _sql_patches(inspector):
-    """Patch everything outside the service on the SQLAlchemy path."""
     return (
         patch(f"{MODULE}.connector_registry.get", return_value=None),
         patch(
@@ -50,9 +39,6 @@ def _run(fn, inspector):
             p.stop()
 
 
-# ── input validation ────────────────────────────────────────────────
-
-
 def test_requires_database_type(service):
     with pytest.raises(ValueError, match="databaseType is required"):
         service.list_schemas("", DETAILS)
@@ -73,17 +59,13 @@ def test_columns_requires_table(service):
         service.list_columns("postgresql", DETAILS, "public", "")
 
 
-# ── schemas ─────────────────────────────────────────────────────────
-
-
 def test_list_schemas_does_not_touch_tables_or_columns(service):
-    """The whole point: saving a connection must not enumerate the catalog."""
     inspector = MagicMock()
     inspector.get_schema_names.return_value = ["public", "analytics"]
 
     result = _run(lambda: service.list_schemas("postgresql", DETAILS), inspector)
 
-    assert result == ["analytics", "public"]  # sorted
+    assert result == ["analytics", "public"]
     inspector.get_table_names.assert_not_called()
     inspector.get_columns.assert_not_called()
 
@@ -108,8 +90,6 @@ def test_list_schemas_respects_cap(service):
 
 
 def test_reuses_cached_engine_and_never_disposes_it(service):
-    """A fresh engine per dropdown would mean a fresh login each time, which is
-    what previously tripped a database's failed-login lockout."""
     inspector = MagicMock()
     inspector.get_schema_names.return_value = []
     engine = MagicMock()
@@ -126,9 +106,6 @@ def test_reuses_cached_engine_and_never_disposes_it(service):
     engine.dispose.assert_not_called()
 
 
-# ── tables ──────────────────────────────────────────────────────────
-
-
 def test_list_tables_scoped_to_one_schema(service):
     inspector = MagicMock()
     inspector.get_table_names.return_value = ["claim", "member"]
@@ -143,7 +120,6 @@ def test_list_tables_scoped_to_one_schema(service):
 
 
 def test_list_tables_includes_views(service):
-    """Views are valid profiling targets."""
     inspector = MagicMock()
     inspector.get_table_names.return_value = ["claim"]
     inspector.get_view_names.return_value = ["claim_summary"]
@@ -180,9 +156,6 @@ def test_list_tables_respects_cap(service):
     assert len(result) == 4
 
 
-# ── columns ─────────────────────────────────────────────────────────
-
-
 def test_list_columns_scoped_to_one_table(service):
     inspector = MagicMock()
     inspector.get_columns.return_value = [{"name": "claim_id"}, {"name": "amount"}]
@@ -194,9 +167,6 @@ def test_list_columns_scoped_to_one_table(service):
 
     assert result == ["amount", "claim_id"]
     inspector.get_columns.assert_called_once_with("claim", schema="public")
-
-
-# ── connector path (no SQLAlchemy dialect, e.g. Salesforce) ─────────
 
 
 def _stub_connector():
@@ -224,7 +194,6 @@ def test_connector_path_used_when_no_sql_dialect(service):
 
 
 def test_sql_dialect_connector_still_uses_generic_inspection(service):
-    """A connector that *does* have a dialect must not take the connector path."""
     connector = MagicMock()
     connector.supports_sql_metadata_inspection.return_value = True
 

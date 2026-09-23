@@ -1,5 +1,3 @@
-"""Salesforce object profiler: computes per-field dtype and statistics from the already-read Spark DataFrame."""
-
 from __future__ import annotations
 
 from typing import Any, Callable, Mapping
@@ -22,8 +20,6 @@ logger = get_logger(__name__)
 
 @register_profiler
 class SalesforceProfiler(BaseProfiler):
-    """Profiles a Salesforce object's fields from the Spark DataFrame already read for it."""
-
     profiler_type = "salesforce"
 
     def __init__(
@@ -31,8 +27,6 @@ class SalesforceProfiler(BaseProfiler):
         context: ExecutionContext,
         field_type_resolver: Callable[[str], dict[str, str]] | None = None,
     ) -> None:
-        """Store the execution context and the data source's Salesforce field-type resolver
-        (SalesforceDataSource.get_field_types), used to relabel dtypes for display."""
         super().__init__(context)
         self.field_type_resolver = field_type_resolver
 
@@ -41,7 +35,6 @@ class SalesforceProfiler(BaseProfiler):
         data: DataFrame,
         table_config: Mapping[str, Any],
     ) -> TableProfileResult:
-        """Profile a Salesforce object's fields from its already-read Spark DataFrame."""
         try:
             object_name = str(
                 table_config.get("name", "")
@@ -91,24 +84,6 @@ class SalesforceProfiler(BaseProfiler):
         rows: list[dict[str, Any]],
         object_name: str,
     ) -> None:
-        """Relabel each row's dtype with a friendlier Salesforce-native-type-to-SQL-type string.
-
-        Display only - this changes the label, never the statistics. Without it the profile
-        map would show Spark's own dtype ("timestamp", "string"), losing the distinction
-        between, say, a picklist and a plain text field that describe() does know about.
-
-        Min/max needs no special handling here. SalesforceDataSource now gives date/datetime
-        fields real DateType/TimestampType, so _profile_dataframe() computes a genuine
-        chronological earliest/latest for them the same way it does for a JDBC source - see
-        base_profiler's NOT_APPLICABLE branch, which only ever applied to string and boolean
-        columns. Two cases still legitimately read "Not Applicable": Salesforce "time" fields,
-        which stay text because Spark has no TimeType, and any date field the data source had
-        to fall back to text because a value would not parse.
-
-        Best-effort: a field-type lookup failure (e.g. a transient API error) logs a warning
-        and leaves every row's Spark-derived dtype untouched rather than failing the whole
-        profiling run over a metadata display label.
-        """
         if self.field_type_resolver is None:
             return
 

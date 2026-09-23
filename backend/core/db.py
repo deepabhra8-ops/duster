@@ -1,5 +1,3 @@
-"""Database configuration and shared SQLAlchemy engine/sessions."""
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import NullPool
@@ -12,12 +10,6 @@ logger = get_logger(__name__)
 Base = declarative_base()
 
 def get_engine():
-    """Create and return a SQLAlchemy engine.
-
-    Uses NullPool by default so SQLAlchemy never holds idle pooled connections
-    open between requests - simplest correct default for a locally-run,
-    single-process app.
-    """
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL is not configured.")
 
@@ -32,7 +24,6 @@ except RuntimeError as exc:
     SessionLocal = None
 
 def get_db_session():
-    """Get a database session, intended to be used in context managers."""
     if SessionLocal is None:
         raise RuntimeError("Database engine is not initialized.")
     return SessionLocal()

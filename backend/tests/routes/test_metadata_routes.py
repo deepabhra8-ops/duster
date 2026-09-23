@@ -1,8 +1,3 @@
-"""Unit tests for the /api/metadata route's connector-polymorphic dispatch: a connector
-whose supports_sql_metadata_inspection() is False (Salesforce) is routed to its own
-list_schemas()/list_tables()/list_columns(), instead of the route hardcoding a per-type
-branch and importing a concrete connector class directly.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -13,8 +8,6 @@ from services.connectors.salesforce_connector import SalesforceConnector
 
 
 class _FakeRequest:
-    """Minimal stand-in for fastapi.Request - metadata() only ever calls request.json()."""
-
     def __init__(self, body: dict):
         self._body = body
 
@@ -44,9 +37,6 @@ def test_invalid_level_is_rejected():
 
 
 def test_generic_sql_connector_still_requires_schema_for_tables():
-    """Regression lock: a connector using the generic inspector path must still be rejected
-    for a missing schema - only a connector with supports_sql_metadata_inspection() False
-    (like Salesforce) is exempt from this."""
     response = _call(
         {"databaseType": "postgresql", "connectionDetails": {"host": "h"}, "level": "tables"}
     )

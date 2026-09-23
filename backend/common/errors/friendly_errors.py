@@ -1,23 +1,8 @@
-"""Translates raw database-driver/connectivity exceptions into user-friendly messages.
-
-Every connector (SQLAlchemy-based or not) funnels its low-level exception here before
-it reaches the API response. The raw exception should still be logged server-side by
-the caller - this module only decides what the *user* sees.
-
-Patterns specific to one connector's own error vocabulary (e.g. Salesforce's INVALID_LOGIN)
-belong on that connector's DatabaseConnector.error_patterns, not in the generic _PATTERNS
-list below - describe_connection_error() checks those first. _PATTERNS holds only patterns
-generic across multiple/unknown drivers (auth failure, host unreachable, connection refused, ...).
-"""
-
 from __future__ import annotations
 
 import re
 
 
-# Each entry: (compiled pattern matched against str(exc), case-insensitive, friendly message).
-# Order matters - more specific patterns are listed before the generic ones they could
-# otherwise be shadowed by (e.g. "access denied for user" before a bare "access denied").
 _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (
         re.compile(
@@ -123,21 +108,10 @@ def describe_connection_error(
     exc: BaseException,
     extra_patterns: tuple[tuple[re.Pattern[str], str], ...] = (),
 ) -> str:
-    """Return a user-friendly message for a connection-test failure.
-
-    `extra_patterns` - a connector's own DatabaseConnector.error_patterns - is checked
-    before the generic patterns below, so connector-specific vocabulary (e.g. Salesforce's
-    INVALID_LOGIN) can be matched without this module needing to know about it.
-
-    Falls back to a generic "check your credentials / is the database up" message when
-    the exception doesn't match any known pattern, so the UI never shows raw driver text.
-    """
-
     if isinstance(exc, (ImportError, ModuleNotFoundError)):
         return _MISSING_DRIVER_MESSAGE
 
     if isinstance(exc, ValueError) and "json" in type(exc).__module__:
-        # json.JSONDecodeError is a ValueError subclass.
         return _INVALID_CREDENTIALS_FILE_MESSAGE
 
     text = str(exc)

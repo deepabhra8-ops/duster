@@ -6,7 +6,6 @@ import ModalPortal from "../ModalPortal.jsx";
 const PROFILE_MAP_RULES_COLUMN = "Applicable Rules";
 const PROFILE_MAP_PARAMS_COLUMN = "Rule Parameters";
 const PROFILE_MAP_NOTES_COLUMN = "Analyst Notes";
-// Mirrors PROFILE_MAP_NOTES_MAX_LEN in backend/config/settings.py.
 const NOTES_MAX_LENGTH = 200;
 
 const ruleParameterHint = (ruleId) =>
@@ -33,8 +32,6 @@ export default function RuleEditModal({
     }
   }, [isOpen, currentParams, currentNotes]);
 
-  // Freeze the page behind the overlay - see the hook for why a plain
-  // body overflow:hidden is not enough (nesting, scrollbar layout shift).
   useScrollLock(isOpen);
 
   if (!isOpen || !row) return null;

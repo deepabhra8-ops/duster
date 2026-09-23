@@ -1,10 +1,3 @@
-/**
- * StageIndicator.jsx - Generic stage-circle indicator.
- *
- * Purely presentational: renders whatever `steps`/`connectors` a page's
- * progress computation (see utils/runProgress.js) hands it. Reuses the
- * existing .steps / .step-item / .step-num / .step-conn styling verbatim.
- */
 import { Fragment } from "react";
 
 export default function StageIndicator({ steps = [], connectors = [] }) {

@@ -1,60 +1,3 @@
-/**
- * Validator.jsx - DQ Validator landing page.
- *
- * Rows are real now - GET /api/jobs?step=3 (JobRepository/JobService), the
- * same server-side pagination/search/status-filter/sort/active-polling
- * pattern ProfileMapper.jsx already uses for its own (step=1) jobs table;
- * see that file's header comment for the debounced-search / silent-poll
- * mechanics ported here verbatim. Was MOCK_JOBS (frontend-only design pass)
- * until NewValidatorJobModal.jsx's Create started producing real jobs (see
- * that file's own header comment) - a mock array could never reflect one.
- *
- * canRun/canCancel/canDelete now match the real backend guards exactly (see
- * JobService.start_draft_job/cancel_job/delete_job) rather than the old
- * mock's assumptions: Run only for "draft" (start_draft_job rejects anything
- * else with "Job is not a draft" - error/cancelled jobs can't be re-run from
- * here the way the old mock assumed), Delete for anything except
- * queued/running/cancelling (ACTIVE_STATUSES, jobStatus.js) - the old mock
- * only allowed done/cancelled, which would've wrongly blocked deleting a
- * draft or an error'd job. Run/Cancel/Delete call the real
- * startJob/cancelJob/deleteJob (api.js) with toast feedback + a reload,
- * same as ProfileMapper.jsx's handleRun/handleCancel/handleDelete.
- *
- * The status pill and the filter dropdown both display `j.status` through
- * jobStatusLabel() (helpers.js - shared with ProfileMapper.jsx's own jobs
- * table) rather than the raw value, e.g. "running" reads "In-Progress".
- * STATUS_PILL/ACTIVE_STATUSES come from constants/jobStatus.js - the same
- * status vocabulary ProfileMapper.jsx's table uses, since both are jobs off
- * the same backend now (draft/queued/running/cancelling/done/error/cancelled
- * - no more "paused", which only ever existed in the old mock data).
- *
- * The Progress column is the same ProgressBar/derivePercent/
- * STATUS_PROGRESS_COLOR wiring ProfileMapper.jsx's table already uses -
- * job.progress ({current, total}, one tick per table finished - see
- * pipeline_service.py) comes back from the same GET /api/jobs response,
- * unconditionally on job status, so it needs no extra fetch here. The
- * silent re-poll effect below (already present for the status-transition
- * toasts) is what makes a running row's bar advance without a manual
- * refresh; derivePercent clamps at 99% until status flips to "done".
- *
- * View Results and the Job ID column both land on the job details page now
- * (/validator/:jobId, ValidatorJob.jsx) - that page fetches the real job
- * itself (GET /api/job/{id}) rather than needing anything passed via router
- * state, so both entry points converge on the same fully-wired page: real
- * job id/name/description, the four dimension score gauges, and the
- * per-dimension result tabs, all off that one job response's `summary`
- * (ValidationResultService.build_summary(), stored on the job as
- * `dq_results` - no file read at request time; see that service's own
- * header comment). Still disabled outside status "done", same as before.
- *
- * The older /results/:jobId (Results.jsx) view - which this page's Job
- * ID/View Results links stopped pointing at - has since been removed
- * entirely (route, page, and its OverallScore/DimensionScores/FindingsTable
- * components), along with the "Results" and "File Uploads" sidebar items
- * and /uploads (Uploads.jsx). /run and /run/:jobId (RunRedirect.jsx) were
- * kept, just unlinked from the sidebar - Jobs.jsx's "Log" action still
- * depends on that route.
- */
 import { useEffect, useState } from "react";
 import { CircleX, Play, Plus, Trash2, Eye } from "lucide-react";
 import RefreshButton from "../components/RefreshButton.jsx";
@@ -91,9 +34,6 @@ export default function Validator() {
 
   const [newJobOpen, setNewJobOpen] = useState(false);
 
-  /* Arriving from a Profile Mapper job's results page (?sourceJobId=...) opens
-     the New Job modal with that job already chosen. The param is cleared once
-     consumed so a later refresh does not reopen the modal. */
   const [searchParams, setSearchParams] = useSearchParams();
   const sourceJobId = searchParams.get("sourceJobId") || "";
 
@@ -110,12 +50,8 @@ export default function Validator() {
     }
   }
   const [busyId, setBusyId] = useState(null);
-  /* Phase 5: ConfirmDialog state instead of window.confirm */
   const [confirmState, setConfirmState] = useState(null);
 
-  // Paging, debounced search, filtering, sorting, the fetch and the silent poll
-  // all live in useJobList - shared verbatim with ProfileMapper.jsx, which runs
-  // the same list against step 1.
   const {
     state,
     reload: load,
@@ -191,7 +127,6 @@ export default function Validator() {
         <p>{meta.subtitle}</p>
       </header>
 
-      {/* Top section: actions + filters. */}
       <div className="card page-fill">
         <div className="uploads-toolbar">
           <input
@@ -247,10 +182,6 @@ export default function Validator() {
               <option value="asc">↑ Oldest first</option>
             </select>
           </div>
-          {/* Refresh and the primary action form one right-aligned group.
-              .jobs-toolbar-action's margin-left:auto only moves that button,
-              so a sibling placed before it would stay packed against the
-              filters instead of sitting beside it. */}
           <div className="jobs-toolbar-action row" style={{ gap: "8px", alignItems: "center" }}>
             <RefreshButton onRefresh={load} refreshing={refreshing} lastUpdated={lastUpdated} />
             <button
@@ -264,9 +195,6 @@ export default function Validator() {
           </div>
         </div>
 
-        {/* One card holds the toolbar and the table, matching ProfileMapper -
-            a second card put a visible gap between a filter and the rows it
-            filters, which read as two unrelated panels. */}
         {state.error ? (
           <div className="alert alert-err"><IconError style={{ verticalAlign: "text-bottom" }} /> {state.error}</div>
         ) : (
@@ -326,9 +254,6 @@ export default function Validator() {
                           <td style={{ paddingLeft: "32px" }} data-label="Status">
                             <span className="status-with-error">
                               <StatusPill status={j.status} />
-                              {/* The reason is one click away rather than one
-                                  page away - see JobErrorButton for why it is
-                                  fetched on demand. */}
                               {j.status === "error" ? (
                                 <JobErrorButton jobId={j.job_id} jobName={j.name} />
                               ) : null}
@@ -352,11 +277,6 @@ export default function Validator() {
                               >
                                 <Play size={16} aria-hidden="true" />
                               </button>
-                              {/* Icon-only, like its three neighbours. As a text button this
-                                  was single-handedly the widest thing in the row, and the
-                                  Actions column is the one column whose content is fixed -
-                                  width spent here is width taken from Name and Description,
-                                  which are not. The label lives on in title/aria-label. */}
                               <button
                                 type="button"
                                 className="btn btn-ghost btn-icon-only"
@@ -424,7 +344,6 @@ export default function Validator() {
         }}
       />
 
-      {/* Phase 5: ConfirmDialog replaces window.confirm for destructive job delete */}
       <ConfirmDialog
         open={Boolean(confirmState)}
         title="Delete Job"

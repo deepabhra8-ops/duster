@@ -1,5 +1,3 @@
-"""Draws the Summary sheet in xlsxwriter: title band, project metadata, dimension score table, overall score, and legend."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -11,8 +9,6 @@ from engine.reporting.dimension_scorer import DimensionScorer
 
 
 class SummaryWorkbookWriter:
-    """Lays out the Summary sheet in xlsxwriter, given a built Dimension/Score/Status DataFrame and run metadata."""
-
     TITLE = "Data Quality Analysis – Summary"
 
     DARK_BLUE = "#1F4E79"
@@ -27,7 +23,6 @@ class SummaryWorkbookWriter:
         self,
         scorer: DimensionScorer | None = None,
     ) -> None:
-        """Store the scorer used for score formatting and grading."""
         self.scorer = scorer or DimensionScorer()
 
     def write(
@@ -40,7 +35,6 @@ class SummaryWorkbookWriter:
         overall_score: float,
         validation_result: Any = None,
     ) -> None:
-        """Draw the full Summary sheet: title, metadata, dimension table, overall score, and legend."""
         formats = self._create_formats(workbook)
 
         self._configure_worksheet(worksheet)
@@ -77,8 +71,6 @@ class SummaryWorkbookWriter:
         self,
         workbook: Any,
     ) -> dict[str, Any]:
-        """Build the named xlsxwriter cell formats used across this sheet."""
-
         return {
             "title": workbook.add_format(
                 {
@@ -207,7 +199,6 @@ class SummaryWorkbookWriter:
         self,
         worksheet: Any,
     ) -> None:
-        """Set column widths and the title row height."""
         worksheet.set_column("A:A", 28)
         worksheet.set_column("B:B", 20)
         worksheet.set_column("C:C", 22)
@@ -218,7 +209,6 @@ class SummaryWorkbookWriter:
         worksheet: Any,
         formats: dict[str, Any],
     ) -> None:
-        """Write the merged title band."""
         worksheet.merge_range(0, 0, 0, 2, self.TITLE, formats["title"])
 
     def _write_project_metadata(
@@ -229,7 +219,6 @@ class SummaryWorkbookWriter:
         formats: dict[str, Any],
         validation_result: Any = None,
     ) -> None:
-        """Write the project name and generated-timestamp row."""
         generated = self._format_timestamp(run_timestamp)
 
         total_executed = sum(
@@ -254,7 +243,6 @@ class SummaryWorkbookWriter:
         dataframe: pl.DataFrame,
         formats: dict[str, Any],
     ) -> int:
-        """Write the dimension header and one row per dimension; returns the row count."""
         header_row = 3
 
         worksheet.write(header_row, 0, "Dimension", formats["header"])
@@ -285,7 +273,6 @@ class SummaryWorkbookWriter:
         formats: dict[str, Any],
         dimension_count: int,
     ) -> int:
-        """Write the overall DQ score row below the dimension table; returns its row index."""
         row = 4 + dimension_count
 
         overall_score = float(overall_score)
@@ -308,7 +295,6 @@ class SummaryWorkbookWriter:
         formats: dict[str, Any],
         overall_row: int,
     ) -> None:
-        """Write the good/warning/poor threshold legend below the overall score."""
         row = overall_row + 2
         good_pct = int(self.scorer.GOOD_THRESHOLD * 100)
         warning_pct = int(self.scorer.WARNING_THRESHOLD * 100)
@@ -326,7 +312,6 @@ class SummaryWorkbookWriter:
 
     @staticmethod
     def _format_timestamp(run_timestamp: str) -> str:
-        """Format an ISO timestamp for display, falling back to the raw string."""
         try:
             return datetime.fromisoformat(run_timestamp).strftime("%d-%b-%Y %H:%M")
         except (TypeError, ValueError):
@@ -334,7 +319,6 @@ class SummaryWorkbookWriter:
 
     @staticmethod
     def _row_format(status: str, formats: dict[str, Any]) -> Any:
-        """Return the row format matching a good/warning/poor status."""
         if status == "good":
             return formats["row_good"]
 
@@ -345,7 +329,6 @@ class SummaryWorkbookWriter:
 
     @staticmethod
     def _overall_format(status: str, formats: dict[str, Any]) -> Any:
-        """Return the overall-score format matching a good/warning/poor status."""
         if status == "good":
             return formats["overall_good"]
 

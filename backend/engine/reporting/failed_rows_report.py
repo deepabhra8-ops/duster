@@ -1,5 +1,3 @@
-"""Builds the flat Failed Rows summary (for CSV/API export) and writes the native per-table Excel rendering."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,12 +24,6 @@ logger = get_logger(__name__)
 
 
 def _frame(rows: list[dict], columns: list[str]) -> pl.DataFrame:
-    """Build a report frame with a fixed column order.
-
-    An explicit schema is required for the empty case: polars cannot infer
-    columns from no rows, and the writers still expect the headers to exist so
-    an empty sheet renders with its header row rather than blank.
-    """
     if not rows:
         return pl.DataFrame(schema={name: pl.Utf8 for name in columns})
 
@@ -39,8 +31,6 @@ def _frame(rows: list[dict], columns: list[str]) -> pl.DataFrame:
 
 
 class FailedRowsReport:
-    """Builds failed-row data for both the flat DataFrame export and the native Excel rendering."""
-
     SHEET_NAME = "Failed Rows"
 
     def __init__(
@@ -48,7 +38,6 @@ class FailedRowsReport:
         formatter: FailedRowsFormatter | None = None,
         workbook_writer: FailedRowsWorkbookWriter | None = None,
     ) -> None:
-        """Store the formatter and workbook writer collaborators."""
         self.formatter = formatter or FailedRowsFormatter()
         self.workbook_writer = (
             workbook_writer
@@ -59,11 +48,6 @@ class FailedRowsReport:
         self,
         validation_result: ValidationRunResult,
     ) -> pl.DataFrame:
-        """Build a flat summary of failed rows (one row per rejected record) for CSV/API export.
-
-        write_to_workbook() does not use this DataFrame - it renders directly from
-        validation_result so each table keeps its own original columns and per-cell highlighting.
-        """
         try:
             rows: list[dict[str, Any]] = []
 
@@ -124,7 +108,6 @@ class FailedRowsReport:
         output_path: str | Path,
         sheet_name: str = SHEET_NAME,
     ) -> Path:
-        """Write the Failed Rows sheet to a standalone workbook."""
         output_path = Path(output_path)
 
         try:
@@ -133,9 +116,6 @@ class FailedRowsReport:
                 exist_ok=True,
             )
 
-            # xlsxwriter directly rather than through a dataframe library's
-            # writer wrapper: every cell below is written with the xlsxwriter
-            # API anyway, so the wrapper only added a dependency.
             with xlsxwriter.Workbook(
                 str(output_path),
                 XLSXWRITER_SAFE_OPTIONS,
@@ -166,7 +146,6 @@ class FailedRowsReport:
         validation_result: ValidationRunResult,
         sheet_name: str = SHEET_NAME,
     ) -> None:
-        """Add the Failed Rows worksheet and delegate its layout to FailedRowsWorkbookWriter."""
         try:
             workbook = getattr(writer, "book", writer)
             worksheet = workbook.add_worksheet(sheet_name)

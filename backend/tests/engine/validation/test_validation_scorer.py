@@ -1,7 +1,3 @@
-"""Unit tests for ValidationScorer: rule/dimension/overall score math, plus dimension/category
-resolution via a rule registry. Uses a local RuleRegistry with one fake rule, not the app's
-global default_rule_registry, to keep these tests isolated from the real rule set.
-"""
 from __future__ import annotations
 
 import pytest
@@ -18,7 +14,7 @@ class _FakeRule(BaseRule):
     category = "Nulls"
 
     def validate(self, data, column_name, parameters, context):
-        raise NotImplementedError  # never called by these tests
+        raise NotImplementedError
 
 
 @pytest.fixture

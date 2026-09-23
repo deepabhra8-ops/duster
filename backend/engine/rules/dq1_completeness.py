@@ -1,5 +1,3 @@
-"""DQ1: flags null or blank values in a column."""
-
 from __future__ import annotations
 
 from pyspark.sql import DataFrame
@@ -13,8 +11,6 @@ from engine.rules.rule_registry import register_rule
 
 @register_rule
 class DQ1CompletenessRule(BaseRule):
-    """Validates that a column's values are not null or blank."""
-
     rule_id = "DQ1"
     rule_name = "Completeness / Null Check"
     dimension = "Completeness"
@@ -28,7 +24,6 @@ class DQ1CompletenessRule(BaseRule):
         parameters: str,
         context: ExecutionContext,
     ) -> RuleResult:
-        """Fail values that are null or an empty/whitespace-only string."""
         column = col(column_name)
 
         pass_mask = column.isNotNull() & (trim(column.cast("string")) != "")

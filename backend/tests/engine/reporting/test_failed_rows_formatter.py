@@ -1,4 +1,3 @@
-"""Unit tests for FailedRowsFormatter: rendering and ordering a row's RowFailure list."""
 from __future__ import annotations
 
 from engine.core.result_models import RowFailure
@@ -31,7 +30,6 @@ def test_reference_string_is_empty_for_no_failures():
 
 
 def test_sort_failures_orders_rules_numerically_not_lexically():
-    """Lexical sort would put DQ10 before DQ2 - this must sort them 2, 9, 10."""
     failures = [_failure("DQ10", "a"), _failure("DQ2", "b"), _failure("DQ9", "c")]
 
     sorted_failures = FailedRowsFormatter().sort_failures(failures)

@@ -1,7 +1,3 @@
-/**
- * useNotifications.js - access the app-wide notification state (NotificationsContext.jsx):
- * `{ items, unreadCount, hasMore, status, loadingMore, error, refresh, loadMore, markRead, markAllRead, clearAll }`.
- */
 import { useContext } from "react";
 import { NotificationsContext } from "../contexts/NotificationsContext.jsx";
 

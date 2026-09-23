@@ -1,10 +1,3 @@
-/**
- * SourceConnection.jsx - Source type selection + connection config.
- *
- * Flat File  → info alert + CSV guidance + sample download.
- * Database   → DB type selector, dynamic <DatabaseFields/>, chunk size,
- *              and a Test Connection button (Axios via api.testConnection).
- */
 import { useState } from "react";
 import DatabaseFields from "./DatabaseFields.jsx";
 import { testConnection, sampleCsvUrl } from "../../api/api.js";
@@ -31,7 +24,7 @@ export default function SourceConnection({
   const dbType = config.databaseType || "";
 
   const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState(null); // { ok, msg }
+  const [result, setResult] = useState(null);
 
   async function handleTest() {
     if (!dbType) {
@@ -63,7 +56,6 @@ export default function SourceConnection({
         <IconDatabase style={{ verticalAlign: "text-bottom" }} /> Source Connection <span className="badge">{SOURCE_LABELS[srcType] || srcType}</span>
       </div>
 
-      {/* Source type segmented control */}
       <div className="form-group" style={{ marginBottom: "16px" }}>
         <label>Source Type</label>
         <div className="seg" role="group" aria-label="Source type">
@@ -80,7 +72,6 @@ export default function SourceConnection({
         </div>
       </div>
 
-      {/* Flat File guidance */}
       {isFlat ? (
         <div>
           <div className="alert alert-info">
@@ -111,7 +102,6 @@ export default function SourceConnection({
           </div>
         </div>
       ) : (
-        /* Database connection form */
         <div className="form-grid">
           <div className="form-group full">
             <label htmlFor="cfg-db-type">Database Type</label>
@@ -128,12 +118,10 @@ export default function SourceConnection({
             </select>
           </div>
 
-          {/* Dynamic DB fields */}
           <div className="full">
             <DatabaseFields dbType={dbType} details={config.connectionDetails} onChange={onConnDetailChange} />
           </div>
 
-          {/* Chunk size + test button */}
           <div className="form-group">
             <label htmlFor="cfg-chunk">Chunk Size (rows)</label>
             <input

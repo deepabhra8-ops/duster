@@ -1,5 +1,3 @@
-"""Generic SQLAlchemy-based writer: writes DataFrames to tables, creates schemas, and runs DDL/DML statements."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -22,16 +20,11 @@ logger = get_logger(__name__)
 
 
 class DatabaseWriter:
-    """Writes DataFrames and runs statements against a database via a SQLAlchemy engine (or, for
-    BigQuery, via Spark's dedicated BigQuery connector)."""
-
     def __init__(
         self,
         engine: Engine,
         db_config: Mapping[str, Any] | None = None,
     ) -> None:
-        """Store the SQLAlchemy engine to write through, and (for BigQuery only) the raw
-        service_account_json/project_id/dataset_id config the SQLAlchemy URL can't carry."""
         self.engine = engine
         self.db_config = db_config or {}
 
@@ -51,14 +44,6 @@ class DatabaseWriter:
         chunksize: int = 10000,
         method: str | None = "multi",
     ) -> int:
-        """Write a DataFrame to a database table via Spark JDBC, returning the row count written.
-
-        ``index``/``chunksize``/``method`` are accepted for call-site compatibility with the
-        pandas-era signature but no longer apply - Spark writes have no row index to carry,
-        and partitioning/batching is controlled by the DataFrame's own partitions instead.
-        Returning the count lets the caller (DatabaseStagingWriter) reuse it instead of
-        counting `data` again itself.
-        """
         _ = index, chunksize, method
 
         try:
@@ -99,9 +84,6 @@ class DatabaseWriter:
                     **target.properties,
                 }
 
-                # Redshift/Snowflake/Databricks have no built-in Spark JdbcDialect, so Spark's
-                # generic type mapping applies and mis-maps some column types for them (e.g.
-                # booleans -> "BIT", which none of the three support) - see jdbc_dialects.py.
                 write_data, column_type_overrides = prepare_dataframe_for_jdbc_write(
                     data,
                     dialect_of(self.engine.url),
@@ -138,7 +120,6 @@ class DatabaseWriter:
         table_name: str,
         mode: str,
     ) -> None:
-        """Write a DataFrame to BigQuery via Spark's dedicated BigQuery connector."""
         dataset_id = str(self.db_config.get("dataset_id", "")).strip()
 
         if not dataset_id:
@@ -164,7 +145,6 @@ class DatabaseWriter:
         self,
         schema: str,
     ) -> None:
-        """Create a database schema if the dialect supports it (PostgreSQL/Redshift/MSSQL)."""
         try:
             if not schema or not str(schema).strip():
                 raise ValueError(
@@ -217,7 +197,6 @@ class DatabaseWriter:
         query: str,
         params: Mapping[str, Any] | None = None,
     ) -> None:
-        """Run a statement within a transaction."""
         try:
             with self.engine.begin() as connection:
                 connection.execute(
@@ -234,7 +213,6 @@ class DatabaseWriter:
         table_name: str,
         schema: str | None = None,
     ) -> None:
-        """Truncate a database table."""
         try:
             table_reference = self.build_table_reference(
                 table_name=table_name,
@@ -257,7 +235,6 @@ class DatabaseWriter:
         table_name: str,
         schema: str | None = None,
     ) -> bool:
-        """Return whether the given table exists."""
         try:
             from sqlalchemy import inspect
 
@@ -277,7 +254,6 @@ class DatabaseWriter:
         table_name: str,
         schema: str | None = None,
     ) -> str:
-        """Build a quoted schema.table reference."""
         table_name = str(table_name).strip()
 
         if not table_name:
@@ -305,7 +281,6 @@ class DatabaseWriter:
     def quote_identifier(
         identifier: str,
     ) -> str:
-        """Quote a SQL identifier, escaping embedded quotes."""
         identifier = str(identifier).strip()
 
         if not identifier:
@@ -323,7 +298,6 @@ class DatabaseWriter:
     def _escape_identifier(
         identifier: str,
     ) -> str:
-        """Escape a schema name for safe interpolation into DDL."""
         return str(identifier).replace(
             "'",
             "''",

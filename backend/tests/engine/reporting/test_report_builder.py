@@ -1,11 +1,3 @@
-"""The report workbook is actually produced and actually opens.
-
-These writers had no test at all, which mattered when they were moved off a
-dataframe library's Excel wrapper onto xlsxwriter directly: nothing would have
-caught a workbook that was written but unreadable, or a sheet that silently
-went missing. Every assertion here reads the file back rather than trusting the
-write call to have returned cleanly.
-"""
 from __future__ import annotations
 
 import pytest
@@ -82,8 +74,6 @@ class TestWorkbookIsProduced:
         assert path.is_file()
         assert path.stat().st_size > 0
 
-        # Opening with a different library than the one that wrote it is the
-        # real check that the file is a valid workbook, not just bytes on disk.
         load_workbook(path)
 
     def test_it_contains_the_expected_sheets(self, validation_result, tmp_path):
@@ -120,8 +110,6 @@ class TestContent:
         assert any("DQ1" in v for v in values)
 
     def test_no_cell_contains_the_string_nan(self, validation_result, tmp_path):
-        """A blank value written straight from a frame used to land in the
-        workbook as the literal text "nan"."""
         path = ReportBuilder().write(validation_result, tmp_path / "report.xlsx")
         book = load_workbook(path)
 
@@ -133,9 +121,6 @@ class TestContent:
 
 class TestFormulaInjection:
     def test_a_formula_looking_value_is_stored_as_text(self, spark, tmp_path):
-        """XLSXWRITER_SAFE_OPTIONS must survive the move to a raw workbook -
-        a source value like =cmd|'/c calc'!A0 must not become a live formula.
-        """
         payload = "=cmd|'/c calc'!A0"
 
         failed_rows = spark.createDataFrame([("r1", payload)], [ROW_ID_COLUMN, "claim_id"])

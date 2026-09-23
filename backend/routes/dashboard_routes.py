@@ -1,5 +1,3 @@
-"""HTTP endpoint backing the Home dashboard."""
-
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
@@ -16,7 +14,6 @@ dashboard_bp = APIRouter()
 
 @dashboard_bp.get("/api/dashboard/summary")
 def dashboard_summary(username: str = Depends(require_auth)):
-    """Return job counts, recent activity, and the DQ score trend for this user."""
     try:
         return {"ok": True, "data": dashboard_service.build_summary(username)}
     except Exception:

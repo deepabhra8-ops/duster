@@ -1,5 +1,3 @@
-"""Coordinates end-to-end DQ validation: resolves the source, validates each table via TableValidator, stages passed rows, and builds the run result."""
-
 from __future__ import annotations
 
 import itertools
@@ -47,8 +45,6 @@ logger = get_logger(__name__)
 
 
 class ValidationEngine:
-    """Orchestrates validation across all configured tables and builds the run-level result."""
-
     def __init__(
         self,
         context: ExecutionContext,
@@ -61,7 +57,6 @@ class ValidationEngine:
         validation_scorer: ValidationScorer | None = None,
         failure_policy: FailurePolicy | None = None,
     ) -> None:
-        """Wire up the engine's collaborators, defaulting to the shared registries."""
         try:
             self.context = context
 
@@ -96,7 +91,6 @@ class ValidationEngine:
         progress_callback: Callable[[int, int], None] | None = None,
         cancel_event: threading.Event | None = None,
     ) -> ValidationRunResult:
-        """Validate the configured tables and return the run-level result, reporting progress per table."""
         try:
             return self._validate(
                 tables=tables,
@@ -115,7 +109,6 @@ class ValidationEngine:
         progress_callback: Callable[[int, int], None] | None = None,
         cancel_event: threading.Event | None = None,
     ) -> ValidationRunResult:
-        """Validate each table (skipping/reading errors gracefully), stage passed rows, and aggregate scores."""
         profile_map = (
             profile_map
             if profile_map is not None
@@ -152,7 +145,6 @@ class ValidationEngine:
         progress_lock = threading.Lock()
 
         def validate_one(table_config: Mapping[str, Any]):
-            """Validate one table. Runs on a worker thread when several overlap."""
             self._check_not_cancelled(cancel_event)
 
             try:
@@ -163,10 +155,6 @@ class ValidationEngine:
                 )
             finally:
                 if progress_callback is not None:
-                    # Tables no longer finish in order, so progress counts how
-                    # many are done rather than which index this was. The lock
-                    # guards the callback itself - it writes to Postgres, and
-                    # two threads calling it at once would interleave.
                     with progress_lock:
                         progress_callback(next(completed), total_tables)
 
@@ -178,8 +166,6 @@ class ValidationEngine:
             description="table validation",
         )
 
-        # Merged on this thread, in the input's order, so dimension scores are
-        # accumulated deterministically no matter what order the tables finished.
         for outcome in outcomes:
             if outcome.error is not None:
                 if isinstance(outcome.error, JobCancelledError):
@@ -200,8 +186,6 @@ class ValidationEngine:
             for dimension, scores in table_dimension_scores.items():
                 dimension_scores.setdefault(dimension, []).extend(scores)
 
-        # Catch cancellation requested during/after the last table, before the
-        # (potentially non-trivial) result-building and report-writing that follow.
         self._check_not_cancelled(cancel_event)
 
         result = self._build_run_result(
@@ -215,7 +199,6 @@ class ValidationEngine:
     def _check_not_cancelled(
         cancel_event: threading.Event | None,
     ) -> None:
-        """Raise JobCancelledError if the caller has signalled cancellation."""
         if cancel_event is not None and cancel_event.is_set():
             raise JobCancelledError("Job cancelled by user")
 
@@ -225,21 +208,10 @@ class ValidationEngine:
         source: Any,
         profile_map: Mapping[str, Any],
     ) -> tuple[str, TableValidationResult | None, dict[str, list[float]]]:
-        """Validate one table, returning its name, result, and dimension scores.
-
-        Returns rather than writing into shared dicts because tables are
-        validated concurrently: two threads appending to one dimension_scores
-        list would interleave, and the caller merges these per-table scores on a
-        single thread instead. A None result means the table was skipped.
-        """
         table_name = self._get_table_name(table_config)
         dimension_scores: dict[str, list[float]] = {}
 
         if table_name not in profile_map:
-            # Silence here is dangerous: every table skipped means an empty run
-            # result, which scores as "no data" and reaches the UI looking exactly
-            # like a successful validation that simply found nothing wrong. Name
-            # the mismatch so the job log says why nothing was validated.
             logger.warning(
                 "Skipping table '%s': no profile-map entry for it. "
                 "The profile map covers: %s",
@@ -273,7 +245,6 @@ class ValidationEngine:
         table_config: Mapping[str, Any],
         table_name: str,
     ) -> DataFrame | None:
-        """Read a table from the source, returning None (and logging) if it can't be read."""
         try:
             return source.read(table_config=table_config)
         except FileNotFoundError:
@@ -289,7 +260,6 @@ class ValidationEngine:
         data: DataFrame,
         table_configuration: Any,
     ) -> TableValidationResult:
-        """Validate a single in-memory table."""
         dimension_scores: dict[
             str,
             list[float],
@@ -311,9 +281,6 @@ class ValidationEngine:
         table_name: str,
         data: DataFrame,
     ) -> None:
-        """Write a table's passed rows to the configured staging destination."""
-        # TableValidator tags rows with an internal _dq_row_id column for row-failure
-        # tracking; strip it before it reaches the curated staging output.
         if "_dq_row_id" in data.columns:
             data = data.drop("_dq_row_id")
 
@@ -349,7 +316,6 @@ class ValidationEngine:
     def _load_profile_map(
         self,
     ) -> Mapping[str, Any]:
-        """Load the profile map configured for the current execution."""
         path = self.context.config.get(
             "profile_map_file",
             "",
@@ -377,7 +343,6 @@ class ValidationEngine:
             list[float],
         ],
     ) -> ValidationRunResult:
-        """Aggregate per-table results and dimension scores into the final ValidationRunResult."""
         dimension_results = {
             dimension: DimensionResult.from_scores(
                 dimension=dimension,
@@ -403,7 +368,6 @@ class ValidationEngine:
     def _add_curated_timestamp(
         data: DataFrame,
     ) -> DataFrame:
-        """Return the data with a curated_at timestamp column added."""
         return data.withColumn(
             "curated_at",
             current_timestamp(),
@@ -413,7 +377,6 @@ class ValidationEngine:
     def _get_table_name(
         table_config: Mapping[str, Any],
     ) -> str:
-        """Resolve a table's name from its config (name, then table, then file)."""
         table_name = str(
             table_config.get(
                 "name",

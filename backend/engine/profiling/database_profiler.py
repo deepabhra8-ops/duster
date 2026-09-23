@@ -1,5 +1,3 @@
-"""Database table profiler: computes per-column dtype and statistics directly from the Spark DataFrame read for that table."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -21,8 +19,6 @@ logger = get_logger(__name__)
 
 @register_profiler
 class DatabaseProfiler(BaseProfiler):
-    """Profiles a database table's columns from the Spark DataFrame already read for it."""
-
     profiler_type = "database"
 
     def __init__(
@@ -30,9 +26,6 @@ class DatabaseProfiler(BaseProfiler):
         context,
         engine: Engine | None = None,
     ) -> None:
-        """Store the execution context. The SQLAlchemy engine is accepted for constructor
-        compatibility with ProfilerFactory's dependency injection, but is no longer needed -
-        profiling now runs directly off the Spark DataFrame passed to profile()."""
         super().__init__(context)
         self.engine = engine
 
@@ -41,7 +34,6 @@ class DatabaseProfiler(BaseProfiler):
         data: DataFrame,
         table_config: Mapping[str, Any],
     ) -> TableProfileResult:
-        """Profile a database table's columns from its already-read Spark DataFrame."""
         try:
             table_name = str(
                 table_config.get(
@@ -90,7 +82,6 @@ class DatabaseProfiler(BaseProfiler):
         table_name: str,
         data: DataFrame | None = None,
     ) -> TableProfileResult:
-        """Convenience wrapper to profile a table given its schema/name and already-read data."""
         try:
             if data is None:
                 raise ValueError(
@@ -111,7 +102,3 @@ class DatabaseProfiler(BaseProfiler):
                 table_name,
             )
             raise
-
-    # _profile_dataframe()/_bool_label() live on BaseProfiler now - the aggregate-query
-    # logic is generic to any already-read Spark DataFrame, not specific to JDBC sources,
-    # and SalesforceProfiler needs the exact same computation.

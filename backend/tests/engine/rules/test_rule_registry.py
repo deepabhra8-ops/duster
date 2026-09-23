@@ -1,7 +1,3 @@
-"""Unit tests for RuleRegistry - the same registry pattern as connectors/data
-sources/profilers, exercised on its own local instance (not the global default_rule_registry,
-to avoid interfering with the app's real rule registrations).
-"""
 from __future__ import annotations
 
 import pytest
@@ -18,7 +14,7 @@ class _RuleA(BaseRule):
 
 
 class _RuleB(BaseRule):
-    rule_id = "testrule_b"  # lowercase - normalization should upper-case it
+    rule_id = "testrule_b"
 
     def validate(self, data, column_name, parameters, context):
         raise NotImplementedError

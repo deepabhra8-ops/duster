@@ -1,5 +1,3 @@
-"""CSV table profiler: computes per-column dtype, null/distinct counts, and min/max statistics."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -28,8 +26,6 @@ logger = get_logger(__name__)
 
 @register_profiler
 class CsvProfiler(BaseProfiler):
-    """Profiles an in-memory DataFrame read from a CSV source."""
-
     profiler_type = "csv"
 
     def profile(
@@ -37,7 +33,6 @@ class CsvProfiler(BaseProfiler):
         data: DataFrame,
         table_config: Mapping[str, Any],
     ) -> TableProfileResult:
-        """Profile every column of a CSV-sourced DataFrame."""
         try:
             table_name = str(
                 table_config.get(
@@ -78,7 +73,6 @@ class CsvProfiler(BaseProfiler):
         self,
         table_config: Mapping[str, Any],
     ) -> bool:
-        """CSV profiler supports every table configuration."""
         logger.debug("CSV profiler supports the supplied table configuration")
         return True
 
@@ -86,14 +80,6 @@ class CsvProfiler(BaseProfiler):
         self,
         data: DataFrame,
     ) -> list[ProfileColumnResult]:
-        """Compute every column's dtype and statistics via one combined aggregate query.
-
-        Previously this ran a separate `.select(...).first()` per column - a distinct
-        Spark action (full scan) per column, turning an N-column table into N scans
-        instead of 1. Building one list of aliased aggregate expressions across every
-        column and running them through a single `.select(*exprs).first()` computes
-        every column's stats - and the row count - in a single pass.
-        """
         try:
             column_names = data.columns
 
@@ -163,7 +149,6 @@ class CsvProfiler(BaseProfiler):
     def _safe_value(
         value: Any,
     ) -> Any:
-        """Return an aggregate's min/max value, or '' when the column had no non-null values."""
         if value is None:
             return ""
 

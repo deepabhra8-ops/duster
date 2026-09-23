@@ -1,13 +1,3 @@
-/**
- * ProjectSettings.jsx - Project name, run mode, and pipeline step.
- * Controlled inputs; all changes bubble up via `onChange(patch)`.
- *
- * Run Mode 2 (Curation) only applies to the DQ Validator step - curation
- * means "write passing rows to staging," which only Step 3 does. So the
- * Profile Mapper option is disabled whenever Curation is selected, and
- * switching to Curation while Step 1 is selected auto-switches to Step 3
- * rather than leaving an unsupported combination selected.
- */
 import { STEPS } from "../../constants/appConfig.js";
 import { IconTag } from "../Icons.jsx";
 

@@ -1,5 +1,3 @@
-"""DQ5: flags numeric, date, or string values outside a configured min/max range."""
-
 from __future__ import annotations
 
 from dateutil import parser as date_parser
@@ -14,8 +12,6 @@ from engine.rules.rule_registry import register_rule
 
 @register_rule
 class DQ5RangeRule(BaseRule):
-    """Validates that a column's values fall within a configured min/max range (numeric, date, or string)."""
-
     rule_id = "DQ5"
     rule_name = "Range Validation"
     dimension = "Conformity"
@@ -29,7 +25,6 @@ class DQ5RangeRule(BaseRule):
         parameters: str,
         context: ExecutionContext,
     ) -> RuleResult:
-        """Fail values outside [min, max], comparing numerically, then as dates, then as strings."""
         minimum = RuleParameterParser.get(
             parameters,
             position=0,
@@ -69,7 +64,6 @@ class DQ5RangeRule(BaseRule):
         minimum: str,
         maximum: str,
     ) -> str:
-        """Build the human-readable range description for this rule's notes."""
         if minimum and maximum:
             return (
                 f"Value must be between {minimum} "
@@ -83,7 +77,6 @@ class DQ5RangeRule(BaseRule):
 
     @staticmethod
     def _safe_strip(value) -> str:
-        """Return a stripped string, or '' for null-like values."""
         if DQ5RangeRule._is_null_like(value):
             return ""
 
@@ -91,7 +84,6 @@ class DQ5RangeRule(BaseRule):
 
     @staticmethod
     def _safe_float(value):
-        """Parse a value as a float, or None if it isn't numeric."""
         value_string = DQ5RangeRule._safe_strip(value)
 
         if not value_string:
@@ -104,15 +96,6 @@ class DQ5RangeRule(BaseRule):
 
     @staticmethod
     def _safe_date_parse(value):
-        """Parse a value as a date, or None if it isn't a valid date.
-
-        Uses dateutil's flexible parser (not just strict ISO 8601) so range checks against
-        dates in whatever format the source data uses keep working. This runs once per UDF
-        call on a single scalar, not over a DataFrame, so no bulk tabular library belongs
-        here - dateutil is what pandas itself delegated non-ISO strings to, so the accepted
-        formats are unchanged. The empty case is handled above; dateutil raises on "" where
-        pandas returned NaT, and both were treated as "not a date".
-        """
         value_string = DQ5RangeRule._safe_strip(value)
 
         if not value_string:
@@ -125,7 +108,6 @@ class DQ5RangeRule(BaseRule):
 
     @staticmethod
     def _is_null_like(value) -> bool:
-        """Return whether a value should be treated as null (None, NaN, or blank)."""
         if value is None:
             return True
 
@@ -136,29 +118,6 @@ class DQ5RangeRule(BaseRule):
 
 
 class _RangeCheck:
-    """Per-row range test for DQ5, as a picklable object rather than a closure.
-
-    Spark ships a UDF to its executors by pickling it. cloudpickle can pickle an
-    ordinary Python closure, but the deployed engine is compiled by Cython, and a
-    nested `def` inside a Cython-compiled method is not a types.FunctionType - so
-    cloudpickle declines its function path and falls back to pickling by
-    qualified name, which cannot work for a local object. That surfaced in the
-    UI as:
-
-        Rule error: Could not serialize object: AttributeError: Can't pickle
-        local object 'DQ5RangeRule.validate.<locals>.is_valid'
-
-    and the rule was then recorded as not run for every row.
-
-    An instance of a module-level class avoids the problem entirely: pickle
-    stores the class *by reference* (module + qualname, importable on the
-    executor from the same wheel) plus this object's own attributes. No function
-    introspection is involved, so whether the module was compiled by Cython
-    stops mattering.
-
-    The comparison logic below is unchanged from the closure it replaces.
-    """
-
     def __init__(self, minimum: str, maximum: str) -> None:
         self.minimum = minimum
         self.maximum = maximum

@@ -1,22 +1,3 @@
-/**
- * validateConfig.js - Pre-flight validation for the pipeline configuration.
- *
- * Run before navigating from Configure → Run Pipeline so an incomplete/
- * invalid config (missing tables, missing connection details, an
- * unsupported run-mode/step combination, etc.) is caught up front instead
- * of only surfacing as a backend job failure.
- *
- * `profileMaps` (optional) is the list of uploaded profile-map filenames -
- * pass it when known (Configure has it) to catch a Step 3 run that has no
- * profile map selected *and* none available to fall back to. Leaving it
- * blank is otherwise a legitimate, backend-supported choice
- * (config_builder.py's _resolve_profile_map_path falls back to the job's
- * own generated map, then to any uploaded one), so this is skipped rather
- * than assumed-invalid when the list isn't available (e.g. from a Run page,
- * which doesn't fetch it).
- *
- * Returns an array of human-readable error messages; empty array = valid.
- */
 import { SOURCE_TYPES } from "../constants/sourceTypes.js";
 import { DB_FIELD_CONFIGS, DB_REQUIRED_FIELDS } from "../constants/dbFields.js";
 import { STEPS } from "../constants/appConfig.js";

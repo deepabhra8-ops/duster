@@ -1,5 +1,3 @@
-"""Tests for the login password hashing format and its legacy-upgrade paths."""
-
 from __future__ import annotations
 
 import hashlib
@@ -30,8 +28,6 @@ class TestHashPassword:
         assert hash_password("a") != hash_password("b")
 
     def test_handles_unicode(self):
-        # Encoding must be pinned to utf-8, or the same password hashes
-        # differently depending on the platform's default encoding.
         assert hash_password("pässwörd") == f"sha256${_bare('pässwörd')}"
 
 
@@ -109,15 +105,8 @@ class TestRetag:
 
 class TestKnownLimitation:
     def test_a_64_hex_char_plaintext_password_is_unusable(self, monkeypatch):
-        """A documented, accepted failure - asserted so it cannot regress silently.
-
-        A stored plaintext that happens to be 64 lowercase hex characters is
-        indistinguishable from a SHA-256 digest, so it is read as one and its
-        owner can never log in. Preferred over the inverse error (treating a
-        real digest as plaintext); see the note in common/security/password_hash.py.
-        """
         monkeypatch.setattr(password_hash, "AUTH_ALLOW_LEGACY_PLAINTEXT", True)
-        stored = "a" * 64  # valid hex, but it is really this user's password
+        stored = "a" * 64
 
         ok, _ = verify_password(stored, stored)
 

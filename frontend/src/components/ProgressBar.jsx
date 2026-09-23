@@ -1,8 +1,3 @@
-/**
- * ProgressBar.jsx - compact horizontal progress bar for table rows
- * (percentage fill + numeric label). Generic/reusable - first used by
- * ProfileMapper.jsx's jobs table (see docs/ux-plan.md §5).
- */
 export default function ProgressBar({ percent = 0, colorVar = "--blue" }) {
   const clamped = Math.max(0, Math.min(100, percent));
 

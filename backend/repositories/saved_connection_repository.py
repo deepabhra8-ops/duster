@@ -1,13 +1,3 @@
-"""Storage for saved database connections (name + encrypted connection details).
-
-Connection details are encrypted at rest (common/security/crypto.py) because they hold real
-credentials for external databases. Only non-secret fields are ever returned by
-the list/summary methods; decryption is a separate, explicit call.
-
-Schema is owned by backend/migrations/002_ui_v2_schema.sql - this module never
-issues DDL.
-"""
-
 from __future__ import annotations
 
 import secrets
@@ -26,15 +16,7 @@ logger = get_logger(__name__)
 
 
 class SavedConnectionRepository:
-    """CRUD for the `saved_connections` table."""
-
     def list_all(self) -> list[dict[str, Any]]:
-        """Return every saved connection's non-secret fields, newest first.
-
-        Connections are shared: any authenticated user may see and use them.
-        Editing and deleting are owner-only, enforced in the service layer using
-        the `created_by` returned here.
-        """
         try:
             with get_db_session() as session:
                 rows = (
@@ -55,13 +37,6 @@ class SavedConnectionRepository:
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict[str, Any]], int]:
-        """Return one page of connections plus the total matching count.
-
-        Filtering and pagination happen in SQL, mirroring JobRepository.list_page -
-        used by the Connections manager page; list_all() above stays untouched for
-        the job wizard's connection picker, which needs every connection to
-        search/select from rather than one page of them.
-        """
         try:
             with get_db_session() as session:
                 query = session.query(SavedConnection)
@@ -90,8 +65,6 @@ class SavedConnectionRepository:
             raise
 
     def get(self, connection_id: str) -> dict[str, Any] | None:
-        """Return one connection's non-secret fields (including `created_by` for
-        ownership checks), or None if it doesn't exist."""
         try:
             with get_db_session() as session:
                 row = session.get(SavedConnection, connection_id)
@@ -101,11 +74,6 @@ class SavedConnectionRepository:
             raise
 
     def get_decrypted(self, connection_id: str) -> dict[str, Any] | None:
-        """Return one connection with its details decrypted, or None if absent.
-
-        Used server-side when resolving a job's `connection_id` at run time, and
-        by the owner-only reveal route that pre-fills the edit form.
-        """
         try:
             with get_db_session() as session:
                 row = session.get(SavedConnection, connection_id)
@@ -132,7 +100,6 @@ class SavedConnectionRepository:
         created_by: str,
         description: str | None = None,
     ) -> dict[str, Any]:
-        """Encrypt and store a new connection; return its non-secret fields."""
         connection_id = secrets.token_urlsafe(12)
 
         try:
@@ -162,11 +129,6 @@ class SavedConnectionRepository:
         connection_details: dict[str, Any],
         description: str | None = None,
     ) -> dict[str, Any] | None:
-        """Re-encrypt and overwrite an existing connection; return its updated
-        non-secret fields, or None if it doesn't exist.
-
-        Deliberately never touches `created_by` - ownership doesn't transfer on edit.
-        """
         try:
             with get_db_session() as session:
                 row = session.get(SavedConnection, connection_id)
@@ -189,10 +151,6 @@ class SavedConnectionRepository:
             raise
 
     def delete(self, connection_id: str) -> bool:
-        """Delete a connection and return whether it existed.
-
-        Jobs referencing it keep their history - the FK is ON DELETE SET NULL.
-        """
         try:
             with get_db_session() as session:
                 row = session.get(SavedConnection, connection_id)
@@ -211,7 +169,6 @@ class SavedConnectionRepository:
 
     @staticmethod
     def _to_summary(row: SavedConnection) -> dict[str, Any]:
-        """Map a row to its non-secret representation. Never includes credentials."""
         return {
             "id": row.id,
             "name": row.name,

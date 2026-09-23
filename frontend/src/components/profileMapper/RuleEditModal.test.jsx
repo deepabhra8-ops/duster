@@ -1,11 +1,3 @@
-/**
- * RuleEditModal - Analyst Notes is capped at 200 characters, with a live counter.
- *
- * The backend rejects notes over PROFILE_MAP_NOTES_MAX_LEN (200); the modal used
- * to let a user type past that and only find out on Save. These tests pin the
- * UI half: the counter starts at the saved length, follows typing, and the
- * textarea carries maxLength so the browser stops input at the limit.
- */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 

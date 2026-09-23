@@ -1,10 +1,3 @@
-"""NotificationService: validation, and who may notify whom.
-
-The repository is faked - its own tests cover the SQL - so these pin the rules the
-service adds on top: what a valid notification is, that an in-app link cannot be
-made to leave the app, and that only an admin can put a message in someone else's
-bell.
-"""
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -54,12 +47,12 @@ class TestIsInternalLink:
         [
             "https://evil.example",
             "http://evil.example/x",
-            "//evil.example",            # protocol-relative: same origin rules as a full URL
-            "/\\evil.example",           # browsers read a backslash as a slash -> "//evil.example"
+            "//evil.example",
+            "/\\evil.example",
             "javascript:alert(1)",
             "relative/path",
             "",
-            "/\t/evil.example",          # browsers strip tabs/newlines from URLs -> "//evil.example"
+            "/\t/evil.example",
             "/\n/evil.example",
             "/ok\x00",
         ],
@@ -124,7 +117,6 @@ class TestWhoMayNotifyWhom:
         is_admin.assert_not_called()
 
     def test_a_non_admin_cannot_notify_someone_else(self, service, repo, is_admin):
-        """Otherwise any signed-in user could put a message, with a link, in anyone's bell."""
         is_admin.return_value = False
 
         with pytest.raises(NotificationPermissionError):
@@ -148,7 +140,6 @@ class TestWhoMayNotifyWhom:
 
 class TestListFor:
     def test_unread_count_comes_from_the_repository_not_from_the_page(self, service, repo):
-        """A page can hold fewer rows than are unread; the badge must count them all."""
         repo.list_page.return_value = ([{"id": 9, "status": "unread"}], 9)
         repo.unread_count.return_value = 41
 
@@ -206,7 +197,6 @@ class TestClearAll:
         repo.delete_all.assert_called_once_with("alice")
 
     def test_reads_the_unread_count_back_rather_than_assuming_zero(self, service, repo):
-        """One can arrive between the delete and the count; the badge must reflect it."""
         repo.delete_all.return_value = 3
         repo.unread_count.return_value = 1
 

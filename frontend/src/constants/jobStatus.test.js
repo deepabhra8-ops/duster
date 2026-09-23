@@ -1,14 +1,3 @@
-/**
- * jobStatus - a status is ONE colour, the same everywhere it appears.
- *
- * The bug: draft and cancelled shared a grey, queued and cancelling shared an
- * amber, and the dashboard chart kept its own hex list that had drifted from the
- * pills and progress bars - so a status looked different in each place. Now every
- * status has one --status-<name> colour in global.css, and the pill, the progress
- * bar and the chart all read it. These tests pin that: every status has a
- * colour, no two statuses share one, everything named here is actually defined,
- * and the chart has no palette of its own.
- */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 

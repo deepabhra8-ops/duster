@@ -7,7 +7,6 @@ describe("isInternalPath", () => {
     expect(isInternalPath(link)).toBe(true);
   });
 
-  /* Each of these would leave the app if handed to a browser. */
   it.each([
     ["a full URL", "https://evil.example"],
     ["a protocol-relative URL", "//evil.example"],

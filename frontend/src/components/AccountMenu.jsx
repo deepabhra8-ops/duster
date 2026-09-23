@@ -1,11 +1,3 @@
-/**
- * AccountMenu.jsx - Topbar user icon + account/profile dropdown.
- *
- * Item list is data-driven (`ACCOUNT_MENU_ITEMS`) so new entries (profile,
- * settings, theme, ...) are just array additions later, not new dropdown
- * plumbing. Sign Out is the only item today - logic moved here from the
- * old sidebar footer.
- */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";

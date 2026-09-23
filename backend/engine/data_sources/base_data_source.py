@@ -1,5 +1,3 @@
-"""Defines the BaseDataSource contract: reading tables (whole or chunked), existence checks, and column/row metadata."""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -15,8 +13,6 @@ logger = get_logger(__name__)
 
 
 class BaseDataSource(ABC):
-    """Base class for a data source that reads tables into DataFrames."""
-
     source_type: str = ""
 
     def __init__(
@@ -24,7 +20,6 @@ class BaseDataSource(ABC):
         config: Mapping[str, Any],
         context: ExecutionContext,
     ) -> None:
-        """Store the source configuration and execution context."""
         try:
             self.config = config
             self.context = context
@@ -47,7 +42,6 @@ class BaseDataSource(ABC):
         table_config: Mapping[str, Any],
         columns: list[str] | None = None,
     ) -> DataFrame:
-        """Read a table into a DataFrame; implemented by each source type."""
         logger.error(
             "Unsupported read operation for source type '%s'",
             self.source_type,
@@ -62,7 +56,6 @@ class BaseDataSource(ABC):
         columns: list[str] | None = None,
         chunk_size: int = 0,
     ) -> Iterator[DataFrame]:
-        """Read a table in chunks, falling back to a single full read."""
         try:
             if chunk_size and chunk_size > 0:
                 yield from self._read_chunks(
@@ -89,7 +82,6 @@ class BaseDataSource(ABC):
         columns: list[str] | None,
         chunk_size: int,
     ) -> Iterator[DataFrame]:
-        """Default chunked-read fallback: yields one full read."""
         yield self.read(
             table_config=table_config,
             columns=columns,
@@ -100,7 +92,6 @@ class BaseDataSource(ABC):
         self,
         table_config: Mapping[str, Any],
     ) -> bool:
-        """Return whether the configured table exists; implemented by each source type."""
         logger.error(
             "Unsupported table existence check for source type '%s'",
             self.source_type,
@@ -113,7 +104,6 @@ class BaseDataSource(ABC):
         self,
         table_config: Mapping[str, Any],
     ) -> list[str]:
-        """Return the table's column names."""
         try:
             dataframe = self.read(
                 table_config=table_config,
@@ -130,7 +120,6 @@ class BaseDataSource(ABC):
         self,
         table_config: Mapping[str, Any],
     ) -> int:
-        """Return the table's row count."""
         try:
             dataframe = self.read(
                 table_config=table_config,
@@ -144,19 +133,15 @@ class BaseDataSource(ABC):
             raise
 
     def supports_columns_projection(self) -> bool:
-        """Return whether this source can read a subset of columns."""
         return True
 
     def supports_chunking(self) -> bool:
-        """Return whether this source supports chunked reads."""
         return False
 
     def profiler_dependencies(self) -> Mapping[str, Any]:
-        """Return extra objects a profiler may need from this source."""
         return {}
 
     def metadata(self) -> Mapping[str, Any]:
-        """Return descriptive metadata about this source."""
         try:
             return {
                 "source_type": self.source_type,
@@ -169,5 +154,4 @@ class BaseDataSource(ABC):
             raise
 
     def validate_configuration(self) -> None:
-        """Validate source-specific configuration; no-op by default."""
         return None

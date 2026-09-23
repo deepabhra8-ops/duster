@@ -1,4 +1,3 @@
-"""DQ3 - min/max string length, against a real Spark DataFrame."""
 from __future__ import annotations
 
 import pytest
@@ -26,11 +25,9 @@ class TestBounds:
             data, "code", parameters="3|5", context=context
         )
 
-        # "ab" is too short and "abcdef" too long; the bounds are inclusive.
         assert _failing(data, result) == 2
 
     def test_length_is_measured_after_trimming(self, spark, context):
-        """Otherwise padding in a fixed-width extract reads as real content."""
         data = spark.createDataFrame([("  ab  ",)], ["code"])
 
         result = DQ3StringLengthRule().validate(
@@ -42,15 +39,12 @@ class TestBounds:
 
 class TestParameterHandling:
     def test_non_numeric_bounds_fall_back_to_defaults(self, spark, context):
-        """The parser coerces silently, so this documents the actual behaviour
-        rather than the behaviour one might assume."""
         data = spark.createDataFrame([("abc",)], ["code"])
 
         result = DQ3StringLengthRule().validate(
             data, "code", parameters="not|numbers", context=context
         )
 
-        # Defaults are 0..255, which "abc" satisfies.
         assert _failing(data, result) == 0
 
 
@@ -89,5 +83,4 @@ class TestEdgeCases:
             data, "code", parameters="3|5", context=context
         )
 
-        # "12345" fits 3..5; "1" does not.
         assert _failing(data, result) == 1

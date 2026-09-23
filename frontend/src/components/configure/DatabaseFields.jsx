@@ -1,23 +1,3 @@
-/**
- * DatabaseFields.jsx - Dynamic connection-detail form.
- *
- * Renders the field set for the selected database type (from
- * DB_FIELD_CONFIGS) and reports edits via `onChange(fieldId, value)`.
- * Values are read from `details` (config.connectionDetails).
- *
- * Two callers with different chrome, hence `enhanced`:
- *
- *   - SourceConnection.jsx (the Configure page) renders the plain form it
- *     always did. Default, so that page is untouched.
- *
- *   - ConnectionWizardModal.jsx passes `enhanced`, which adds a leading icon
- *     per field, a show/hide toggle on passwords, and "(Optional)" as a
- *     separate muted span so required fields can carry a red asterisk from
- *     CSS instead of the label text. That keeps the wizard's fields looking
- *     like the New Job wizards' without a second copy of this component - the
- *     field list, the value plumbing and the widget-per-type switch are the
- *     part worth sharing, and they are identical either way.
- */
 import { useState } from "react";
 import {
   Database,
@@ -33,10 +13,6 @@ import {
 
 import { DB_FIELD_CONFIGS } from "../../constants/dbFields.js";
 
-/* Matched on field id, which is stable across database types in
-   constants/dbFields.js - every type calls its host "host", its user
-   "username", and so on. A field with no entry simply gets no icon rather
-   than a generic one, which would add noise without adding meaning. */
 const FIELD_ICONS = {
   host: Server,
   server_hostname: Server,
@@ -56,9 +32,6 @@ const FIELD_ICONS = {
 };
 
 export default function DatabaseFields({ dbType, details = {}, onChange, enhanced = false, readOnly = false }) {
-  /* Which password fields are currently revealed, by field id. Local because
-     it is pure presentation - nothing outside this form needs to know, and it
-     must reset when the form unmounts rather than persist per connection. */
   const [revealed, setRevealed] = useState({});
 
   if (!dbType) return null;
@@ -73,9 +46,6 @@ export default function DatabaseFields({ dbType, details = {}, onChange, enhance
         const isPassword = field.type === "password";
         const isRevealed = Boolean(revealed[field.id]);
 
-        /* Plain mode keeps the original single-string label. Enhanced mode
-           splits it so "(Optional)" can be muted and the required marker can
-           be CSS, matching the New Job wizards. */
         const label = enhanced ? (
           <>
             {field.label}

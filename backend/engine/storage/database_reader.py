@@ -1,5 +1,3 @@
-"""Generic Spark-JDBC-based reader: tables, raw queries, chunked reads, existence checks, and column metadata."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -17,13 +15,10 @@ logger = get_logger(__name__)
 
 
 class DatabaseReader:
-    """Reads tables and queries from a database via Spark JDBC (bulk reads) or SQLAlchemy (metadata, parameterized queries)."""
-
     def __init__(
         self,
         engine: Engine,
     ) -> None:
-        """Store the SQLAlchemy engine to read through."""
         self.engine = engine
 
     def read_table(
@@ -32,7 +27,6 @@ class DatabaseReader:
         schema: str | None = None,
         columns: list[str] | None = None,
     ) -> DataFrame:
-        """Read a whole table into a DataFrame, optionally projecting columns."""
         try:
             query = self.build_select_query(
                 table_name=table_name,
@@ -56,13 +50,8 @@ class DatabaseReader:
         query: str,
         params: Mapping[str, Any] | None = None,
     ) -> DataFrame:
-        """Run a raw SQL query and return the result as a DataFrame."""
         try:
             if params:
-                # Spark's JDBC reader has no parameter binding, and this app never inlines
-                # untrusted values into SQL - run the parameterized query through
-                # SQLAlchemy instead, then hand the (already small/bounded) result rows to
-                # Spark as an in-memory DataFrame.
                 statement = text(query)
 
                 with self.engine.connect() as connection:
@@ -91,8 +80,6 @@ class DatabaseReader:
         columns: list[str] | None = None,
         chunk_size: int = 0,
     ):
-        """Read a table as a single Spark DataFrame (Spark partitions its own reads; there's no
-        pandas-style chunked iteration to fall back to)."""
         yield self.read_table(
             table_name=table_name,
             schema=schema,
@@ -105,8 +92,6 @@ class DatabaseReader:
         params: Mapping[str, Any] | None = None,
         chunk_size: int = 0,
     ):
-        """Run a raw SQL query as a single Spark DataFrame (Spark partitions its own reads; there's no
-        pandas-style chunked iteration to fall back to)."""
         yield self.read_query(query=query, params=params)
 
     def table_exists(
@@ -114,7 +99,6 @@ class DatabaseReader:
         table_name: str,
         schema: str | None = None,
     ) -> bool:
-        """Return whether the given table exists."""
         try:
             from sqlalchemy import inspect
 
@@ -134,7 +118,6 @@ class DatabaseReader:
         table_name: str,
         schema: str | None = None,
     ) -> list[str]:
-        """Return a table's column names."""
         from sqlalchemy import inspect
 
         inspector = inspect(self.engine)
@@ -154,7 +137,6 @@ class DatabaseReader:
         table_name: str,
         schema: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Return full column metadata (name, type, etc.) for a table."""
         from sqlalchemy import inspect
 
         inspector = inspect(self.engine)
@@ -169,7 +151,6 @@ class DatabaseReader:
         table_name: str,
         schema: str | None = None,
     ) -> int:
-        """Return a table's row count via SELECT COUNT(*)."""
         try:
             table_reference = self.build_table_reference(
                 table_name=table_name,
@@ -194,7 +175,6 @@ class DatabaseReader:
         query: str,
         params: Mapping[str, Any] | None = None,
     ) -> Any:
-        """Run a query and return its single scalar result."""
         try:
             statement = text(query)
 
@@ -217,7 +197,6 @@ class DatabaseReader:
         schema: str | None = None,
         columns: list[str] | None = None,
     ):
-        """Build a SELECT query for a table, optionally projecting columns."""
         try:
             table_reference = self.build_table_reference(
                 table_name=table_name,
@@ -246,7 +225,6 @@ class DatabaseReader:
         table_name: str,
         schema: str | None = None,
     ) -> str:
-        """Build a quoted schema.table reference."""
         table_name = str(table_name).strip()
 
         if not table_name:
@@ -274,7 +252,6 @@ class DatabaseReader:
     def quote_identifier(
         identifier: str,
     ) -> str:
-        """Quote a SQL identifier, escaping embedded quotes."""
         try:
             identifier = str(identifier).strip()
 
@@ -297,7 +274,6 @@ class DatabaseReader:
         query: str,
         columns: list[str] | None = None,
     ) -> DataFrame:
-        """Read a query's result set via Spark JDBC, using the dialect resolved from the engine's URL."""
         target = build_jdbc_target(self.engine.url)
 
         reader = get_spark_session().read.format("jdbc")

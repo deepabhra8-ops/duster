@@ -1,6 +1,5 @@
 import React from 'react';
 
-// Common SVG props to keep icons consistent
 const commonProps = {
   viewBox: "0 0 24 24",
   fill: "none",
@@ -134,9 +133,6 @@ export const IconSettings = (props) => (
   </svg>
 );
 
-/* Mobile navigation drawer toggle (Topbar.jsx). Shows a hamburger when the
-   drawer is shut and a close glyph when it is open, so the one button reads
-   as both actions rather than needing a second control. */
 export const IconMenu = ({ open = false, ...props }) => (
   <svg {...commonProps} {...props}>
     {open ? (

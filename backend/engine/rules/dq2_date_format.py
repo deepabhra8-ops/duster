@@ -1,5 +1,3 @@
-"""DQ2: flags values that don't match the configured date format."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -15,8 +13,6 @@ from engine.rules.rule_registry import register_rule
 
 @register_rule
 class DQ2DateFormatRule(BaseRule):
-    """Validates that a column's values parse under a configured date format."""
-
     rule_id = "DQ2"
     rule_name = "Date Format Validation"
     dimension = "Conformity"
@@ -30,12 +26,6 @@ class DQ2DateFormatRule(BaseRule):
         parameters: str,
         context: ExecutionContext,
     ) -> RuleResult:
-        """Fail values that don't parse under the configured strptime format (default %Y-%m-%d).
-
-        Uses a Python-side UDF (rather than Spark's native to_date) because the configured
-        format is a Python strptime pattern (e.g. '%Y-%m-%d'), not Spark SQL's datetime
-        pattern syntax (e.g. 'yyyy-MM-dd') - the two aren't interchangeable strings.
-        """
         date_format = RuleParameterParser.get(
             parameters,
             position=0,
@@ -55,15 +45,6 @@ class DQ2DateFormatRule(BaseRule):
 
 
 class _MatchesDateFormat:
-    """Per-row strptime check for DQ2.
-
-    Built as a module-level callable rather than a closure so Spark can pickle
-    it: the deployed engine is Cythonised, and a nested `def` there is not a
-    types.FunctionType, so cloudpickle falls back to pickling by qualified name
-    and fails with "Can't pickle local object". See _RangeCheck in
-    engine/rules/dq5_range.py for the full explanation.
-    """
-
     def __init__(self, date_format: str) -> None:
         self.date_format = date_format
 

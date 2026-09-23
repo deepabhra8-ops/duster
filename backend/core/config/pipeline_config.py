@@ -1,5 +1,3 @@
-"""Upload handling and DQ pipeline defaults."""
-
 MAX_UPLOAD_SIZE_BYTES = 200 * 1024 * 1024
 
 UPLOAD_KINDS = (
@@ -14,9 +12,6 @@ UPLOAD_KIND_LABELS = {
     "profile_map": "Profile Map",
 }
 
-# Server-side mirror of frontend/src/constants/appConfig.js's UPLOAD_ALLOWED_EXT.
-# The frontend check is UX only (a curl/Postman request skips it entirely), so
-# this is the actual enforcement point - see UploadFileSaver._validate_extension.
 UPLOAD_ALLOWED_EXTENSIONS = {
     "data": (".csv", ".xlsx"),
     "lov": (".csv",),

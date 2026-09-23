@@ -1,8 +1,3 @@
-"""DQ11 - a custom Spark SQL condition, optionally scoped by a filter.
-
-Two expressions: the first says which rows the check applies to, the second
-says what those rows must satisfy. A row outside the filter cannot fail.
-"""
 from __future__ import annotations
 
 import pytest
@@ -36,11 +31,9 @@ class TestCondition:
             data, "amount", parameters="|amount >= 0", context=context
         )
 
-        # Both negative amounts fail; the filter is empty so every row applies.
         assert _failing(data, result) == 2
 
     def test_a_filter_limits_which_rows_are_judged(self, data, context):
-        """The CLOSED row with -20 is out of scope, so only the OPEN -5 fails."""
         result = DQ11CustomRule().validate(
             data,
             "amount",
@@ -70,8 +63,6 @@ class TestCondition:
 
 class TestInvalidExpressions:
     def test_an_unparseable_condition_reports_not_run(self, data, context):
-        """It used to pass every row, so a typo in a custom rule reported the
-        data as clean rather than telling anyone the rule was broken."""
         result = DQ11CustomRule().validate(
             data, "amount", parameters="|this is not sql", context=context
         )
@@ -80,13 +71,6 @@ class TestInvalidExpressions:
         assert _failing(data, result) == 0
 
     def test_a_condition_naming_an_unknown_column_builds_but_fails_later(self, data, context):
-        """expr() only parses the SQL; an unknown column is not detected until
-        Spark analyses the plan, which happens after validate() returns.
-
-        So this rule is not caught here - it surfaces when the mask is used, and
-        RuleExecutor records it as a rule error, which is itself reported as NOT
-        RUN. The check still never counts as passing; it just fails a layer up.
-        """
         result = DQ11CustomRule().validate(
             data, "amount", parameters="|no_such_column > 0", context=context
         )
@@ -115,15 +99,6 @@ class TestEdgeCases:
         assert _failing(empty, result) == 0
 
     def test_a_null_is_not_flagged_because_sql_comparisons_return_null(self, spark, context):
-        """Worth knowing when writing a DQ11 expression: `NULL >= 0` evaluates to
-        NULL, not false, and the mask `~filter | condition` is therefore NULL
-        too. A filter on NULL excludes the row, so a null is neither passed nor
-        failed - it simply never appears as a finding.
-
-        That is standard SQL three-valued logic rather than a bug, but it means
-        a custom rule will not catch nulls unless its expression says so
-        explicitly (e.g. `amount IS NOT NULL AND amount >= 0`).
-        """
         data = spark.createDataFrame([(None,), (5,)], "amount: int")
 
         result = DQ11CustomRule().validate(

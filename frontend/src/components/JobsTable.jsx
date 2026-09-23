@@ -1,13 +1,3 @@
-/**
- * JobsTable.jsx - Job history table (presentational).
- *
- * Columns: Job ID, Project, Status, Created Date, Completion Date, Actions.
- * Actions: Log (re-view in Run) always; Report download when status === "done".
- *
- * The backend list currently exposes a creation timestamp ("started") but no
- * completion timestamp, so Completion Date uses the first available completion
- * field if one is present, otherwise "-".
- */
 import { fmtDate } from "../utils/helpers.js";
 import { STATUS_PILL } from "../constants/jobStatus.js";
 import Pagination from "./Pagination.jsx";

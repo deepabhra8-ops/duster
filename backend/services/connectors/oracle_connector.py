@@ -1,5 +1,3 @@
-"""Oracle database connector."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -10,8 +8,6 @@ from services.connectors.registry import register_connector
 
 @register_connector
 class OracleConnector(DatabaseConnector):
-    """Builds Oracle connection strings."""
-
     db_type = "oracle"
     required_fields = ("host", "username", "password")
 
@@ -19,7 +15,6 @@ class OracleConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> list[str]:
-        """Return missing required fields, requiring 'sid' or 'service_name' depending on connection_mode."""
         required = list(self.required_fields)
         required.append(
             "sid"
@@ -37,7 +32,6 @@ class OracleConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build an oracledb SQLAlchemy connection string, using service_name or SID."""
         key = (
             "sid"
             if details.get("connection_mode", "service_name") == "sid"

@@ -1,5 +1,3 @@
-"""Orchestrates profiling: resolves the data source, profiles each table, infers rules, and builds the profile map."""
-
 from __future__ import annotations
 
 import itertools
@@ -28,8 +26,6 @@ logger = get_logger(__name__)
 
 
 class ProfilingEngine:
-    """Coordinates profiling, rule inference, and profile-map building for a source."""
-
     def __init__(
         self,
         context: ExecutionContext,
@@ -39,7 +35,6 @@ class ProfilingEngine:
         rule_inference: RuleInference | None = None,
         profile_map_builder: ProfileMapBuilder | None = None,
     ) -> None:
-        """Wire up the engine's collaborators, defaulting to the shared registries."""
         try:
             self.context = context
 
@@ -83,7 +78,6 @@ class ProfilingEngine:
         progress_callback: Callable[[int, int], None] | None = None,
         cancel_event: threading.Event | None = None,
     ) -> ProfileRunResult:
-        """Profile each configured table, reporting progress after each one."""
         try:
             source_type = self.context.source_type
 
@@ -104,7 +98,6 @@ class ProfilingEngine:
             progress_lock = threading.Lock()
 
             def profile_one(table_config: Mapping[str, Any]):
-                """Profile one table. Runs on a worker thread when several overlap."""
                 if cancel_event is not None and cancel_event.is_set():
                     raise JobCancelledError("Job cancelled by user")
 
@@ -112,8 +105,6 @@ class ProfilingEngine:
                     data = source.read(
                         table_config=table_config,
                     )
-                    # Profiling runs one aggregate query per column; without caching, each of
-                    # those actions would re-read/re-parse the source from scratch.
                     data = data.cache()
 
                     try:
@@ -135,13 +126,7 @@ class ProfilingEngine:
 
                     return profile
                 finally:
-                    # A table that failed still counts as finished, so the bar
-                    # reaches N of N when the others are kept.
                     if progress_callback is not None:
-                        # Tables no longer finish in order, so progress counts how
-                        # many are done rather than which index this was. The lock
-                        # guards the callback itself - it writes to Postgres, and
-                        # two threads calling it at once would interleave.
                         with progress_lock:
                             progress_callback(next(completed), total_tables)
 
@@ -161,9 +146,6 @@ class ProfilingEngine:
                 table_name = self._get_table_name(outcome.item)
 
                 if outcome.error is not None:
-                    # A cancellation is the whole run ending, not one table
-                    # failing, so it propagates; anything else is recorded
-                    # against its table and the other tables' work is kept.
                     if isinstance(outcome.error, JobCancelledError):
                         raise outcome.error
 
@@ -179,8 +161,6 @@ class ProfilingEngine:
                 tables_result[table_name] = outcome.value
                 logger.debug("Profiled table '%s'", table_name)
 
-            # Nothing survived, so there is no partial result worth keeping - fail
-            # the run the way a single-table run always has.
             if first_error is not None and not tables_result:
                 raise first_error
 
@@ -204,7 +184,6 @@ class ProfilingEngine:
         self,
         table_config: Mapping[str, Any],
     ):
-        """Profile a single table and return its result."""
         try:
             result = self.profile(
                 tables=[table_config]
@@ -223,12 +202,6 @@ class ProfilingEngine:
         self,
         profile_result: ProfileRunResult,
     ) -> dict[str, dict[str, list[str]]]:
-        """Infer rule IDs for every column of every profiled table, from its already-computed profile stats.
-
-        Rule inference only needs each column's name and dtype - both already sitting in
-        ``profile_result`` from the profiling pass that just ran - so this reads no
-        DataFrame at all rather than re-reading each table's source a second time.
-        """
         try:
             inferred_rules: dict[
                 str,
@@ -262,7 +235,6 @@ class ProfilingEngine:
             Mapping[str, list[str]],
         ] | None = None,
     ):
-        """Build the profile map from a profiling result and its inferred rules."""
         try:
             result = self.profile_map_builder.build(
                 profile_result=profile_result,
@@ -280,7 +252,6 @@ class ProfilingEngine:
         progress_callback: Callable[[int, int], None] | None = None,
         cancel_event: threading.Event | None = None,
     ):
-        """Run profiling, rule inference, and profile-map building end to end."""
         try:
             profile_result = self.profile(
                 tables=tables,
@@ -288,13 +259,9 @@ class ProfilingEngine:
                 cancel_event=cancel_event,
             )
 
-            # Catch cancellation requested during/after the last table, before rule
-            # inference and profile-map building (and its write to disk) run.
             if cancel_event is not None and cancel_event.is_set():
                 raise JobCancelledError("Job cancelled by user")
 
-            # infer_rules() reads directly from profile_result's already-computed column
-            # stats - no second read of the source is needed here.
             inferred_rules = self.infer_rules(
                 profile_result=profile_result,
             )
@@ -312,7 +279,6 @@ class ProfilingEngine:
 
     @staticmethod
     def _short_error(error: BaseException) -> str:
-        """First line of an error, capped - Spark messages can run to a full stack."""
         lines = [line.strip() for line in str(error).splitlines() if line.strip()]
         message = lines[0] if lines else type(error).__name__
         return message[:300]
@@ -321,7 +287,6 @@ class ProfilingEngine:
     def _get_table_name(
         table_config: Mapping[str, Any],
     ) -> str:
-        """Resolve a table's name from its config (name, then table, then file)."""
         try:
             table_name = str(
                 table_config.get(

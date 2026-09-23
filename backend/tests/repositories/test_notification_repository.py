@@ -1,15 +1,3 @@
-"""NotificationRepository against a real database, not a mock.
-
-What matters here is what SQL does - which rows a query returns, and for whom - so a
-mock would only echo back whatever it was told to. These run the real ORM statements
-against a file-backed SQLite database.
-
-The table is created with explicit DDL rather than Base.metadata.create_all, as in
-test_job_repository_transition.py: the models file declares Postgres-only column
-types elsewhere, and naming the columns here documents exactly what the repository
-depends on. The Postgres side (CHECK constraints, the job-finished trigger) is
-migration 008's and is not something SQLite can stand in for.
-"""
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -57,7 +45,6 @@ def repository(session_factory, monkeypatch):
 
 
 def _add(repository, username="alice", n=1):
-    """Create `n` notifications and return their ids, oldest first."""
     return [repository.create(username, "info", f"title {i}")["id"] for i in range(n)]
 
 
@@ -73,8 +60,6 @@ class TestCreate:
         assert created["status"] == "unread"
 
     def test_timestamp_carries_an_explicit_utc_offset(self, repository):
-        """Stored naive, but a bare ISO string is read by browsers as LOCAL time, which
-        makes every "5 minutes ago" wrong by the viewer's UTC offset."""
         created = repository.create("alice", "info", "t")
 
         stamp = datetime.fromisoformat(created["created_at"])
@@ -111,12 +96,10 @@ class TestListPage:
         assert seen == list(reversed(ids))
 
     def test_a_row_arriving_between_pages_does_not_shift_the_next_page(self, repository):
-        """The reason this is keyset- and not offset-paged: the list is live. With OFFSET, a
-        new row would push everything down one and the seam row would be served twice."""
         ids = _add(repository, n=4)
 
         first, cursor = repository.list_page("alice", limit=2)
-        _add(repository, n=1)  # a notification arrives while the user is scrolling
+        _add(repository, n=1)
         second, _ = repository.list_page("alice", limit=2, before_id=cursor)
 
         assert [i["id"] for i in first + second] == list(reversed(ids))
@@ -163,7 +146,6 @@ class TestUnreadCount:
         assert repository.unread_count("nobody") == 0
 
     def test_counts_beyond_a_single_page(self, repository):
-        """The badge is the whole unread total, not the number of rows a page holds."""
         _add(repository, n=7)
 
         items, _ = repository.list_page("alice", limit=2)
@@ -196,7 +178,6 @@ class TestMarkRead:
 
         assert repository.mark_read("alice", bobs) is None
         assert repository.mark_read("alice", 99999) is None
-        # ...and it was not touched.
         assert repository.unread_count("bob") == 1
 
     def test_leaves_the_others_alone(self, repository):
@@ -237,7 +218,6 @@ class TestDeleteAll:
         assert repository.unread_count("alice") == 0
 
     def test_never_touches_another_users_notifications(self, repository):
-        """The property that matters: the caller can only ever clear their own."""
         _add(repository, "alice", n=3)
         bobs = _add(repository, "bob", n=2)
         repository.mark_read("bob", bobs[0])
@@ -246,7 +226,7 @@ class TestDeleteAll:
 
         items, _ = repository.list_page("bob", limit=50)
         assert sorted(i["id"] for i in items) == sorted(bobs)
-        assert repository.unread_count("bob") == 1  # bob's read/unread state is untouched too
+        assert repository.unread_count("bob") == 1
 
     def test_is_idempotent_and_reports_zero_when_there_was_nothing(self, repository):
         _add(repository, "alice", n=2)
@@ -256,7 +236,6 @@ class TestDeleteAll:
         assert repository.delete_all("nobody") == 0
 
     def test_new_notifications_after_clearing_are_kept_and_still_ordered(self, repository):
-        """Ids are never reused, so the live stream's cursor stays valid across a clear."""
         old = _add(repository, "alice", n=2)
         repository.delete_all("alice")
 
@@ -267,18 +246,11 @@ class TestDeleteAll:
         assert repository.latest_id("alice") == new[0]
 
 
-# A fixed "now" so every age below is exact, and a 7-day window.
 NOW = datetime(2026, 9, 21, 12, 0, 0)
 CUTOFF = NOW - timedelta(days=7)
 
 
 def _seed(session_factory, username, status, age_days):
-    """Insert one notification created `age_days` before NOW and return its id.
-
-    Through the ORM model, not raw SQL, so the timestamp is stored in exactly the format the
-    query later compares it in - otherwise the "exactly at the cutoff" case would be decided by
-    string formatting rather than by the logic under test.
-    """
     with session_factory() as session:
         row = Notification(
             username=username,
@@ -311,14 +283,12 @@ class TestPurgeRead:
         assert _remaining(session_factory) == [fresh_read]
 
     def test_never_deletes_an_unread_notification_however_old(self, repository, session_factory):
-        """Only the status column decides. A year-old unread notification is still news."""
         ancient_unread = _seed(session_factory, "alice", "unread", age_days=365)
 
         assert repository.purge_read_before(CUTOFF) == 0
         assert _remaining(session_factory) == [ancient_unread]
 
     def test_one_created_exactly_at_the_cutoff_is_kept(self, repository, session_factory):
-        """Strictly older than the window, not "at least as old"."""
         on_the_line = _seed(session_factory, "alice", "read", age_days=7)
 
         assert repository.purge_read_before(CUTOFF) == 0
@@ -338,10 +308,8 @@ class TestPurgeRead:
         assert bob_old_read not in _remaining(session_factory)
 
     def test_the_age_counts_from_creation_not_from_when_it_was_read(self, repository, session_factory):
-        """The stated requirement, and its consequence: a notification that sat unread past the
-        window is deleted at the next sweep after it is finally opened."""
         stale = _seed(session_factory, "alice", "unread", age_days=8)
-        assert repository.purge_read_before(CUTOFF) == 0  # unread: safe
+        assert repository.purge_read_before(CUTOFF) == 0
 
         repository.mark_read("alice", stale)
 
@@ -358,7 +326,7 @@ class TestPurgeRead:
 
         deleted = repository.purge_read_before(CUTOFF, batch_size=3)
 
-        assert deleted == 7  # three batches: 3 + 3 + 1
+        assert deleted == 7
         assert _remaining(session_factory) == [keeper]
 
     def test_a_backlog_that_is_an_exact_multiple_of_the_batch_size_still_terminates(self, repository, session_factory):
@@ -369,7 +337,6 @@ class TestPurgeRead:
         assert _remaining(session_factory) == []
 
     def test_one_call_is_bounded_and_the_next_finishes_the_job(self, repository, session_factory):
-        """A big backlog is worked off across sweeps, not in one long, lock-holding run."""
         for _ in range(7):
             _seed(session_factory, "alice", "read", age_days=20)
 

@@ -1,9 +1,3 @@
-/**
- * useCachedResource - the stale-while-revalidate contract.
- *
- * The point of the hook is that a returning visit paints from cache instead of
- * a skeleton, and that a slow response can never overwrite a newer one.
- */
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -48,7 +42,6 @@ describe("returning visit", () => {
 
     render(<Probe cacheKey={key} fetcher={fetcher} />);
 
-    // The whole point: data is on screen immediately and loading is already false.
     expect(screen.getByTestId("loading")).toHaveTextContent("false");
     expect(screen.getByTestId("data")).toHaveTextContent("cached");
 
@@ -66,7 +59,6 @@ describe("resilience", () => {
     render(<Probe cacheKey={key} fetcher={fetcher} />);
 
     await waitFor(() => expect(screen.getByTestId("refreshing")).toHaveTextContent("false"));
-    // A failed background refresh must not blank a page that was working.
     expect(screen.getByTestId("data")).toHaveTextContent("cached");
   });
 
@@ -83,7 +75,6 @@ describe("resilience", () => {
 
     await waitFor(() => expect(screen.getAllByTestId("loading")[0]).toHaveTextContent("false"));
 
-    // Two components, one key, one network call.
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });

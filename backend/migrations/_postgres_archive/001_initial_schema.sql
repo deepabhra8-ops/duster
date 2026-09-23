@@ -1,18 +1,3 @@
--- Migration 001: Initial Schema for Data Quality Validator
-
--- Users table is expected to exist and be managed externally, but here is a reference:
--- CREATE TABLE users (
---     user_id SERIAL PRIMARY KEY,
---     user_name VARCHAR(255) UNIQUE NOT NULL,
---     password_hash VARCHAR(255) NOT NULL,
---     is_active BOOLEAN DEFAULT TRUE,
---     is_admin BOOLEAN DEFAULT FALSE,
---     expiry_date DATE,
---     user_email_id VARCHAR(255),
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- );
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS jobs (

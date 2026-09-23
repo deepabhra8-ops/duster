@@ -1,5 +1,3 @@
-"""SQLAlchemy-backed repository for job state."""
-
 from typing import Any
 
 from sqlalchemy import case, func, or_, text
@@ -12,10 +10,7 @@ logger = get_logger(__name__)
 
 
 class JobRepository:
-    """SQLAlchemy-backed repository for job state."""
-
     def create(self, job_id: str, job_data: dict[str, Any]) -> None:
-        """Create a new job."""
         try:
             with get_db_session() as session:
                 progress = job_data.get("progress", {})
@@ -44,7 +39,6 @@ class JobRepository:
             raise
 
     def get(self, job_id: str) -> dict[str, Any]:
-        """Return a job by ID, or an empty dictionary if it does not exist."""
         try:
             with get_db_session() as session:
                 job = session.query(Job).filter(
@@ -60,7 +54,6 @@ class JobRepository:
             return {}
 
     def update(self, job_id: str, **fields: Any) -> None:
-        """Update fields on an existing job."""
         try:
             with get_db_session() as session:
                 job = session.query(Job).filter(
@@ -69,20 +62,17 @@ class JobRepository:
                 
                 if not job:
                     raise KeyError(f"Job not found: {job_id}")
-                
-                # Handle log appends
+
                 if "log" in fields:
                     job.log = fields["log"]
                     del fields["log"]
 
-                # Handle nested progress dict → flat columns
                 if "progress" in fields:
                     prog = fields.pop("progress")
                     if isinstance(prog, dict):
                         job.progress_current = prog.get("current", job.progress_current)
                         job.progress_total = prog.get("total", job.progress_total)
 
-                # Map service-level field names to DB column names
                 field_map = {
                     "started": "started_at",
                     "completed": "completed_at",
@@ -107,18 +97,11 @@ class JobRepository:
         statuses: tuple[str, ...] | list[str],
         limit: int = 200,
     ) -> list[dict[str, Any]]:
-        """Return jobs currently in any of `statuses`, oldest first.
-
-        Used by the reconciler to find jobs the database still thinks are
-        running. Oldest first so the longest-stranded are settled even when the
-        limit truncates the sweep.
-        """
         try:
             with get_db_session() as session:
                 rows = (
                     session.query(Job)
                     .filter(Job.status.in_(tuple(statuses)))
-                    # SQL Server's ORDER BY has no NULLS FIRST syntax.
                     .order_by(
                         case((Job.started_at.is_(None), 0), else_=1),
                         Job.started_at.asc(),
@@ -148,23 +131,6 @@ class JobRepository:
         to_status: str,
         **fields: Any,
     ) -> bool:
-        """Move a job to `to_status` only if it is currently in one of `from_statuses`.
-
-        Returns True if this call performed the move, False if it did not - the
-        job was already in some other state, or does not exist.
-
-        This exists because read-then-write is not safe here. `start_draft_job`
-        used to SELECT the job, check `status == 'draft'`, and then UPDATE it;
-        two concurrent start requests could both pass the check before either
-        wrote, and both would trigger a Glue run for the same job - two billed
-        cluster runs writing results over each other. The status check and the
-        write are one statement here, so the database decides the winner and the
-        loser gets False.
-
-        The same guard protects the terminal writes. Both the web tier and the
-        Glue run write this row, so a late arrival can no longer resurrect a job
-        that has already finished or been cancelled.
-        """
         try:
             with get_db_session() as session:
                 values: dict[str, Any] = {Job.status: to_status}
@@ -200,8 +166,6 @@ class JobRepository:
                     to_status,
                 )
             else:
-                # Not an error: the expected outcome whenever another writer got
-                # there first, which is exactly what this method is for.
                 logger.info(
                     "Job '%s' not moved to '%s'; it is no longer in %s",
                     job_id,
@@ -219,16 +183,6 @@ class JobRepository:
             raise
 
     def append_log(self, job_id: str, line: str) -> None:
-        """Atomically append one line to a job's log.
-
-        Done as a single `JSON_MODIFY(..., 'append $', ...)` UPDATE rather than
-        read-append-write. Several writers touch one job's log concurrently -
-        the status poller every 30s plus any request thread - and a
-        read-modify-write holds no row lock, so two appends interleaving would
-        silently drop one. `entry` is the raw line, not JSON-encoded:
-        JSON_MODIFY's `append $` path adds it as one new string element.
-        """
-
         try:
             with get_db_session() as session:
                 result = session.execute(
@@ -252,7 +206,6 @@ class JobRepository:
             raise
 
     def exists(self, job_id: str) -> bool:
-        """Return True if a job exists."""
         try:
             with get_db_session() as session:
                 count = session.query(Job).filter(
@@ -275,18 +228,8 @@ class JobRepository:
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict[str, Any]], int]:
-        """Return one page of jobs plus the total matching count.
-
-        Filtering, sorting and pagination all happen in SQL. The previous
-        implementation loaded every job row into memory and sliced it in Python,
-        which the V2 UI would hit every 1.4 seconds per open jobs list.
-        Backed by idx_jobs_owner_step_status.
-        """
         try:
             with get_db_session() as session:
-                # The list needs the human-readable saved connection name and
-                # type. Keep this an outer join so flat-file jobs and jobs whose
-                # connection was later deleted are still visible.
                 query = session.query(Job, SavedConnection.name, SavedConnection.db_type).outerjoin(
                     SavedConnection, Job.connection_id == SavedConnection.id
                 )
@@ -301,16 +244,10 @@ class JobRepository:
                     query = query.filter(Job.status == status)
 
                 if db_type == "flat_file":
-                    # Flat-file jobs deliberately have no saved connection.
-                    # `csv` is retained for drafts created by older clients.
                     query = query.filter(
                         func.JSON_VALUE(Job.params, "$.source_type").in_(("flat_file", "csv"))
                     )
                 elif db_type:
-                    # A job snapshots its database type at creation. Include it
-                    # alongside the linked connection so filtering remains
-                    # correct for legacy jobs and jobs whose connection was
-                    # subsequently removed.
                     query = query.filter(
                         or_(
                             SavedConnection.db_type == db_type,
@@ -360,7 +297,6 @@ class JobRepository:
             raise
 
     def delete(self, job_id: str) -> bool:
-        """Hard-delete a job and return whether it existed."""
         try:
             with get_db_session() as session:
                 job = session.query(Job).filter(
@@ -378,7 +314,6 @@ class JobRepository:
             return False
             
     def _to_dict(self, job: Job) -> dict[str, Any]:
-        """Convert a Job SQLAlchemy model instance to a dictionary."""
         return {
             "job_id": str(job.job_id),
             "status": job.status,

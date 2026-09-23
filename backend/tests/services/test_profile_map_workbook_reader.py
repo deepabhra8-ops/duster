@@ -1,8 +1,3 @@
-"""Reading an uploaded profile-map workbook.
-
-Covers the things that actually break real workbooks: legacy header spellings,
-blank cells, codes that look numeric, and sheets that carry no columns.
-"""
 from __future__ import annotations
 
 import pytest
@@ -12,7 +7,6 @@ from services.profile_map_workbook_reader import ProfileMapWorkbookReader
 
 
 def _workbook(tmp_path, sheets: dict[str, tuple[list[str], list[list]]]):
-    """Write a real .xlsx and return its path. {sheet: (headers, rows)}."""
     path = tmp_path / "profile_map.xlsx"
     book = xlsxwriter.Workbook(str(path))
 
@@ -73,10 +67,6 @@ class TestBasicReading:
 
 class TestBlankCells:
     def test_a_blank_cell_never_becomes_the_string_nan(self, reader, tmp_path):
-        """The previous reader stringified a missing cell straight from a pandas
-        frame, so an empty Data Type or Analyst Notes arrived as the literal
-        text "nan" and was written into the profile map as if it were content.
-        """
         path = _workbook(tmp_path, {
             "claims": (HEADERS, [["claim", "claim_id", None, None, "DQ1", None, None]]),
         })
@@ -119,9 +109,6 @@ class TestHeaderVariants:
         assert reader.inspect(path)["tables"][0]["columns"][0]["column_name"] == "claim_id"
 
     def test_a_populated_legacy_header_wins_over_an_empty_current_one(self, reader, tmp_path):
-        """Behaviour change, deliberate: the old reader stopped at the first
-        header present even when its cell was blank, silently dropping rules
-        that were sitting in the legacy column next to it."""
         path = _workbook(tmp_path, {
             "claims": (
                 ["Column", "Applicable Rule\n(Single ID)", "Applicable Rules"],
@@ -195,7 +182,6 @@ class TestSheetHandling:
 
 class TestTypePreservation:
     def test_a_numeric_looking_code_keeps_its_leading_zeros(self, reader, tmp_path):
-        """Reading cells as text is what stops "00123" arriving as 123."""
         path = _workbook(tmp_path, {
             "claims": (["Column", "Applicable Rules"], [["00123", "DQ1"]]),
         })

@@ -1,5 +1,3 @@
-"""Builds and writes the All DQ Findings sheet: one row per rule execution detail across every table."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -32,8 +30,6 @@ logger = get_logger(__name__)
 
 
 class AllFindingsReport:
-    """Flattens every table's rule execution details into the All DQ Findings sheet."""
-
     SHEET_NAME = "All DQ Findings"
 
     COLUMNS = [
@@ -71,7 +67,6 @@ class AllFindingsReport:
         scorer: DimensionScorer | None = None,
         workbook_writer: AllFindingsWorkbookWriter | None = None,
     ) -> None:
-        """Store the scorer and workbook writer collaborators."""
         self.scorer = scorer or DimensionScorer()
         self.workbook_writer = (
             workbook_writer
@@ -82,7 +77,6 @@ class AllFindingsReport:
         self,
         validation_result: ValidationRunResult,
     ) -> DataFrame:
-        """Build one row per rule execution detail across every table."""
         try:
             rows: list[dict[str, Any]] = []
 
@@ -105,8 +99,6 @@ class AllFindingsReport:
                 schema=self.SCHEMA,
             )
 
-            # len(rows) - the Python list already built above - instead of dataframe.count(),
-            # which would otherwise force a Spark action just to log a number already known.
             logger.debug(
                 "Built All DQ Findings report with %s rows",
                 len(rows),
@@ -126,7 +118,6 @@ class AllFindingsReport:
         output_path: str | Path,
         sheet_name: str = SHEET_NAME,
     ) -> Path:
-        """Write the All DQ Findings sheet to a standalone workbook."""
         output_path = Path(
             output_path
         )
@@ -142,8 +133,6 @@ class AllFindingsReport:
             )
 
             with xlsxwriter.Workbook(str(output_path), XLSXWRITER_SAFE_OPTIONS) as workbook:
-                # write_to_workbook() collect()s `dataframe` to render it - reuse the row
-                # count it already computed instead of counting a second time here.
                 row_count = self.write_to_workbook(
                     writer=workbook,
                     dataframe=dataframe,
@@ -171,7 +160,6 @@ class AllFindingsReport:
         dataframe: DataFrame,
         sheet_name: str = SHEET_NAME,
     ) -> int:
-        """Add the All DQ Findings worksheet, delegate its formatting, and return the row count written."""
         try:
             workbook = getattr(writer, "book", writer)
             worksheet = workbook.add_worksheet(sheet_name)
@@ -201,8 +189,6 @@ class AllFindingsReport:
         index: int,
         detail: RuleExecutionDetail,
     ) -> dict[str, Any]:
-        """Convert one rule execution detail into a report row dict."""
-
         return {
             "#": index,
             "Table": detail.table_name,

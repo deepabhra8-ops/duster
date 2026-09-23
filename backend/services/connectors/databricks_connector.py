@@ -1,5 +1,3 @@
-"""Databricks SQL warehouse database connector."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -10,8 +8,6 @@ from services.connectors.registry import register_connector
 
 @register_connector
 class DatabricksConnector(DatabaseConnector):
-    """Builds Databricks connection strings."""
-
     db_type = "databricks"
     required_fields = ("server_hostname", "access_token", "http_path")
 
@@ -19,7 +15,6 @@ class DatabricksConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build a Databricks SQLAlchemy connection string."""
         params = [f"http_path={details.get('http_path', '')}"]
         params += [
             f"{key}={details[key]}"
@@ -36,5 +31,4 @@ class DatabricksConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> dict[str, Any]:
-        """Return no connect_args - the Databricks dialect does not accept connect_timeout."""
         return {}

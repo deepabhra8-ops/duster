@@ -1,5 +1,3 @@
-"""Draws the All DQ Findings sheet in xlsxwriter: header, score-bucket coloring, integer columns, and autofilter."""
-
 from __future__ import annotations
 
 import math
@@ -11,8 +9,6 @@ from engine.reporting.dimension_scorer import DimensionScorer
 
 
 class AllFindingsWorkbookWriter:
-    """Lays out the All DQ Findings sheet in xlsxwriter, given an already-built findings DataFrame."""
-
     DARK_BLUE = "#1F4E79"
     ALT_BLUE = "#EBF3FB"
     GREEN_FILL = "#E2EFDA"
@@ -33,7 +29,6 @@ class AllFindingsWorkbookWriter:
         self,
         scorer: DimensionScorer | None = None,
     ) -> None:
-        """Store the scorer used for score formatting and grading."""
         self.scorer = scorer or DimensionScorer()
 
     def write(
@@ -42,7 +37,6 @@ class AllFindingsWorkbookWriter:
         worksheet: Any,
         dataframe: DataFrame,
     ) -> int:
-        """Format the header row, data rows, column widths, freeze panes, and autofilter; return the row count."""
         formats = self._create_formats(workbook)
         rows = dataframe.collect()
 
@@ -57,8 +51,6 @@ class AllFindingsWorkbookWriter:
         self,
         workbook: Any,
     ) -> dict[str, Any]:
-        """Build the named xlsxwriter cell formats used across this sheet."""
-
         return {
             "header": workbook.add_format(
                 {
@@ -135,8 +127,6 @@ class AllFindingsWorkbookWriter:
         dataframe: DataFrame,
         formats: dict[str, Any],
     ) -> None:
-        """Write the column header row."""
-
         for column_index, column_name in enumerate(dataframe.columns):
             worksheet.write(0, column_index, column_name, formats["header"])
 
@@ -149,8 +139,6 @@ class AllFindingsWorkbookWriter:
         rows: list[Any],
         formats: dict[str, Any],
     ) -> None:
-        """Write every data row, dispatching Score/integer/text cells to their formatters."""
-
         for row_index, row in enumerate(rows):
             excel_row_number = row_index + 2
             is_alt = excel_row_number % 2 == 0
@@ -191,7 +179,6 @@ class AllFindingsWorkbookWriter:
         value: Any,
         formats: dict[str, Any],
     ) -> None:
-        """Write a Score cell, colored by its good/warning/poor grade."""
         score = self.scorer.safe_score(value)
 
         worksheet.write(
@@ -205,8 +192,6 @@ class AllFindingsWorkbookWriter:
         self,
         worksheet: Any,
     ) -> None:
-        """Apply the configured column widths."""
-
         for column_index, width in enumerate(self.COLUMN_WIDTHS):
             worksheet.set_column(column_index, column_index, width)
 
@@ -216,8 +201,6 @@ class AllFindingsWorkbookWriter:
         dataframe: DataFrame,
         row_count: int,
     ) -> None:
-        """Freeze the header row and enable autofilter."""
-
         worksheet.freeze_panes(1, 0)
 
         if len(dataframe.columns) > 0:
@@ -232,7 +215,6 @@ class AllFindingsWorkbookWriter:
 
     @staticmethod
     def _excel_value(value: Any) -> Any:
-        """Replace a missing value with an empty string for Excel output."""
         if value is None:
             return ""
 

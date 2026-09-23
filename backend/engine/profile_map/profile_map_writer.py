@@ -1,5 +1,3 @@
-"""Writes profile-map rule configuration to an Excel workbook (one formatted sheet per table plus an instructions sheet)."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -18,8 +16,6 @@ logger = get_logger(__name__)
 
 
 class ProfileMapWriter:
-    """Writes TableRuleConfiguration data to a formatted profile-map Excel workbook."""
-
     CDE_HEADER = "CDE\n(X=Yes)"
     RULES_HEADER = "Applicable Rule\n(Single ID)"
     PARAMETERS_HEADER = "Rule Parameters\n(see Instructions)"
@@ -51,7 +47,6 @@ class ProfileMapWriter:
         project_name: str = "Project",
         run_timestamp: str | None = None,
     ) -> Path:
-        """Write the full profile map workbook (instructions sheet plus one sheet per table)."""
         path = Path(path)
 
         try:
@@ -60,9 +55,6 @@ class ProfileMapWriter:
                 exist_ok=True,
             )
 
-            # xlsxwriter directly: this writer already styles every header and
-            # column itself, so a dataframe library's Excel wrapper was only
-            # writing the data rows.
             with xlsxwriter.Workbook(
                 str(path),
                 XLSXWRITER_SAFE_OPTIONS,
@@ -98,7 +90,6 @@ class ProfileMapWriter:
         project_name: str,
         run_timestamp: str | None,
     ) -> None:
-        """Write the Instructions sheet explaining how to fill in the profile map."""
         try:
             workbook = getattr(writer, "book", writer)
             worksheet = workbook.add_worksheet("Instructions")
@@ -173,7 +164,6 @@ class ProfileMapWriter:
     def _format_generated(
         run_timestamp: str | None,
     ) -> str:
-        """Format the run timestamp for display, falling back to now."""
         if run_timestamp:
             try:
                 return datetime.fromisoformat(
@@ -190,7 +180,6 @@ class ProfileMapWriter:
         table_name: str,
         configuration: TableRuleConfiguration,
     ) -> None:
-        """Write one table's rule configuration as a formatted sheet."""
         try:
             rows: list[dict[str, Any]] = []
 
@@ -271,8 +260,6 @@ class ProfileMapWriter:
             workbook = getattr(writer, "book", writer)
             worksheet = workbook.add_worksheet(safe_sheet_name)
 
-            # Data starts at row 1; _format_table writes the styled header into
-            # row 0 immediately after.
             for row_index, record in enumerate(dataframe.iter_rows(), start=1):
                 for column_index, value in enumerate(record):
                     worksheet.write(
@@ -295,19 +282,6 @@ class ProfileMapWriter:
 
     @staticmethod
     def _stringify(value: Any) -> str:
-        """Render a min/max metadata value as text, with None becoming empty.
-
-        Min/Max is the one column that genuinely mixes types across rows: a date or
-        numeric column yields a real value, while a string or boolean one yields the
-        NOT_APPLICABLE sentinel. Handing that mixture to pl.DataFrame() below raises
-        ComputeError ("could not append value ... of type datetime[us] to the
-        builder"), so any table with both a temporal and a text column would fail to
-        write at all.
-
-        Mirrors profile_map_rows._stringify deliberately: that is what the Glue path
-        already stores for these two fields, so a workbook written here and the rows
-        stored from a Glue run stay identical rather than drifting apart.
-        """
         if value is None:
             return ""
 
@@ -318,7 +292,6 @@ class ProfileMapWriter:
         part: Any,
         total: Any,
     ) -> str:
-        """Format part/total as a percentage string, guarding against zero/invalid totals."""
         try:
             part = float(part)
             total = float(total)
@@ -336,8 +309,6 @@ class ProfileMapWriter:
         worksheet: Any,
         dataframe: pl.DataFrame,
     ) -> None:
-        """Apply header styling, column widths, freeze panes, and autofilter to a sheet."""
-
         header_format = workbook.add_format(
             {
                 "bold": True,
@@ -410,7 +381,6 @@ class ProfileMapWriter:
         self,
         table_name: str,
     ) -> str:
-        """Sanitize a table name into a valid, length-limited, unique Excel sheet name."""
         invalid_characters = {
             "[",
             "]",

@@ -1,5 +1,3 @@
-"""DQ4: flags numeric values with more decimal places than configured."""
-
 from __future__ import annotations
 
 from pyspark.sql import DataFrame
@@ -13,8 +11,6 @@ from engine.rules.rule_registry import register_rule
 
 @register_rule
 class DQ4DecimalPrecisionRule(BaseRule):
-    """Validates that a numeric column doesn't exceed a configured decimal precision."""
-
     rule_id = "DQ4"
     rule_name = "Decimal Precision"
     dimension = "Conformity"
@@ -28,7 +24,6 @@ class DQ4DecimalPrecisionRule(BaseRule):
         parameters: str,
         context: ExecutionContext,
     ) -> RuleResult:
-        """Fail values with more decimal places than the configured precision (default 2)."""
         precision = RuleParameterParser.get_int(
             parameters,
             position=0,
@@ -51,7 +46,6 @@ class DQ4DecimalPrecisionRule(BaseRule):
 
     @staticmethod
     def _is_null_like(value) -> bool:
-        """Return whether a value should be treated as null (None, NaN, or blank)."""
         if value is None:
             return True
 
@@ -62,15 +56,6 @@ class DQ4DecimalPrecisionRule(BaseRule):
 
 
 class _WithinPrecision:
-    """Per-row decimal-precision check for DQ4.
-
-    Built as a module-level callable rather than a closure so Spark can pickle
-    it: the deployed engine is Cythonised, and a nested `def` there is not a
-    types.FunctionType, so cloudpickle falls back to pickling by qualified name
-    and fails with "Can't pickle local object". See _RangeCheck in
-    engine/rules/dq5_range.py for the full explanation.
-    """
-
     def __init__(self, precision: int) -> None:
         self.precision = precision
 

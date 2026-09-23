@@ -1,9 +1,3 @@
-"""Round-trip tests: profile map -> stored JSON rows -> profile map.
-
-This is the seam that lets a validator run consume an analyst's in-browser edits
-instead of a workbook, so the two halves have to agree on row shape exactly. A
-mismatch here silently drops rule configuration rather than failing loudly.
-"""
 from __future__ import annotations
 
 from engine.core.result_models import RuleConfiguration, TableRuleConfiguration
@@ -117,7 +111,6 @@ def test_build_rows_renders_cde_as_x():
 
 
 def test_roundtrip_preserves_rules_cde_and_parameters():
-    """The whole point of the seam: what profiling produced must survive the trip."""
     original = _profile_map()
     restored = ProfileMapReader().from_rows(build_rows(original))
 
@@ -135,8 +128,6 @@ def test_roundtrip_preserves_rules_cde_and_parameters():
 
 
 def test_roundtrip_reflects_edited_rows():
-    """An edit made to the stored rows must reach the restored configuration -
-    this is what makes a validator run pick up an analyst's changes."""
     rows = build_rows(_profile_map())
 
     for row in rows:

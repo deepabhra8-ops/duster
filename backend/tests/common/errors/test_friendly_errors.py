@@ -1,7 +1,3 @@
-"""Unit tests for common.errors.friendly_errors.describe_connection_error(), including the
-extra_patterns parameter added so connector-specific error vocabulary (e.g. Salesforce's)
-doesn't need to live in this shared module.
-"""
 from __future__ import annotations
 
 import re
@@ -32,9 +28,6 @@ def test_import_error_reports_missing_driver():
 
 
 def test_extra_patterns_are_checked_before_generic_patterns():
-    """A connector's own error_patterns must win even when the text would also match a
-    generic pattern below it - this is what lets Salesforce's INVALID_LOGIN mean something
-    more specific than the generic 'authentication failed' message."""
     extra_patterns = (
         (re.compile(r"custom_marker"), "Custom connector-specific message."),
     )

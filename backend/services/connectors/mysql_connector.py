@@ -1,5 +1,3 @@
-"""MySQL database connector."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -10,8 +8,6 @@ from services.connectors.registry import register_connector
 
 @register_connector
 class MysqlConnector(DatabaseConnector):
-    """Builds MySQL connection strings."""
-
     db_type = "mysql"
     required_fields = ("host", "username", "password")
 
@@ -19,7 +15,6 @@ class MysqlConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build a pymysql SQLAlchemy connection string."""
         database = details.get("database", "")
         ssl_enabled = details.get("ssl_enabled", True)
         ssl = "?ssl_mode=REQUIRED" if ssl_enabled is not False else ""

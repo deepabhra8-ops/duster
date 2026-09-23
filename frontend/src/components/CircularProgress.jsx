@@ -1,8 +1,3 @@
-/**
- * CircularProgress.jsx - small SVG ring progress indicator with the
- * percentage centered inside it. Generic/reusable - first used on
- * ProfileMapperJob.jsx's side rail (see docs/ux-plan.md §5).
- */
 export default function CircularProgress({ percent = 0, size = 72, strokeWidth = 7, label }) {
   const clamped = Math.max(0, Math.min(100, percent));
   const radius = (size - strokeWidth) / 2;

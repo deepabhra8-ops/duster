@@ -1,5 +1,3 @@
-"""Database connector implementations; each module self-registers one DatabaseConnector for a database type via @register_connector."""
-
 from services.connectors import azure_sql_connector
 from services.connectors import bigquery_connector
 from services.connectors import databricks_connector

@@ -1,14 +1,3 @@
-/**
- * NotificationsContext - the reducer's transitions, then the provider around it.
- *
- * The reducer is exercised directly because its subtle parts (merging a refetched first page
- * into a list the user has scrolled, and keeping the badge honest) are pure logic, and pinning
- * them through the DOM would be slow and indirect. The provider tests then cover what only a
- * running provider can get wrong: the stream's lifecycle, optimistic updates and their undo,
- * and overlapping requests.
- *
- * The API module is mocked and EventSource is the scriptable fake in test/fakeEventSource.js.
- */
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -41,7 +30,6 @@ const n = (id, over = {}) => ({
   ...over,
 });
 
-/** The shape api.js resolves a successful list call to: axios's body, nested in the wrapper's. */
 const page = (items, { unread = items.filter((i) => i.status === "unread").length, next = null } = {}) => ({
   ok: true,
   data: { ok: true, data: { items, unread_count: unread, next_cursor: next } },
@@ -53,8 +41,6 @@ const read = (notification, unread) => ({
 });
 
 const loaded = (over = {}) => ({ ...initialNotificationsState, loaded: true, status: "ready", ...over });
-
-/* ─────────────────────────── reducer ─────────────────────────── */
 
 describe("reducer: refreshed (a fetched first page)", () => {
   it("fills an empty state and adopts the server's cursor and total", () => {
@@ -78,7 +64,7 @@ describe("reducer: refreshed (a fetched first page)", () => {
     const next = reduce(held, { type: "refreshed", items: [n(9), n(8)], unreadCount: 5, nextCursor: 8 });
 
     expect(next.items.map((i) => i.id)).toEqual([9, 8, 7, 6, 5]);
-    expect(next.nextCursor).toBe(5); // not 8: replacing it would make "load more" repeat pages
+    expect(next.nextCursor).toBe(5);
   });
 
   it("takes the newer copy of a row it already holds (it may have been read elsewhere)", () => {
@@ -104,8 +90,6 @@ describe("reducer: refreshed (a fetched first page)", () => {
   });
 
   it("drops the held list when more than a page arrived, rather than hide the hole", () => {
-    // Held 3..1; the client was away while 4..30 arrived. The fresh page is 30..11. Joining them
-    // would show 30..11 then jump to 3, and the cursor would skip 10..4 for good.
     const held = loaded({ items: [n(3), n(2), n(1)], nextCursor: null });
     const fresh = Array.from({ length: 20 }, (_, i) => n(30 - i));
 
@@ -242,7 +226,7 @@ describe("reducer: marking read", () => {
 
     expect(next.items).toEqual([]);
     expect(next.unreadCount).toBe(0);
-    expect(next.nextCursor).toBeNull(); // otherwise "load older" would offer pages that no longer exist
+    expect(next.nextCursor).toBeNull();
     expect(next.error).toBe("");
     expect(next.loaded).toBe(true);
   });
@@ -282,8 +266,6 @@ describe("reducer: paging", () => {
   });
 });
 
-/* ─────────────────────────── provider ─────────────────────────── */
-
 let ctx;
 
 function Probe() {
@@ -314,7 +296,6 @@ function mount() {
 const text = (id) => screen.getByTestId(id).textContent;
 const ready = () => waitFor(() => expect(text("status")).toBe("ready"));
 
-/** Let pending promise callbacks run - fake timers do not, and waitFor cannot be used under them. */
 const flush = () => act(async () => { await vi.advanceTimersByTimeAsync(0); });
 
 beforeEach(() => {
@@ -338,7 +319,7 @@ describe("provider: loading", () => {
 
     expect(api.listNotifications).toHaveBeenCalledWith({ limit: 20 });
     expect(text("ids")).toBe("3,2,1");
-    expect(text("count")).toBe("42"); // two unread rows are held; 42 is unread in total
+    expect(text("count")).toBe("42");
     expect(text("more")).toBe("true");
   });
 
@@ -365,8 +346,8 @@ describe("provider: loading", () => {
   it("a slow, older refresh cannot overwrite a newer one", async () => {
     let resolveSlow;
     api.listNotifications
-      .mockReturnValueOnce(new Promise((resolve) => { resolveSlow = resolve; })) // the initial load, slow
-      .mockResolvedValueOnce(page([n(2)], { unread: 1 })); // the refetch when the stream opens, fast
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSlow = resolve; }))
+      .mockResolvedValueOnce(page([n(2)], { unread: 1 }));
 
     mount();
     await act(async () => FakeEventSource.last.open());
@@ -450,19 +431,19 @@ describe("provider: the live stream", () => {
     await flush();
 
     expect(first.closed).toBe(true);
-    expect(api.listNotifications).toHaveBeenCalledTimes(2); // the mount load + the refetch
+    expect(api.listNotifications).toHaveBeenCalledTimes(2);
     expect(FakeEventSource.instances).toHaveLength(1);
 
     await act(async () => { await vi.advanceTimersByTimeAsync(1999); });
     expect(FakeEventSource.instances).toHaveLength(1);
     await act(async () => { await vi.advanceTimersByTimeAsync(1); });
-    expect(FakeEventSource.instances).toHaveLength(2); // after 2s
+    expect(FakeEventSource.instances).toHaveLength(2);
 
     act(() => FakeEventSource.last.fail({ closed: true }));
     await act(async () => { await vi.advanceTimersByTimeAsync(3999); });
     expect(FakeEventSource.instances).toHaveLength(2);
     await act(async () => { await vi.advanceTimersByTimeAsync(1); });
-    expect(FakeEventSource.instances).toHaveLength(3); // after 4s: doubled
+    expect(FakeEventSource.instances).toHaveLength(3);
   });
 
   it("resets the delay once a connection succeeds", async () => {
@@ -472,12 +453,12 @@ describe("provider: the live stream", () => {
 
     act(() => FakeEventSource.last.fail({ closed: true }));
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
-    act(() => FakeEventSource.last.open()); // it worked this time
+    act(() => FakeEventSource.last.open());
     act(() => FakeEventSource.last.fail({ closed: true }));
 
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
 
-    expect(FakeEventSource.instances).toHaveLength(3); // back to 2s, not 4s
+    expect(FakeEventSource.instances).toHaveLength(3);
   });
 
   it("closes the stream on unmount, and a pending reconnect never fires", async () => {
@@ -536,11 +517,11 @@ describe("provider: marking read", () => {
     let pending;
     act(() => { pending = ctx.markRead(3); });
 
-    expect(text("statuses")).toBe("3:read,2:unread"); // before the server has answered
+    expect(text("statuses")).toBe("3:read,2:unread");
     expect(text("count")).toBe("4");
 
     await act(async () => {
-      resolvePatch(read(n(3), 3)); // the server says 3 - someone read another elsewhere
+      resolvePatch(read(n(3), 3));
       await pending;
     });
 
@@ -610,12 +591,12 @@ describe("provider: clearing", () => {
     let pending;
     act(() => { pending = ctx.clearAll(); });
 
-    expect(text("ids")).toBe(""); // before the server has answered
+    expect(text("ids")).toBe("");
     expect(text("count")).toBe("0");
     expect(text("more")).toBe("false");
 
     await act(async () => {
-      resolveDelete({ ok: true, data: { ok: true, data: { deleted: 40, unread_count: 1 } } }); // one arrived meanwhile
+      resolveDelete({ ok: true, data: { ok: true, data: { deleted: 40, unread_count: 1 } } });
       await pending;
     });
 
@@ -632,9 +613,9 @@ describe("provider: clearing", () => {
     await act(async () => { await ctx.clearAll(); });
 
     expect(await screen.findByText("Couldn't clear notifications")).toBeInTheDocument();
-    await waitFor(() => expect(text("ids")).toBe("3,2")); // nothing was deleted, so the server still has them
+    await waitFor(() => expect(text("ids")).toBe("3,2"));
     expect(text("count")).toBe("2");
-    expect(api.listNotifications).toHaveBeenCalledTimes(2); // the mount load + the recovery fetch
+    expect(api.listNotifications).toHaveBeenCalledTimes(2);
   });
 
   it("a notification that arrives after clearing is kept", async () => {
@@ -687,7 +668,7 @@ describe("provider: paging", () => {
     act(() => { ctx.loadMore(); });
     act(() => { ctx.loadMore(); });
 
-    expect(api.listNotifications).toHaveBeenCalledTimes(2); // the mount load and ONE page load
+    expect(api.listNotifications).toHaveBeenCalledTimes(2);
 
     await act(async () => resolveMore(page([n(4)], { next: null })));
   });
@@ -695,8 +676,6 @@ describe("provider: paging", () => {
 
 describe("useNotifications", () => {
   it("refuses to be used outside its provider", () => {
-    // React reports a render error twice more: to console.error, and to window's "error" event,
-    // which jsdom prints as a stack trace. Both are expected here and would bury a real failure.
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const swallow = (event) => event.preventDefault();
     window.addEventListener("error", swallow);

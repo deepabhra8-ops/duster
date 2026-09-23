@@ -1,4 +1,3 @@
-"""Spark-based unit test for DQ1CompletenessRule.validate() against a real small DataFrame."""
 from __future__ import annotations
 
 import pytest

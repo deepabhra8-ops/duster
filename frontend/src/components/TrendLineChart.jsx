@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
 
-/* The API sends each point as {date, score, runs} (DashboardService._score_trend).
-   `day` is accepted too because that is what this component read for its whole
-   life - and since `p.day` was undefined against the real payload, every X-axis
-   label rendered as an empty string and the axis looked deliberately blank. */
 const pointDate = (p) => p.date || p.day || '';
 
 export default function TrendLineChart({ points }) {
@@ -24,14 +20,12 @@ export default function TrendLineChart({ points }) {
       min = 0; max = 1; span = 1;
     }
   } else {
-    // Add 10% padding top and bottom, but clamp between 0 and 1 (0% and 100%)
     const pad = span * 0.1;
     min = Math.max(0, min - pad);
     max = Math.min(1, max + pad);
     span = max - min;
   }
 
-  // Ensure Y-axis labels are unique even for very tight score clusters
   let decimals = 1;
   const stepDiff = (span * 0.25) * 100; 
   if (stepDiff > 0 && stepDiff < 0.1) decimals = 2;
@@ -48,7 +42,6 @@ export default function TrendLineChart({ points }) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Decide which X-axis labels to render to prevent overlap on large datasets
   const maxLabels = 6;
   const labelIndices = new Set();
   if (points.length <= maxLabels) {
@@ -103,10 +96,6 @@ export default function TrendLineChart({ points }) {
             const y = 100 - (((Number(p.score) || 0) - min) / span) * 100;
             const runs = Number(p.runs) || 0;
 
-            /* The hit area is deliberately larger than the 8px dot: a point on a
-               line chart is a target the size of a full stop, and asking for it
-               to be hit exactly makes the tooltip feel broken rather than
-               precise. The dot stays its own size inside it. */
             return (
               <div
                 key={i}
@@ -118,8 +107,6 @@ export default function TrendLineChart({ points }) {
                 <div className="trend-dot" />
 
                 {hovered === i && (
-                  /* Flipped to the other side near the edges, so the first and
-                     last points do not push their tooltip off the card. */
                   <div
                     className={`trend-tooltip${x > 70 ? ' align-right' : ''}${x < 30 ? ' align-left' : ''}`}
                   >

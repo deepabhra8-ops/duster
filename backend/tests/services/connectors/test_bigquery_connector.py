@@ -1,7 +1,3 @@
-"""Unit tests for BigqueryConnector.accelerator_credentials() - the other half of the
-config_builder if/else branch removed during the OCP refactor - plus regression locks
-confirming it still relies on DatabaseConnector's other defaults unchanged.
-"""
 from __future__ import annotations
 
 from services.connectors.bigquery_connector import BigqueryConnector
@@ -33,14 +29,10 @@ def test_accelerator_credentials_defaults_missing_fields_to_empty_strings():
 
 
 def test_still_supports_database_staging_by_default():
-    """Unlike Salesforce, BigQuery IS a valid staging target (via Spark's dedicated
-    format("bigquery") writer) - it must not have overridden this default."""
     assert BigqueryConnector().supports_database_staging() is True
 
 
 def test_still_supports_generic_sql_metadata_inspection_by_default():
-    """BigQuery has a real SQLAlchemy dialect (bigquery://project/dataset), so it keeps
-    using the generic inspector rather than needing its own list_* methods."""
     assert BigqueryConnector().supports_sql_metadata_inspection() is True
 
 

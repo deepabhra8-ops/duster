@@ -1,5 +1,3 @@
-"""HTTP endpoints for uploading, listing, and previewing files, delegating processing to UploadService."""
-
 from fastapi import APIRouter, Request
 from starlette.datastructures import UploadFile
 from fastapi.responses import JSONResponse
@@ -16,8 +14,6 @@ upload_bp = APIRouter()
 
 @upload_bp.post("/api/upload")
 async def upload_file(request: Request):
-    """Receive one or more uploaded files."""
-
     try:
         form = await request.form()
 
@@ -86,8 +82,6 @@ async def upload_file(request: Request):
 
 @upload_bp.get("/api/uploads")
 def list_uploads(request: Request):
-    """Return uploaded files with filtering, sorting, and pagination."""
-
     try:
         page = int(
             request.query_params.get(
@@ -175,8 +169,6 @@ def list_uploads(request: Request):
 
 @upload_bp.get("/api/uploads/preview")
 def preview_upload(request: Request):
-    """Return a preview of an uploaded CSV or Excel file."""
-
     kind = request.query_params.get(
         "kind",
         "data",

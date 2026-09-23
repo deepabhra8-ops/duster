@@ -1,9 +1,3 @@
-/**
- * NotFound.jsx - 404 fallback page.
- *
- * Rendered by the catch-all route for any URL that doesn't match a known
- * page, instead of silently redirecting somewhere.
- */
 import { Link, useLocation } from "react-router-dom";
 
 export default function NotFound() {

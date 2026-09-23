@@ -1,11 +1,3 @@
-/**
- * FilePreviewModal.jsx - Overlay modal that previews the first rows of an
- * uploaded file via previewUpload(kind, filename).
- *
- * Controlled by the parent: render with `open` true and a target
- * { kind, filename }. Closing is handled via onClose (overlay click,
- * close button, or Esc).
- */
 import { useEffect, useState } from "react";
 import { useScrollLock } from "../hooks/useScrollLock.js";
 import { previewUpload } from "../api/api.js";
@@ -32,7 +24,6 @@ export default function FilePreviewModal({ open, kind, filename, onClose }) {
     };
   }, [open, kind, filename]);
 
-  // Close on Escape while open.
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -42,8 +33,6 @@ export default function FilePreviewModal({ open, kind, filename, onClose }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // Freeze the page behind the overlay - see the hook for why a plain
-  // body overflow:hidden is not enough (nesting, scrollbar layout shift).
   useScrollLock(open);
 
   if (!open) return null;

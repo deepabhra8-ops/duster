@@ -1,5 +1,3 @@
-"""Google BigQuery database connector."""
-
 from __future__ import annotations
 
 import json
@@ -16,8 +14,6 @@ logger = get_logger(__name__)
 
 @register_connector
 class BigqueryConnector(DatabaseConnector):
-    """Builds and tests BigQuery connections using service-account credentials."""
-
     db_type = "bigquery"
     required_fields = ("project_id", "dataset_id")
 
@@ -25,14 +21,12 @@ class BigqueryConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build a BigQuery SQLAlchemy connection string."""
         return f"bigquery://{details.get('project_id', '')}/{details.get('dataset_id', '')}"
 
     def validate(
         self,
         details: dict[str, Any],
     ) -> list[str]:
-        """Return missing required fields, including service_account_json."""
         missing = super().validate(details)
 
         if not str(details.get("service_account_json", "")).strip():
@@ -41,9 +35,6 @@ class BigqueryConnector(DatabaseConnector):
         return missing
 
     def accelerator_credentials(self, details: dict[str, Any]) -> dict[str, Any]:
-        """Return the service-account credentials the engine's dedicated BigQuery read/write
-        path needs directly - it doesn't go through JDBC, so a connection_string alone
-        (built above) isn't enough."""
         return {
             "service_account_json": details.get("service_account_json", ""),
             "project_id": details.get("project_id", ""),
@@ -54,8 +45,6 @@ class BigqueryConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> dict[str, Any]:
-        """Test a BigQuery connection using service-account credentials, bypassing SQLAlchemy entirely."""
-
         try:
             from google.cloud import bigquery
             from google.oauth2 import service_account

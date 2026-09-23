@@ -1,12 +1,3 @@
-/**
- * NewProfileMapperJobModal - the multi-file Flat File path.
- *
- * Each picked CSV becomes one table of the job (and one results tab), so these
- * pin: every file is uploaded and attached in a single tables call, a second file
- * with the same name is refused (the engine keys results by table name and would
- * overwrite), bad files don't cost the user the good ones, and a failed upload is
- * named in a toast rather than silently dropped.
- */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

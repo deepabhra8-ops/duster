@@ -1,5 +1,3 @@
-"""Amazon Redshift database connector."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -10,8 +8,6 @@ from services.connectors.registry import register_connector
 
 @register_connector
 class RedshiftConnector(DatabaseConnector):
-    """Builds Redshift connection strings."""
-
     db_type = "redshift"
     required_fields = ("host", "username", "password", "database")
 
@@ -19,7 +15,6 @@ class RedshiftConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build a psycopg2 SQLAlchemy connection string."""
         ssl_enabled = details.get("ssl_enabled", True)
         ssl = "?sslmode=require" if ssl_enabled is not False else ""
 
@@ -32,7 +27,6 @@ class RedshiftConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> dict[str, Any]:
-        """Return connect_args with SSL mode for Redshift."""
         args = super().connect_args(details)
         ssl_enabled = details.get("ssl_enabled", True)
         if ssl_enabled is not False:

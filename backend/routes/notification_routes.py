@@ -1,23 +1,3 @@
-"""HTTP endpoints for the top bar's notification bell.
-
-    GET    /api/notifications          the signed-in user's notifications, newest first
-    POST   /api/notifications          create one (for yourself; admins may name another user)
-    PATCH  /api/notifications/{id}     mark one read
-    POST   /api/notifications/read-all mark all read
-    DELETE /api/notifications          delete all of the user's notifications (irreversible)
-    GET    /api/notifications/stream   live feed of new notifications (Server-Sent Events)
-
-Everything is scoped to the authenticated user: a notification that belongs to
-someone else is reported as not found, the same as one that does not exist.
-
-Two routers, on purpose. `notification_bp` is registered in create_app() with the
-usual Depends(require_auth). The stream lives on `notification_stream_bp`, which
-is not - require_auth slides the session's expiry forward on every call, and an
-open stream would then keep a session alive for as long as a tab stayed open, so
-the inactivity timeout could never fire. The stream authenticates with
-require_auth_no_slide instead.
-"""
-
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
@@ -43,12 +23,10 @@ notification_stream_bp = APIRouter()
 
 
 def _error(message: str, status_code: int) -> JSONResponse:
-    """The error envelope api.js reads: a top-level "error" string."""
     return JSONResponse({"ok": False, "error": message}, status_code=status_code)
 
 
 def _parse_id(raw: str) -> int | None:
-    """An id from the URL, or None if it cannot possibly match a row."""
     try:
         value = int(raw)
     except (TypeError, ValueError):
@@ -58,7 +36,6 @@ def _parse_id(raw: str) -> int | None:
 
 
 async def _json_body(request: Request) -> dict | None:
-    """The request's JSON object, or None if the body is not one."""
     try:
         body = await request.json()
     except ValueError:
@@ -69,11 +46,6 @@ async def _json_body(request: Request) -> dict | None:
 
 @notification_bp.get("/api/notifications")
 def list_notifications(request: Request, username: str = Depends(require_auth)):
-    """One page of the user's notifications, newest first, with their total unread count.
-
-    Query: `limit` (default 20, max 50), `before` (an id - only older ones), `unread=true`.
-    Keyset-paged: pass the previous response's `next_cursor` as `before` for the next page.
-    """
     params = request.query_params
 
     try:
@@ -102,11 +74,6 @@ def list_notifications(request: Request, username: str = Depends(require_auth)):
 
 @notification_bp.post("/api/notifications")
 async def create_notification(request: Request, username: str = Depends(require_auth)):
-    """Create a notification. Body: {type, title, content?, link?, username?}.
-
-    Defaults to the caller. Naming a different `username` needs an admin - see
-    NotificationService.create for why.
-    """
     body = await _json_body(request)
 
     if body is None:
@@ -134,10 +101,8 @@ async def create_notification(request: Request, username: str = Depends(require_
     return JSONResponse({"ok": True, "data": notification}, status_code=201)
 
 
-# Registered before the "/{notification_id}" route below, so "read-all" is never read as an id.
 @notification_bp.post("/api/notifications/read-all")
 def mark_all_notifications_read(username: str = Depends(require_auth)):
-    """Mark every one of the user's notifications read."""
     try:
         return {"ok": True, "data": notification_service.mark_all_read(username)}
     except Exception:
@@ -147,10 +112,6 @@ def mark_all_notifications_read(username: str = Depends(require_auth)):
 
 @notification_bp.delete("/api/notifications")
 def clear_notifications(username: str = Depends(require_auth)):
-    """Delete every one of the user's notifications, read and unread. Irreversible.
-
-    Only ever the caller's own: the user comes from the session, never from the request.
-    """
     try:
         return {"ok": True, "data": notification_service.clear_all(username)}
     except Exception:
@@ -164,11 +125,6 @@ async def update_notification(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Mark one notification read. Body: {"status": "read"}.
-
-    Idempotent. Responds with the notification and the user's new unread count, so
-    the badge can be corrected without another request.
-    """
     parsed_id = _parse_id(notification_id)
 
     if parsed_id is None:
@@ -176,8 +132,6 @@ async def update_notification(
 
     body = await _json_body(request)
 
-    # Only unread -> read exists. Accepting a status field keeps the door open for
-    # more without changing the shape; anything else is refused rather than ignored.
     if body is None or body.get("status") != "read":
         return _error('Only {"status": "read"} is supported', 400)
 
@@ -198,11 +152,6 @@ async def stream_notifications(
     request: Request,
     username: str = Depends(require_auth_no_slide),
 ):
-    """Server-Sent Events: one `notification` event per new notification, until disconnect.
-
-    Starts from "now" - history comes from GET /api/notifications, and the client
-    re-fetches it whenever the stream (re)opens, which is what closes any gap.
-    """
     try:
         after_id = await run_in_threadpool(notification_repository.latest_id, username)
     except Exception:
@@ -219,9 +168,6 @@ async def stream_notifications(
         ),
         media_type="text/event-stream",
         headers={
-            # Without these an intermediary may hold the stream back until it fills a
-            # buffer, and the "live" feed arrives in lumps. X-Accel-Buffering is what
-            # Nginx honours to turn its proxy buffering off for this one response.
             "Cache-Control": "no-cache, no-transform",
             "X-Accel-Buffering": "no",
         },

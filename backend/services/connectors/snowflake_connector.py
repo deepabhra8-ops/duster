@@ -1,5 +1,3 @@
-"""Snowflake database connector."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -10,8 +8,6 @@ from services.connectors.registry import register_connector
 
 @register_connector
 class SnowflakeConnector(DatabaseConnector):
-    """Builds Snowflake connection strings."""
-
     db_type = "snowflake"
     required_fields = (
         "account",
@@ -26,7 +22,6 @@ class SnowflakeConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build a Snowflake SQLAlchemy connection string. 'role' is optional and read directly from details."""
         params = [
             f"warehouse={details.get('warehouse', '')}",
             f"role={details.get('role', '')}",

@@ -1,5 +1,3 @@
-"""Draws the Failed Rows sheet: one block per table with its own header and per-cell highlighting for failed columns."""
-
 from __future__ import annotations
 
 import math
@@ -16,15 +14,10 @@ from engine.reporting.failed_rows_formatter import (
 MAX_FORMATTED_COLUMNS = 50
 COLUMN_WIDTH = 22
 
-# TableValidator tags every row with this internal id column so row-level DQ-rule
-# failures collected under different rules can be matched back to the same physical row -
-# it's never shown as a data column in the sheet.
 ROW_ID_COLUMN = "_dq_row_id"
 
 
 class FailedRowsWorkbookWriter:
-    """Lays out the Failed Rows sheet in xlsxwriter, reading directly from ValidationRunResult per table."""
-
     TITLE = "Failed / Rejected Rows by Table"
 
     MED_BLUE = "#2E75B6"
@@ -37,7 +30,6 @@ class FailedRowsWorkbookWriter:
         self,
         formatter: FailedRowsFormatter | None = None,
     ) -> None:
-        """Store the formatter used to render and order row failures."""
         self.formatter = formatter or FailedRowsFormatter()
 
     def write(
@@ -46,7 +38,6 @@ class FailedRowsWorkbookWriter:
         worksheet: Any,
         validation_result: ValidationRunResult,
     ) -> None:
-        """Write the title, then one block per table with failed rows."""
         formats = self._create_formats(workbook)
 
         worksheet.write(0, 0, self.TITLE, formats["title"])
@@ -58,9 +49,6 @@ class FailedRowsWorkbookWriter:
             if table_result.failed_rows is None or table_result.fail_count == 0:
                 continue
 
-            # Stream rows from executors instead of materializing every failed row (every
-            # column, for every failing row in the table) in driver memory at once via
-            # collect() - bounded memory regardless of how many rows failed.
             failed_rows = table_result.failed_rows.toLocalIterator()
 
             current_row, columns_used = self._write_table_block(
@@ -96,8 +84,6 @@ class FailedRowsWorkbookWriter:
         start_row: int,
         formats: dict[str, Any],
     ) -> tuple[int, int]:
-        """Write one table's label, header row, and failed rows with per-cell highlighting."""
-
         row = start_row
 
         worksheet.write(
@@ -165,7 +151,6 @@ class FailedRowsWorkbookWriter:
 
                 is_failed = column_name in failed_columns
 
-                # The writer now checks the actual Python value before choosing the Excel format:
                 if isinstance(value, datetime):
                     cell_format = (
                         formats["failed_datetime"]
@@ -204,7 +189,6 @@ class FailedRowsWorkbookWriter:
         self,
         workbook: Any,
     ) -> dict[str, Any]:
-        """Build the named xlsxwriter cell formats used across this sheet."""
         return {
             "title": workbook.add_format(
                 {
@@ -300,7 +284,6 @@ class FailedRowsWorkbookWriter:
         worksheet: Any,
         column_count: int,
     ) -> None:
-        """Apply a uniform column width, capped at MAX_FORMATTED_COLUMNS."""
         column_count = min(
             max(column_count, 1),
             MAX_FORMATTED_COLUMNS,
@@ -316,7 +299,6 @@ class FailedRowsWorkbookWriter:
     def _row_height(
         failure_count: int,
     ) -> float:
-        """Return a row height scaled to the number of failures listed in that row."""
         lines = max(failure_count, 1)
 
         return min(15 * lines + 5, 120)
@@ -325,7 +307,6 @@ class FailedRowsWorkbookWriter:
     def _is_missing(
         value: Any,
     ) -> bool:
-        """Return whether a scalar value represents a missing value (collections are never missing)."""
         if value is None:
             return True
 
@@ -338,18 +319,15 @@ class FailedRowsWorkbookWriter:
     def _is_date_value(
         value: Any,
     ) -> bool:
-        """Return whether a scalar value is a Python date or datetime."""
         return isinstance(value, (date, datetime))
     
     @staticmethod
     def _excel_value(
         value: Any,
     ) -> Any:
-        """Convert a cell value into an Excel-writable form."""
         if FailedRowsWorkbookWriter._is_missing(value):
             return ""
 
-        # preserves date/datetime values
         if isinstance(value, (date, datetime)):
             return value
 

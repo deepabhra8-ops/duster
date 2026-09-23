@@ -1,12 +1,3 @@
-"""Unit tests for ProfileMapService - edit validation, normalization and auditing.
-
-The repository is patched throughout; no database is touched. apply_edits() reads
-through get_or_backfill() (not get()) so that a freshly-minted row_id gets
-persisted before anything is matched against it - see profile_map_repository.py's
-own docstring for why. Fixture rows here already carry a row_id, so backfilling
-is a no-op and get_or_backfill can be patched to just return the same fixture
-get() would have.
-"""
 from __future__ import annotations
 
 import uuid
@@ -53,9 +44,6 @@ def _stored(version: int = 1):
 
 def _edit(row_id="uuid-1", **changes):
     return {"row_id": row_id, "changes": changes}
-
-
-# ── cell validation ─────────────────────────────────────────────────
 
 
 def test_rejects_non_editable_field(service):
@@ -110,12 +98,10 @@ def test_analyst_notes_limit_is_200(service):
 
 
 def test_rule_parameters_keep_the_larger_limit(service):
-    """Only notes were capped at 200; parameters can still be longer."""
     assert service._validate_cell("Rule Parameters", "x" * 201) == "x" * 201
 
 
 def test_normalizes_rule_ids(service):
-    """Case is normalized."""
     assert service._normalize_rule_ids(" dq1 ") == "DQ1"
     assert service._normalize_rule_ids("") == ""
 
@@ -125,9 +111,6 @@ def test_normalizes_cde_flag(service):
     assert service._normalize_cde("true") == "X"
     assert service._normalize_cde("") == ""
     assert service._normalize_cde("no") == ""
-
-
-# ── applying edits ──────────────────────────────────────────────────
 
 
 def test_applies_edit_and_builds_audit(service):
@@ -168,7 +151,6 @@ def test_applies_edit_and_builds_audit(service):
 
 
 def test_rows_matched_by_row_id_not_index(service):
-    """A reordered map must still route the edit to the right row."""
     reordered = {"rows": [dict(ROWS[1]), dict(ROWS[0])], "version": 1, "row_count": 2}
     captured = {}
 
@@ -188,7 +170,6 @@ def test_rows_matched_by_row_id_not_index(service):
 
 
 def test_unchanged_value_is_a_noop_and_does_not_bump_version(service):
-    """Echoing the current value must not burn a version or write an audit row."""
     with patch(
         "services.profile_map_service.profile_map_repository.get_or_backfill",
         return_value=_stored(version=7),
@@ -225,15 +206,11 @@ def test_missing_profile_map_raises_keyerror(service):
             service.apply_edits("j1", 1, [_edit(**{"Analyst Notes": "x"})], "alice")
 
 
-# ── adding rule rows ────────────────────────────────────────────────
-
-
 def _addition(source_row_id="uuid-1", **changes):
     return {"source_row_id": source_row_id, "changes": changes}
 
 
 def _apply(service, *, edits=None, additions=None, removals=None, stored=None, version=1):
-    """Run apply_edits with the repository patched, returning what it was handed."""
     captured = {}
 
     with patch(
@@ -256,7 +233,6 @@ def _apply(service, *, edits=None, additions=None, removals=None, stored=None, v
 
 
 def _multi_rule_stored(version: int = 1):
-    """A column carrying two rules, so one can be removed without emptying it."""
     rows = [dict(r) for r in ROWS]
     second = dict(ROWS[0])
     second["row_id"] = "uuid-3"
@@ -280,22 +256,17 @@ def test_added_row_clones_column_metadata_and_gets_a_server_side_row_id(service)
     assert len(captured["rows"]) == len(ROWS) + 1
 
     added = next(r for r in captured["rows"] if r["Applicable Rules"] == "DQ5")
-    # Profiling metadata is inherited from the source row...
     assert added["Table"] == "claim"
     assert added["Column"] == "claim_id"
     assert added["Data Type"] == "bigint"
-    # ...and only the analyst's three fields differ.
     assert added["Rule Parameters"] == "1 | 99"
     assert added["Analyst Notes"] == "range check"
 
-    # The id is minted server-side and is not any existing row's.
     assert added["row_id"] not in {r["row_id"] for r in ROWS}
     assert uuid.UUID(added["row_id"])
 
 
 def test_added_row_is_inserted_beside_its_column_not_appended(service):
-    """A column's rules must stay contiguous - the UI groups on it, and the
-    exported workbook preserves row order."""
     _, captured = _apply(service, additions=[_addition(**{"Applicable Rules": "DQ5"})])
 
     columns = [r["Column"] for r in captured["rows"]]
@@ -310,12 +281,10 @@ def test_added_row_is_audited_as_an_addition(service):
     assert entry["new_value"] == "DQ5"
     assert entry["table"] == "claim"
     assert entry["column"] == "claim_id"
-    # Audit rows carry a real UUID - profile_map_edits.row_id is UUID NOT NULL.
     assert uuid.UUID(entry["row_id"])
 
 
 def test_edits_and_additions_apply_in_one_call(service):
-    """A Save carrying both must land as a single version bump, not two."""
     result, captured = _apply(
         service,
         edits=[_edit(row_id="uuid-2", **{"Analyst Notes": "edited"})],
@@ -344,13 +313,11 @@ def test_rejects_addition_with_unknown_rule_id(service):
 
 
 def test_rejects_addition_setting_a_profiling_field(service):
-    """Only the three analyst fields may be set; stats come from the source row."""
     with pytest.raises(ValueError, match="cannot be set on an added rule row"):
         _apply(service, additions=[_addition(**{"Applicable Rules": "DQ5", "Total Count": "999"})])
 
 
 def test_addition_alone_still_bumps_the_version(service):
-    """The no-op short-circuit must not swallow a save that only adds rows."""
     result, captured = _apply(service, edits=[], additions=[_addition(**{"Applicable Rules": "DQ5"})])
 
     assert result["version"] == 2
@@ -358,12 +325,8 @@ def test_addition_alone_still_bumps_the_version(service):
 
 
 def test_rejects_a_rule_the_column_already_has(service):
-    """A rule may apply to a column once - twice would score it twice."""
     with pytest.raises(ValueError, match="already has a DQ1 rule"):
         _apply(service, additions=[_addition(**{"Applicable Rules": "DQ1"})])
-
-
-# ── removing rule rows ──────────────────────────────────────────────
 
 
 def test_removes_one_rule_leaving_the_columns_others(service):
@@ -371,7 +334,6 @@ def test_removes_one_rule_leaving_the_columns_others(service):
 
     remaining = [r["row_id"] for r in captured["rows"]]
     assert "uuid-3" not in remaining
-    # The column itself and its other rule survive.
     assert "uuid-1" in remaining
     assert [r["Column"] for r in captured["rows"] if r["Column"] == "claim_id"] == ["claim_id"]
 
@@ -386,8 +348,6 @@ def test_removal_is_audited(service):
 
 
 def test_refuses_to_remove_a_columns_last_rule(service):
-    """Emptying a column would drop it from the map and strand the add flow,
-    which needs one of its rows as the source. Enabled is how you skip a column."""
     with pytest.raises(ValueError, match="must keep at least one rule"):
         _apply(service, removals=["uuid-2"])
 
@@ -398,7 +358,6 @@ def test_rejects_removal_of_unknown_row(service):
 
 
 def test_removal_runs_before_additions_so_a_rule_can_be_swapped(service):
-    """Deleting DQ10 and adding DQ10 back in one save must not trip the duplicate check."""
     _, captured = _apply(
         service,
         removals=["uuid-3"],

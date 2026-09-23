@@ -15,56 +15,7 @@ metadata_bp = APIRouter()
 
 @metadata_bp.post("/api/metadata")
 async def metadata(request: Request):
-    """
-    Return database metadata for the Configure page.
-
-    Supported levels:
-        schemas
-        tables
-        columns
-
-    Optional:
-        search
-
-    Examples:
-
-    Schemas:
-    {
-        "databaseType": "postgresql",
-        "connectionDetails": {...},
-        "level": "schemas",
-        "search": "ana"
-    }
-
-    Tables:
-    {
-        "databaseType": "postgresql",
-        "connectionDetails": {...},
-        "level": "tables",
-        "schema": "Analytics",
-        "search": "cust"
-    }
-
-    Columns:
-    {
-        "databaseType": "postgresql",
-        "connectionDetails": {...},
-        "level": "columns",
-        "schema": "Analytics",
-        "table": "customer",
-        "search": "customerid"
-    }
-
-    A connector whose DatabaseConnector.supports_sql_metadata_inspection() is False (no
-    SQLAlchemy dialect to introspect - e.g. Salesforce) is routed to its own
-    list_schemas()/list_tables()/list_columns() instead of the generic inspector below.
-    """
-
     try:
-        # ==========================================================
-        # REQUEST BODY
-        # ==========================================================
-
         body = await request.json()
 
         database_type = str(
@@ -90,10 +41,6 @@ async def metadata(request: Request):
         search = str(
             body.get("search", "")
         ).strip()
-
-        # ==========================================================
-        # VALIDATION
-        # ==========================================================
 
         if not database_type:
             return JSONResponse(
@@ -131,8 +78,6 @@ async def metadata(request: Request):
 
         connector = connector_registry.get(database_type)
 
-        # A connector without generic SQL inspection (e.g. Salesforce) owns whatever notion
-        # of "schema" makes sense for it - it may not need one selected first at all.
         uses_generic_sql_inspection = (
             connector is None
             or connector.supports_sql_metadata_inspection()
@@ -166,12 +111,7 @@ async def metadata(request: Request):
                 status_code=400,
             )
 
-        # Normalized search value.
         search_lower = search.lower()
-
-        # ==========================================================
-        # CONNECTOR-OWNED METADATA (no generic SQL inspection)
-        # ==========================================================
 
         if connector is not None and not uses_generic_sql_inspection:
 
@@ -204,10 +144,6 @@ async def metadata(request: Request):
                 "items": items,
             }
 
-        # ==========================================================
-        # DATABASE CONNECTION
-        # ==========================================================
-
         connection_string = (
             connection_service.build_connection_string(
                 database_type,
@@ -215,17 +151,9 @@ async def metadata(request: Request):
             )
         )
 
-        # Reuse a pooled engine per connection string instead of opening a brand-new
-        # authenticated connection for every schema/table/column lookup - see
-        # metadata_engine_cache.py for why this matters (repeated fresh logins can
-        # trip a database's failed-login lockout under normal Configure-page usage).
         engine = get_cached_engine(connection_string)
 
         inspector = inspect(engine)
-
-        # ==========================================================
-        # SCHEMAS
-        # ==========================================================
 
         if level == "schemas":
 
@@ -260,10 +188,6 @@ async def metadata(request: Request):
                 "ok": True,
                 "items": items,
             }
-
-        # ==========================================================
-        # TABLES
-        # ==========================================================
 
         if level == "tables":
 
@@ -303,10 +227,6 @@ async def metadata(request: Request):
                 "ok": True,
                 "items": items,
             }
-
-        # ==========================================================
-        # COLUMNS
-        # ==========================================================
 
         if level == "columns":
 
@@ -349,10 +269,6 @@ async def metadata(request: Request):
                 "ok": True,
                 "items": items,
             }
-
-        # ==========================================================
-        # FALLBACK
-        # ==========================================================
 
         return JSONResponse(
             {

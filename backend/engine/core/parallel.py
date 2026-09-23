@@ -1,30 +1,3 @@
-"""Bounded parallel execution of per-table work, shared by profiling and validation.
-
-Both engines used to walk their tables strictly one at a time. For a handful of
-large tables that is fine - each one already spreads across the whole cluster,
-so overlapping them wins little. It is the opposite for the common case of many
-small tables: each table's Spark job leaves most of the cluster idle while the
-driver waits for it, and total runtime becomes the sum of a lot of mostly-idle
-waits. Submitting several tables' jobs concurrently from the driver lets Spark's
-scheduler pack them together.
-
-Three things make this safe rather than merely faster:
-
-1. **Cancellation keeps working.** The Glue job stops a run with
-   ``cancelJobGroup(job_id)``, and a Spark job group is *thread-local* - work
-   submitted from a worker thread would not carry it, so a user's Cancel would
-   silently do nothing while the job kept burning cluster time. Each worker
-   re-applies the driver's job group before doing anything.
-
-2. **Concurrency is bounded.** Every in-flight table caches a DataFrame, so
-   unbounded workers means unbounded driver and executor memory. The cap is
-   deliberately small and configurable.
-
-3. **A failure is per-table.** One table raising must not lose the results of
-   the tables that already succeeded, so exceptions are captured against their
-   table and returned, not propagated out of the pool.
-"""
-
 from __future__ import annotations
 
 import os
@@ -42,10 +15,6 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
-# Small on purpose. Each concurrent table holds a cached DataFrame, and the
-# driver coordinates all of them; the aim is to stop the cluster idling between
-# tables, not to run everything at once. Override per deployment with
-# DQ_MAX_TABLE_WORKERS, or per job with config["max_table_workers"].
 DEFAULT_MAX_TABLE_WORKERS = 4
 
 _JOB_GROUP_ID = "spark.jobGroup.id"
@@ -54,8 +23,6 @@ _JOB_DESCRIPTION = "spark.job.description"
 
 @dataclass
 class TaskOutcome:
-    """One item's result, or the exception it raised. Never both."""
-
     index: int
     item: Any
     value: Any = None
@@ -67,12 +34,6 @@ class TaskOutcome:
 
 
 def resolve_max_workers(config: Any = None) -> int:
-    """Return the configured table-level concurrency, floored at 1.
-
-    Order of precedence: the job's own config, then the environment, then the
-    default. A value of 1 restores the original strictly-sequential behaviour,
-    which is the escape hatch if a deployment ever needs it.
-    """
     raw = None
 
     if config is not None:
@@ -98,7 +59,6 @@ def resolve_max_workers(config: Any = None) -> int:
 
 
 def _current_job_group() -> tuple[str | None, str | None]:
-    """Read the driver thread's Spark job group, if a session exists."""
     try:
         from engine.core.spark_session import get_spark_session
 
@@ -108,15 +68,11 @@ def _current_job_group() -> tuple[str | None, str | None]:
             context.getLocalProperty(_JOB_DESCRIPTION),
         )
     except Exception:
-        # No session yet, or a Spark build without local properties. Parallelism
-        # still works; only group-based cancellation would be unavailable, and
-        # that is what the warning in run_in_parallel covers.
         logger.debug("Could not read the current Spark job group", exc_info=True)
         return None, None
 
 
 def _apply_job_group(group_id: str | None, description: str | None) -> None:
-    """Re-apply the driver's job group inside a worker thread."""
     if group_id is None:
         return
 
@@ -141,14 +97,6 @@ def run_in_parallel(
     cancel_event: threading.Event | None = None,
     description: str = "task",
 ) -> list[TaskOutcome]:
-    """Run ``worker`` over ``items`` with bounded concurrency.
-
-    Returns one TaskOutcome per item, in the input's order regardless of the
-    order they finished, so downstream results stay deterministic.
-
-    Runs inline - no pool, no threads - for a single item or a worker count of
-    one, so the common small job behaves exactly as it did before.
-    """
     if not items:
         return []
 
@@ -167,9 +115,6 @@ def run_in_parallel(
         )
 
     def run_one(index: int, item: T) -> TaskOutcome:
-        # The worker runs on a pool thread, which does not inherit the driver
-        # thread's job group - without this, cancelJobGroup() would not reach
-        # anything submitted here.
         _apply_job_group(group_id, group_description)
 
         if cancel_event is not None and cancel_event.is_set():
@@ -177,7 +122,7 @@ def run_in_parallel(
 
         try:
             return TaskOutcome(index=index, item=item, value=worker(item))
-        except BaseException as exc:  # noqa: BLE001 - recorded, then re-raised by the caller if it wants
+        except BaseException as exc:
             return TaskOutcome(index=index, item=item, error=exc)
 
     logger.info(
@@ -187,9 +132,6 @@ def run_in_parallel(
         workers,
     )
 
-    # inheritable_thread_target also ensures the JVM-side thread is closed when
-    # the Python thread finishes, which matters for a long Glue run that would
-    # otherwise accumulate JVM threads.
     try:
         from pyspark.util import inheritable_thread_target
 
@@ -211,7 +153,6 @@ def _run_sequentially(
     cancel_event: threading.Event | None,
     description: str,
 ) -> list[TaskOutcome]:
-    """The single-worker path: identical semantics, without touching threads."""
     outcomes: list[TaskOutcome] = []
 
     for index, item in enumerate(items):
@@ -221,7 +162,7 @@ def _run_sequentially(
 
         try:
             outcomes.append(TaskOutcome(index=index, item=item, value=worker(item)))
-        except BaseException as exc:  # noqa: BLE001
+        except BaseException as exc:
             outcomes.append(TaskOutcome(index=index, item=item, error=exc))
 
     return outcomes

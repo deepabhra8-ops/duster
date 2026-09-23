@@ -1,32 +1,3 @@
-/**
- * Login.jsx - Standalone sign-in screen (no Sidebar/Topbar). Rendered outside
- * the authenticated layout by App.jsx, so it is the only page reachable without
- * a session.
- *
- * On success, always lands on DEFAULT_ROUTE (the dashboard), regardless of
- * which page the user was on when they signed out or their session expired.
- *
- * ── Layout ──────────────────────────────────────────────────────────────────
- * Two panels: the product on the left, the form on the right. The left half is
- * presentation - what this tool is and what it is for - and it is the half that
- * disappears first on a narrow screen, since none of it is needed to sign in.
- * Below 960px only the card remains - and the card carries the logo, so the
- * page still identifies itself with nothing extra to swap in.
- *
- * The login call itself is untouched: same useAuth().login({ username,
- * password }), same error handling, same post-login redirect.
- *
- * "Remember me" is deliberately narrow in scope. It stores ONLY the username,
- * in localStorage, and only so the field is prefilled next time; no password
- * and no token are written, and nothing about the session's lifetime changes -
- * that is the server's cookie, not ours to extend. Unticking it clears the
- * stored name on the next submit.
- *
- * There is deliberately no "Forgot password?" link. No reset flow exists - no
- * endpoint, no mail sender - so the link could only lead nowhere, and a dead
- * end at the point of failing to sign in is worse than no link at all. Add the
- * backend route and it belongs right beside the Remember me row.
- */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -46,7 +17,6 @@ import { useLocalStorage } from "../hooks/useLocalStorage.js";
 import { DEFAULT_ROUTE } from "../constants/appConfig.js";
 import "../styles/login.css";
 
-/** What the product does, in the order someone new would ask it. */
 const FEATURES = [
   {
     icon: Database,
@@ -95,8 +65,6 @@ export default function Login() {
       return;
     }
 
-    // Only the username, and only on a successful sign-in - there is no point
-    // remembering one the server just rejected.
     setRememberedUser(remember ? username : "");
 
     navigate(DEFAULT_ROUTE, { replace: true });
@@ -141,9 +109,6 @@ export default function Login() {
             <span className="auth-card-logo">DUSTER</span>
           </div>
 
-          {/* A door with an arrow through it - the one icon that means this
-              action rather than this product. The bar chart that was here
-              described the app, which the whole left panel already does. */}
           <span className="auth-card-icon" aria-hidden="true">
             <LogIn size={26} />
           </span>

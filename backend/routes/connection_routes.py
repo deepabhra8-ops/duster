@@ -1,14 +1,3 @@
-"""HTTP endpoints for testing database connections and managing saved connections.
-
-Saved connections are shared but owner-managed: any authenticated user may list
-and use one, but only its creator (or an admin) may edit, delete, or reveal its
-credentials - see SavedConnectionService, which enforces that.
-
-The whole router is registered with Depends(require_auth) in create_app(), so
-every route here is authenticated; routes needing the *identity* (for ownership)
-declare the dependency again to receive the username.
-"""
-
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
@@ -29,17 +18,11 @@ connection_bp = APIRouter()
 
 
 def _error(message: str, status_code: int) -> JSONResponse:
-    """Build the error envelope the frontend's axios wrapper expects.
-
-    api.js reads err.response.data.error, so every failure must carry a
-    top-level "error" string or the UI shows a bare status code.
-    """
     return JSONResponse({"ok": False, "error": message}, status_code=status_code)
 
 
 @connection_bp.post("/api/test-connection")
 async def test_connection(request: Request):
-    """Test a database connection using the supplied connection details."""
     try:
         body = await request.json()
         body = body if isinstance(body, dict) else {}
@@ -98,24 +81,8 @@ async def test_connection(request: Request):
         raise
 
 
-# =====================================================================
-# SAVED CONNECTIONS
-# =====================================================================
-
-
 @connection_bp.get("/api/connections")
 def list_connections(request: Request):
-    """List saved connections. Never returns credentials.
-
-    Two callers, two response shapes, told apart by whether `page` is present:
-
-    - The job wizard's connection picker (useSavedConnections.js) calls this
-      with no query params at all, and needs every connection back to search/
-      select from - so that shape is preserved exactly as before.
-    - The Connections manager page calls it with `page`/`pageSize` (+ optional
-      `search`/`dbType`/`sortOrder`), and gets one page back, filtered and
-      sorted in SQL - see SavedConnectionService.list_page.
-    """
     try:
         page_param = request.query_params.get("page")
 
@@ -153,7 +120,6 @@ async def create_connection(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Create a saved connection owned by the current user."""
     try:
         body = await request.json()
         body = body if isinstance(body, dict) else {}
@@ -166,12 +132,6 @@ async def create_connection(
             description=body.get("description", ""),
         )
 
-        # No catalog work here on purpose. Saving a connection used to run a
-        # schema query first, which made the user wait on "fetching schemas" for
-        # something they had not asked for - they are saving a connection, not
-        # building a job - and the result went stale as soon as the source
-        # changed. Schemas are read live when a connection is actually picked,
-        # the same way tables and columns already were. See migration 007.
         return {"ok": True, "data": created}
     except ValueError as exc:
         return _error(str(exc), 400)
@@ -186,7 +146,6 @@ async def update_connection(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Update a saved connection. Owner (or admin) only."""
     try:
         body = await request.json()
         body = body if isinstance(body, dict) else {}
@@ -218,10 +177,6 @@ def delete_connection(
     connection_id: str,
     username: str = Depends(require_auth),
 ):
-    """Delete a saved connection. Owner (or admin) only.
-
-    Jobs that referenced it keep their history - the FK is ON DELETE SET NULL.
-    """
     try:
         if not saved_connection_service.delete(connection_id, username):
             return _error("Connection not found", 404)
@@ -239,10 +194,6 @@ def reveal_connection(
     connection_id: str,
     username: str = Depends(require_auth),
 ):
-    """Return a saved connection's decrypted credentials, so its owner can pre-fill
-    the edit form. Owner (or admin) only - this is the one path by which stored
-    credentials leave the server, and every call is logged.
-    """
     try:
         revealed = saved_connection_service.reveal(connection_id, username)
 
@@ -256,35 +207,14 @@ def reveal_connection(
     except ConnectionPermissionError as exc:
         return _error(str(exc), 403)
     except ValueError as exc:
-        # Raised by crypto.decrypt_json when the encryption key has been rotated.
         return _error(str(exc), 500)
     except Exception:
         logger.exception("Failed to reveal saved connection '%s'", connection_id)
         return _error("Failed to read the connection", 500)
 
 
-# =====================================================================
-# CATALOG - one level at a time
-# =====================================================================
-#
-# None of these are owner-gated: connections are shared for use, and decrypted
-# credentials never leave the server here - only catalog names, which aren't
-# secret. Each level is fetched on demand, so cost scales with what the user
-# opens rather than with the size of the database.
-
-
 @connection_bp.get("/api/connections/{connection_id}/schemas")
 def list_connection_schemas(connection_id: str):
-    """Read the connection's schema names live from the source.
-
-    One catalog query, made when a connection is picked for a job - the same
-    on-demand treatment tables and columns already get. Nothing is cached on the
-    connection row any more, so this cannot serve a stale list (migration 007).
-
-    A connection failure is reported through describe_connection_error rather
-    than as a 500: an unreachable database or expired credential is the
-    operator's to fix, and the driver's own wording is not what they need to see.
-    """
     try:
         schemas = saved_connection_service.list_schemas(connection_id)
 
@@ -301,18 +231,11 @@ def list_connection_schemas(connection_id: str):
 
 @connection_bp.post("/api/connections/{connection_id}/schemas/refresh")
 def refresh_connection_schemas(connection_id: str):
-    """Alias of the GET above, kept so an already-loaded SPA build does not 404.
-
-    There is nothing left to refresh: the GET reads live every time. Retained
-    only for compatibility with a browser still running a cached bundle from
-    before migration 007.
-    """
     return list_connection_schemas(connection_id)
 
 
 @connection_bp.get("/api/connections/{connection_id}/tables")
 def list_connection_tables(connection_id: str, schema: str = ""):
-    """Return one schema's tables, fetched live."""
     try:
         if not schema.strip():
             return _error("schema is required", 400)
@@ -334,7 +257,6 @@ def list_connection_tables(connection_id: str, schema: str = ""):
 
 @connection_bp.get("/api/connections/{connection_id}/columns")
 def list_connection_columns(connection_id: str, schema: str = "", table: str = ""):
-    """Return one table's columns, fetched live."""
     try:
         if not schema.strip():
             return _error("schema is required", 400)

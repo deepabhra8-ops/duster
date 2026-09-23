@@ -1,4 +1,3 @@
-"""DQ6 - exact value match, or a '%'-wildcard pattern."""
 from __future__ import annotations
 
 import pytest
@@ -64,8 +63,6 @@ class TestWildcard:
         assert _failing(data, result) == 0
 
     def test_regex_metacharacters_are_literal(self, spark, context):
-        """Only '%' is a wildcard - a dot must match a dot, not any character,
-        or a pattern like 'A.B' would quietly accept 'AXB'."""
         data = spark.createDataFrame([("A.B",), ("AXB",)], ["code"])
 
         result = DQ6ValueRule().validate(data, "code", parameters="A.B%", context=context)
@@ -75,9 +72,6 @@ class TestWildcard:
 
 class TestNotConfigured:
     def test_a_blank_expected_value_reports_not_run(self, spark, context):
-        """It used to fail every non-empty row instead: the comparison target
-        became the empty string, so a column of 100 good values came back 0%
-        with 100 findings and the note "Value must equal ''"."""
         data = spark.createDataFrame([("OPEN",), ("CLOSED",)], ["status"])
 
         result = DQ6ValueRule().validate(data, "status", parameters="", context=context)

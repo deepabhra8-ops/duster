@@ -1,4 +1,3 @@
-"""Unit tests for StagingExportService: CSV-first, then database-fallback staging export."""
 from __future__ import annotations
 
 import zipfile
@@ -23,9 +22,6 @@ def service() -> StagingExportService:
 
 @pytest.fixture(autouse=True)
 def redirect_staging_dir(tmp_path, monkeypatch):
-    """Point get_staging_dir() - as staging_export_service.py sees it - at a temp directory,
-    so these tests never touch the real runtime/ folder."""
-
     def fake_get_staging_dir(job_id):
         return tmp_path / job_id
 
@@ -36,8 +32,6 @@ def redirect_staging_dir(tmp_path, monkeypatch):
 def test_export_zips_csv_staging_files_when_present(service, redirect_staging_dir):
     staging_dir = redirect_staging_dir / "job-1"
     staging_dir.mkdir()
-    # write_bytes, not write_text: write_text (newline=None) translates "\n" -> "\r\n" on
-    # Windows, which would make this assert platform-dependent for no reason.
     (staging_dir / "customers_clean.csv").write_bytes(b"id,name\n1,Alice\n")
 
     buffer = service.export("job-1", params={})
@@ -57,8 +51,6 @@ def test_export_ignores_a_staging_directory_with_no_csv_files(service, redirect_
 
 
 def test_export_falls_back_to_database_staging_when_no_csv_output_exists(service):
-    """No staging directory at all (job never produced CSV output) + source_type=database
-    must attempt the database export path instead of failing immediately."""
     with patch.object(
         StagingExportService,
         "_export_database_staging",

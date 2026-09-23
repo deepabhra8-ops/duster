@@ -1,13 +1,3 @@
-"""Every route except health and auth requires a session.
-
-Driven through TestClient so the actual dependency wiring in create_app() is
-what is tested. Calling handler functions directly - which the other route
-tests do - bypasses require_auth entirely, so an unprotected router would look
-fine there and still be open in production.
-
-This is the check that catches a router added later without
-`dependencies=protected_dependencies`.
-"""
 from __future__ import annotations
 
 import pytest
@@ -21,7 +11,6 @@ def client():
     return TestClient(create_app())
 
 
-# One representative route per protected router.
 PROTECTED = [
     ("GET", "/api/connections"),
     ("POST", "/api/test-connection"),
@@ -39,8 +28,6 @@ PROTECTED = [
     ("POST", "/api/notifications/read-all"),
     ("DELETE", "/api/notifications"),
     ("PATCH", "/api/notifications/1"),
-    # Registered on its own router, without the shared dependency (it must not
-    # slide the session) - so this is the entry that proves it is still gated.
     ("GET", "/api/notifications/stream"),
 ]
 
@@ -71,8 +58,6 @@ class TestOpenRoutes:
         assert response.json()["ok"] is True
 
     def test_login_needs_no_session(self, client):
-        """It cannot: it is how a session is obtained. It must reject bad
-        credentials rather than refuse to answer."""
         response = client.post(
             "/api/auth/login", json={"username": "nobody", "password": "wrong"}
         )

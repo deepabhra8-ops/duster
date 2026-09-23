@@ -1,4 +1,3 @@
-"""Unit tests for DimensionScorer: pure scoring math for the dimension report."""
 from __future__ import annotations
 
 import polars as pl

@@ -1,10 +1,3 @@
-"""Unit tests for SalesforceConnector - the connector that exercises every optional
-DatabaseConnector hook (accelerator_source_type, accelerator_credentials,
-supports_database_staging, supports_sql_metadata_inspection, list_*, error_patterns).
-
-No real Salesforce org is touched anywhere here: `Salesforce` (the simple-salesforce client
-class) and `create_client()` are mocked at every call site.
-"""
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -78,15 +71,12 @@ def test_create_client_normalizes_domain(raw_domain, expected):
 
 
 def test_create_client_supplies_a_session_with_timeouts():
-    """simple_salesforce's own default session has no timeout at all, so a hung
-    Salesforce endpoint would tie up the calling worker indefinitely."""
     with patch("services.connectors.salesforce_connector.Salesforce") as mock_salesforce:
         SalesforceConnector.create_client(DETAILS)
 
     session = mock_salesforce.call_args.kwargs["session"]
 
     assert session is not None
-    # The Session subclass injects a (connect, read) timeout into every request.
     assert getattr(session, "_timeout", None) is not None
 
 
@@ -96,8 +86,8 @@ def test_list_tables_returns_sorted_object_names_skipping_unnamed():
         "sobjects": [
             {"name": "Contact"},
             {"name": "Account"},
-            {"name": ""},  # falsy names are skipped
-            {},  # missing "name" key entirely
+            {"name": ""},
+            {},
         ]
     }
 
@@ -170,8 +160,6 @@ def test_test_translates_salesforce_specific_errors(raw_error, expected_message)
 
 
 def test_error_patterns_are_reachable_directly_through_friendly_errors():
-    """error_patterns is a public class attribute precisely so describe_connection_error()
-    can be checked against it independently of test() itself."""
     message = describe_connection_error(
         Exception("INVALID_LOGIN: bad creds"),
         SalesforceConnector.error_patterns,

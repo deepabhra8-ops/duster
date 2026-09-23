@@ -11,7 +11,7 @@ const PROFILE_MAP_CDE_COLUMN = "CDE (X=Yes)";
 export default function ExpandableColumnRow({
   groupIndex,
   group,
-  lines, // includes saved rules and pending new rules
+  lines,
   isExpanded,
   onToggleExpand,
   profileMapDraftEdits,
@@ -37,7 +37,6 @@ export default function ExpandableColumnRow({
     );
   };
 
-  // Calculate rule count (saved not removed + pending new)
   const survivingRules = lines.filter((line) => {
     if (line.kind === "saved") {
        return !profileMapRemovedRows.includes(line.key);
@@ -103,7 +102,6 @@ export default function ExpandableColumnRow({
 
       {isExpanded && (
         <tr className="profile-map-child-row">
-          {/* Colspan 13 covers the entire row: expand + 12 columns */}
           <td colSpan={13}>
             <div className="rules-subtable-container">
               <div className="rules-subtable-header">

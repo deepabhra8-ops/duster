@@ -1,13 +1,3 @@
-"""End-to-end tests for DQ8 (list-of-values) against a real LOV file.
-
-Why these exist: DQ8 was fully implemented, registered, and offered in the UI,
-but nothing ever populated ExecutionContext.reference_data - so every DQ8 check
-took the "reference list not found" branch and reported every row as passing on
-data it had never compared to anything. A unit test of the rule class alone
-would not have caught that; the gap was in the wiring between the job config
-and the context. These therefore drive the rule through a real
-ExecutionContext.from_config(), which is where the wiring lives.
-"""
 from __future__ import annotations
 
 import pytest
@@ -51,7 +41,6 @@ def _invalid_count(data, mask) -> int:
 
 class TestLovIsFound:
     def test_the_check_actually_runs(self, data, lov_file):
-        """The regression: this must not report 'reference list not found'."""
         context = _context({"statuses": str(lov_file)})
 
         result = DQ8LOVRule().validate(
@@ -68,8 +57,6 @@ class TestLovIsFound:
             data=data, column_name="status", parameters="statuses", context=context
         )
 
-        # BOGUS is the only bad value: OPEN/CLOSED match, null is exempt, and
-        # "  PENDING  " is trimmed before comparison.
         assert _invalid_count(data, result.pass_mask) == 1
 
     def test_nulls_are_exempt(self, spark, lov_file):
@@ -89,7 +76,6 @@ class TestLovIsFound:
             data=data, column_name="status", parameters="statuses", context=context
         )
 
-        # Resolved lazily on first use, then reused for the rest of the run.
         assert "statuses" in context.reference_data
 
 
@@ -111,5 +97,4 @@ class TestLovIsMissing:
             data=data, column_name="status", parameters="statuses", context=context
         )
 
-        # A load failure must never be mistaken for "everything passed".
         assert result.was_run is False

@@ -1,10 +1,3 @@
-"""SessionRepository.peek: reads a session WITHOUT sliding its expiry.
-
-The property under test is the whole reason peek exists. The notification stream
-holds a connection open and re-checks its session; if that check slid the expiry
-forward, an idle tab would keep the session alive indefinitely and the inactivity
-timeout (SESSION_TTL_SECONDS) could never fire.
-"""
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -72,7 +65,6 @@ def test_returns_the_username_for_a_live_session(repository, factory):
 
 
 def test_does_not_slide_the_expiry_forward(repository, factory):
-    """The contrast that matters: get() extends the session, peek() must not."""
     _insert(factory, "s1", timedelta(minutes=5))
     before = _expiry(factory, "s1")
 

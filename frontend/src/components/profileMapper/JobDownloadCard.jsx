@@ -1,23 +1,9 @@
-/**
- * JobDownloadCard.jsx - the side-rail download card for a job's generated
- * workbook: ProfileMapperJob.jsx's profile map, ValidatorJob.jsx's DQ report.
- *
- * Download-only by design. This used to be a two-box "Files" card, but the
- * Uploads box had nothing left to list (the configured-source-file and per-job
- * attachment endpoints were removed), so it rendered a permanently empty shell.
- *
- * The caller owns what the file is and how to fetch it - this only renders it,
- * and names the card via `title` (the Validator's results page calls it
- * "Download Report").
- */
 export default function JobDownloadCard({ showDownload, downloadFilename, onDownload, isDownloading, loading = false, title = "Download" }) {
   return (
     <div className="card">
       <div className="card-title">{title}</div>
 
       {loading ? (
-        // Same shape as the real card (file row + full-width button), so the
-        // side rail is already the right size before the job resolves.
         <div className="job-download" aria-hidden="true">
           <div className="job-download-file">
             <span className="skeleton job-download-icon" />

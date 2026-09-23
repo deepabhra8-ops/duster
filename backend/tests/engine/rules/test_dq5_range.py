@@ -1,6 +1,3 @@
-"""Spark-based unit test for DQ5RangeRule.validate() against a real small DataFrame,
-covering the numeric-range branch and the "no bounds configured" branch.
-"""
 from __future__ import annotations
 
 import pytest
@@ -30,13 +27,6 @@ def test_numeric_values_outside_the_configured_range_fail(spark, context):
 
 
 def test_no_bounds_configured_is_not_run(spark, context):
-    """A range check with neither bound set has nothing to check against.
-
-    It used to pass every row and score 1.0, so an analyst who forgot to fill in
-    the bounds saw a perfect Conformity score for a check that never ran. It now
-    reports NOT RUN and is excluded from scoring; the rows still cannot fail,
-    because their validity is genuinely unknown.
-    """
     data = spark.createDataFrame([(5,), (999,)], schema=["age"])
 
     result = DQ5RangeRule().validate(data, "age", parameters="", context=context)

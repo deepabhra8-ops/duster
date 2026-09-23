@@ -1,5 +1,3 @@
-"""Lazily creates and manages a SQLAlchemy engine from a pipeline configuration's connection string."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -13,13 +11,10 @@ logger = get_logger(__name__)
 
 
 class DatabaseConnection:
-    """Wraps a lazily created SQLAlchemy engine, resolved from a config's connection string."""
-
     def __init__(
         self,
         config: Mapping[str, Any],
     ) -> None:
-        """Store the config; the engine is created on first connect()."""
         try:
             self.config = config
             self._engine: Engine | None = None
@@ -29,7 +24,6 @@ class DatabaseConnection:
             raise
 
     def connect(self) -> Engine:
-        """Return the SQLAlchemy engine, creating it on first use."""
         try:
             if self._engine is None:
                 self._engine = create_engine(
@@ -43,7 +37,6 @@ class DatabaseConnection:
             raise
 
     def close(self) -> None:
-        """Dispose the engine, if one was created."""
         try:
             if self._engine is not None:
                 self._engine.dispose()
@@ -54,12 +47,10 @@ class DatabaseConnection:
             raise
 
     def dispose(self) -> None:
-        """Alias for close()."""
         self.close()
 
     @property
     def connection_string(self) -> str:
-        """Return the configured connection string."""
         try:
             database_config = self.config.get(
                 "db",
@@ -93,19 +84,16 @@ class DatabaseConnection:
 
     @property
     def is_connected(self) -> bool:
-        """Return whether an engine has already been created."""
         return self._engine is not None
 
     @property
     def engine(self) -> Engine:
-        """Return the engine, creating it on first use."""
         return self.connect()
 
     def execute(
         self,
         operation,
     ):
-        """Run a callable within a transaction and return its result."""
         try:
             engine = self.connect()
 
@@ -118,15 +106,12 @@ class DatabaseConnection:
             raise
 
     def begin(self):
-        """Start a new transaction on the engine."""
         return self.connect().begin()
 
     def connect_context(self):
-        """Return a raw connection context manager from the engine."""
         return self.connect().connect()
 
     def __enter__(self) -> "DatabaseConnection":
-        """Connect on entering the context manager."""
         self.connect()
         return self
 
@@ -136,5 +121,4 @@ class DatabaseConnection:
         exc_value,
         traceback,
     ) -> None:
-        """Close the engine on exiting the context manager."""
         self.close()

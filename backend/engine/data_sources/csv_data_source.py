@@ -1,5 +1,3 @@
-"""CSV implementation of BaseDataSource: reads CSV files (whole or chunked) relative to the execution context base path."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -20,8 +18,6 @@ logger = get_logger(__name__)
 
 @register_source
 class CsvDataSource(BaseDataSource):
-    """Reads CSV files as the data source."""
-
     source_type = "csv"
 
     def read(
@@ -29,7 +25,6 @@ class CsvDataSource(BaseDataSource):
         table_config: Mapping[str, Any],
         columns: list[str] | None = None,
     ) -> DataFrame:
-        """Read a CSV file into a DataFrame, optionally projecting columns."""
         try:
             file_path = self._get_file_path(table_config)
 
@@ -61,8 +56,6 @@ class CsvDataSource(BaseDataSource):
         columns: list[str] | None = None,
         chunk_size: int = 0,
     ) -> Iterator[DataFrame]:
-        """Read a CSV file as a single Spark DataFrame (Spark partitions its own reads; there's no
-        pandas-style chunked iteration to fall back to)."""
         yield self.read(
             table_config=table_config,
             columns=columns,
@@ -72,10 +65,8 @@ class CsvDataSource(BaseDataSource):
         self,
         table_config: Mapping[str, Any],
     ) -> bool:
-        """Return whether the configured CSV file exists."""
         try:
             file_path = self._get_file_path(table_config)
-            # S3 paths are strings - cannot check existence locally
             if isinstance(file_path, str) and file_path.startswith("s3://"):
                 return True
             exists = Path(file_path).is_file()
@@ -89,26 +80,22 @@ class CsvDataSource(BaseDataSource):
         self,
         table_config: Mapping[str, Any],
     ) -> list[str]:
-        """Return the CSV file's column names."""
         return self.read(table_config).columns
 
     def get_row_count(
         self,
         table_config: Mapping[str, Any],
     ) -> int:
-        """Return the CSV file's row count."""
         return self.read(
             table_config=table_config,
         ).count()
 
     def supports_chunking(self) -> bool:
-        """CSV sources support chunked reads."""
         return True
 
     def validate_configuration(
         self,
     ) -> None:
-        """Validate that a base_path is configured."""
         try:
             base_path = self.context.base_path
 
@@ -125,7 +112,6 @@ class CsvDataSource(BaseDataSource):
         self,
         table_config: Mapping[str, Any],
     ) -> Path | str:
-        """Resolve the CSV file path from the table config and base path."""
         try:
             file_name = table_config.get("file", "")
 
@@ -137,7 +123,6 @@ class CsvDataSource(BaseDataSource):
             base_path = str(self.context.base_path).strip()
             
             if base_path.startswith("s3://"):
-                # Path() mangles s3:// URIs (making them s3:/), so return raw string
                 return f"{base_path.rstrip('/')}/{file_name}"
             
             return Path(base_path) / str(file_name)

@@ -1,17 +1,3 @@
-/**
- * dbFields.js - Dynamic database connection field definitions.
- *
- * DB_FIELD_CONFIGS: per-database-type array of field descriptors used to
- *   render the dynamic connection form on the Configure page.
- *   Each field: { id, label, type, placeholder?, default?, required?,
- *                 hint?, full?, options?, min?, max? }
- *
- * DB_REQUIRED_FIELDS: per-database-type list of field ids that the
- *   frontend treats as required for validation.
- *
- * Ported verbatim from the original config.js.
- */
-
 export const DB_FIELD_CONFIGS = {
   postgresql: [
     { id: "host", label: "Host", type: "text", placeholder: "db.example.com", required: true },
@@ -180,7 +166,6 @@ export const DB_FIELD_CONFIGS = {
   ],
 };
 
-/** Per-DB required field ids for frontend validation. */
 export const DB_REQUIRED_FIELDS = {
   postgresql: ["host", "username", "password"],
   mssql: ["host", "username", "password", "database"],

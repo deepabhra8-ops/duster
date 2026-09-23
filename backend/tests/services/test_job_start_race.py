@@ -1,15 +1,3 @@
-"""Starting the same draft twice must trigger exactly one run.
-
-The bug: start_draft_job read the job, checked status == 'draft', and only then
-wrote 'queued'. Two requests arriving together both passed the check before
-either wrote, so both would have started the engine - two runs for one job,
-writing their results over each other.
-
-The fix is a conditional UPDATE (JobRepository.transition) that folds the check
-and the write into one statement. These tests drive job_service with a
-repository whose transition behaves the way the database does: the first caller
-to ask for draft -> queued wins, everyone else is told no.
-"""
 from __future__ import annotations
 
 import threading
@@ -29,13 +17,6 @@ DRAFT_JOB = {
 
 
 class _AtomicRepository(MagicMock):
-    """Stands in for the database's own conditional UPDATE.
-
-    A plain MagicMock returning True every time would let both callers through
-    and hide the very race under test, so the winner is decided here under a
-    lock, exactly as a single UPDATE ... WHERE status = 'draft' would.
-    """
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._lock = threading.Lock()
@@ -85,13 +66,10 @@ class TestSingleStart:
 
 class TestConcurrentStart:
     def test_two_simultaneous_starts_trigger_exactly_one_run(self, service):
-        """The headline case. Both threads see status 'draft' on read; only the
-        one that wins the conditional UPDATE may go on to submit the job."""
         results = []
         barrier = threading.Barrier(2, timeout=5)
 
         def start():
-            # Line both threads up so they really do overlap.
             barrier.wait()
             results.append(service.start_draft_job("j1", requester="alice"))
 
@@ -124,8 +102,6 @@ class TestConcurrentStart:
         assert service.submit_job.call_count == 1
 
     def test_the_loser_never_submits(self, service):
-        """Returning 'not_draft' is not enough - the point is that the job is
-        never scheduled to run a second time."""
         service.repository.transition = MagicMock(return_value=False)
 
         assert service.start_draft_job("j1", requester="alice") == "not_draft"

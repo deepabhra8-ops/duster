@@ -1,5 +1,3 @@
-"""Registry mapping a rule ID string to its registered BaseRule class."""
-
 from __future__ import annotations
 
 from threading import RLock
@@ -14,8 +12,6 @@ logger = get_logger(__name__)
 
 
 class RuleRegistry:
-    """Thread-safe registry of BaseRule classes keyed by rule ID."""
-
     def __init__(self) -> None:
         self._rules: dict[str, Type[BaseRule]] = {}
         self._lock = RLock()
@@ -24,7 +20,6 @@ class RuleRegistry:
         self,
         rule_class: Type[BaseRule],
     ) -> Type[BaseRule]:
-        """Register a rule class under its rule_id."""
         try:
             rule_id = self._get_rule_id(rule_class)
 
@@ -46,7 +41,6 @@ class RuleRegistry:
         self,
         rule_id: str,
     ) -> None:
-        """Remove a registered rule ID."""
         try:
             normalized_id = self._normalize_rule_id(rule_id)
             with self._lock:
@@ -65,7 +59,6 @@ class RuleRegistry:
         rule_id: str,
         context: ExecutionContext,
     ) -> BaseRule:
-        """Instantiate the registered rule for a rule ID."""
         try:
             normalized_id = self._normalize_rule_id(rule_id)
 
@@ -88,7 +81,6 @@ class RuleRegistry:
         self,
         rule_id: str,
     ) -> bool:
-        """Return whether a rule ID is registered."""
         try:
             normalized_id = self._normalize_rule_id(rule_id)
             with self._lock:
@@ -100,7 +92,6 @@ class RuleRegistry:
             raise
 
     def all(self) -> dict[str, Type[BaseRule]]:
-        """Return all registered rule classes keyed by rule ID."""
         try:
             with self._lock:
                 rules = dict(self._rules)
@@ -111,7 +102,6 @@ class RuleRegistry:
             raise
 
     def rule_ids(self) -> list[str]:
-        """Return all registered rule IDs."""
         try:
             with self._lock:
                 rule_ids = list(self._rules.keys())
@@ -122,7 +112,6 @@ class RuleRegistry:
             raise
 
     def clear(self) -> None:
-        """Remove all registered rules."""
         try:
             with self._lock:
                 count = len(self._rules)
@@ -136,7 +125,6 @@ class RuleRegistry:
     def _get_rule_id(
         rule_class: Type[BaseRule],
     ) -> str:
-        """Return a rule class's normalized rule_id, or raise if it's missing."""
         rule_id = getattr(
             rule_class,
             "rule_id",
@@ -155,7 +143,6 @@ class RuleRegistry:
     def _normalize_rule_id(
         rule_id: str,
     ) -> str:
-        """Normalize a rule ID string for lookup."""
         if not isinstance(rule_id, str):
             raise TypeError(
                 "rule_id must be a string."
@@ -167,7 +154,6 @@ class RuleRegistry:
         self,
         rule: BaseRule,
     ) -> BaseRule:
-        """Register the class of an already-created rule instance."""
         try:
             self.register(type(rule))
             logger.debug("Registered rule instance '%s'", type(rule).__name__)
@@ -183,5 +169,4 @@ default_rule_registry = RuleRegistry()
 def register_rule(
     rule_class: Type[BaseRule],
 ) -> Type[BaseRule]:
-    """Class-decorator that registers a rule with the default registry."""
     return default_rule_registry.register(rule_class)

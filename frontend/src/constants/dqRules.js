@@ -1,14 +1,3 @@
-/**
- * dqRules.js - The 11 Data Quality rule definitions (DQ1–DQ11) and
- * score thresholds, used by the Rule Reference page and scoring helpers.
- *
- * `params` is documentation shown to analysts, so it has to describe what the
- * engine's rule classes actually parse (backend/engine/rules/dq*.py), not what
- * an earlier implementation did. Several entries were inherited from a
- * pre-Spark version and described behaviour that no longer exists - corrected
- * against the implementations.
- */
-
 export const DQ_RULES = [
   { id: "DQ1", dim: "Completeness", cat: "Null / Blank Check", desc: "Flags missing or empty values in mandatory columns", params: "-", pill: "pill-blue", example: { parameter: "-", input: "Customer email: (blank)", output: "Fail — mandatory columns cannot be null, empty, or whitespace-only. \"jane@example.com\" would pass.", note: "No parameter needed - mark a column mandatory in the job's rule configuration and this rule flags any row where it is null, an empty string, or only whitespace." } },
   { id: "DQ2", dim: "Conformity", cat: "Date Format", desc: "Verifies date or timestamp fields match a configured Python format", params: "%Y-%m-%d", pill: "pill-teal", example: { parameter: "%d-%m-%Y", input: "15-01-2020", output: "Pass — the date matches dd-mm-yyyy.", note: "Formats: %d-%m-%Y → 15-01-2020; %Y-%d-%m → 2020-15-01; %Y-%m-%d → 2020-01-15; %d/%m/%Y → 15/01/2020; %m/%d/%Y → 01/15/2020; %d %b %Y → 15 Jan 2020; %d %B %Y → 15 January 2020; %B %d, %Y → January 15, 2020; %b %d, %Y → Jan 15, 2020. Timestamp: %d-%m-%Y %H:%M:%S → 15-01-2020 14:30:45." } },
@@ -23,33 +12,20 @@ export const DQ_RULES = [
   { id: "DQ11", dim: "Custom", cat: "Custom Expression", desc: "Spark SQL boolean expression, optionally scoped by a filter expression", params: "filter_expr | row_expr", pill: "pill-red", example: { parameter: "country = 'India' | createddate < updateddate", input: "country = India, createddate = 01-01-2024, updateddate = 02-01-2024", output: "Pass — the row is in India and its created date is earlier than its updated date.", note: "The engine first filters with the expression before |. Only those rows are evaluated by the expression after |. India rows where createddate is not earlier than updateddate fail; rows from other countries are outside this check and pass." } },
 ];
 
-/**
- * URL segment for a dimension name: "Completeness" -> "completeness".
- * The Rule Reference route (/rules/:dimension) and the second-tier sidebar
- * both build links from this, so a slug means the same thing everywhere.
- */
 export function dimensionSlug(dimension) {
   return String(dimension)
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    // Runs are already collapsed to a single dash above, so at most one can
-    // sit at each end - no need for a quantifier here.
     .replace(/^-|-$/g, "");
 }
 
-/** Distinct dimension names in a rule list, alphabetical. */
 export function ruleDimensions(rules) {
   return Array.from(new Set(rules.map((rule) => rule.dim))).sort((a, b) => a.localeCompare(b));
 }
 
-/** Score thresholds used for RAG colouring (GOOD ≥ .95, WARNING ≥ .80). */
 export const SCORE_THRESHOLDS = { GOOD: 0.95, WARNING: 0.8 };
 
-/**
- * Legend rows describing the score thresholds, for the Rule Reference page.
- * Each entry: { label, cls, range }
- */
 export const SCORE_LEGEND = [
   { label: "Good", cls: "sc-good", range: "≥ 95%" },
   { label: "Warning", cls: "sc-warn", range: "80% – 94%" },

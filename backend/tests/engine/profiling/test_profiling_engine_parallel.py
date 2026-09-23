@@ -1,10 +1,3 @@
-"""Profiling several tables concurrently must produce the same results as serially.
-
-Concurrency here is only worth having if it is invisible in the output: the same
-tables, the same statistics, the same progress accounting. These drive the real
-ProfilingEngine over real CSV files through Spark, once with one worker and once
-with several, and compare.
-"""
 from __future__ import annotations
 
 import threading
@@ -50,12 +43,10 @@ def _table_configs():
 
 
 def _row_count(profile):
-    """Rows are recorded per column; every column of a table sees the same total."""
     return profile.columns[0].total_count if profile.columns else 0
 
 
 def _summarise(result):
-    """Reduce a run to the facts that must not change with concurrency."""
     return {
         name: (_row_count(profile), tuple(sorted(c.column_name for c in profile.columns)))
         for name, profile in result.tables.items()
@@ -75,8 +66,6 @@ class TestParallelMatchesSequential:
         assert set(result.tables) == set(TABLES)
 
     def test_row_counts_are_not_crossed_between_tables(self, csv_dir):
-        """The failure mode concurrency invites: table A's result stored under
-        table B's name."""
         result = _engine(csv_dir, 4).profile(_table_configs())
 
         assert _row_count(result.tables["claims"]) == 3
@@ -97,8 +86,6 @@ class TestProgress:
         _engine(csv_dir, 4).profile(_table_configs(), progress_callback=on_progress)
 
         assert len(calls) == len(TABLES)
-        # Counts a completion rather than an index, so the set is 1..N exactly
-        # once each even though tables finish out of order.
         assert sorted(done for done, _ in calls) == [1, 2, 3, 4]
         assert {total for _, total in calls} == {len(TABLES)}
 

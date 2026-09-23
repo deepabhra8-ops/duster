@@ -1,5 +1,3 @@
-"""Writes one dimension report DataFrame into an xlsxwriter worksheet: colors, formats, header block, and data rows."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -12,8 +10,6 @@ from engine.reporting.dimension_scorer import DimensionScorer
 
 
 class DimensionWorkbookWriter:
-    """Lays out a dimension report sheet in xlsxwriter, given a dataframe and label/definition text."""
-
     DARK_BLUE = "#1F4E79"
     MED_BLUE = "#2E75B6"
     ALT_BLUE = "#EBF3FB"
@@ -30,7 +26,6 @@ class DimensionWorkbookWriter:
         self,
         scorer: DimensionScorer | None = None,
     ) -> None:
-        """Store the scorer used for score formatting and grading."""
         self.scorer = scorer or DimensionScorer()
 
     def write(
@@ -42,8 +37,6 @@ class DimensionWorkbookWriter:
         measurement: str,
         control: str,
     ) -> None:
-        """Fill an already-created worksheet with one dimension's report."""
-
         formats = self._create_formats(workbook)
         overall_score = self.scorer.overall_score(dataframe)
 
@@ -74,7 +67,6 @@ class DimensionWorkbookWriter:
         self,
         workbook: Any,
     ) -> dict[str, Any]:
-        """Build the named xlsxwriter cell formats used across this sheet."""
         return {
             "meta_label": workbook.add_format({"bold": True}),
             "meta_value": workbook.add_format({}),
@@ -156,7 +148,6 @@ class DimensionWorkbookWriter:
         overall_score: float,
         formats: dict[str, Any],
     ) -> None:
-        """Write the sheet's top metadata block (dimension name, measurement, control, overall score)."""
         worksheet.write(0, 0, dimension_label, formats["meta_label"])
 
         worksheet.write(1, 0, "Measurement", formats["meta_label"])
@@ -181,7 +172,6 @@ class DimensionWorkbookWriter:
         columns: list[str],
         formats: dict[str, Any],
     ) -> None:
-        """Write the column header row."""
         for column_index, column_name in enumerate(columns):
             worksheet.write(
                 self.HEADER_ROW,
@@ -200,7 +190,6 @@ class DimensionWorkbookWriter:
         dataframe: pl.DataFrame,
         formats: dict[str, Any],
     ) -> None:
-        """Write every data row, then apply column widths."""
         for row_index in range(len(dataframe)):
             self._write_row(
                 worksheet=worksheet,
@@ -218,7 +207,6 @@ class DimensionWorkbookWriter:
         row_index: int,
         formats: dict[str, Any],
     ) -> None:
-        """Write one data row, alternating row shading."""
         excel_row = self.HEADER_ROW + 1 + row_index
         is_alt = (row_index + 1) % 2 == 0
 
@@ -243,7 +231,6 @@ class DimensionWorkbookWriter:
         is_alt: bool,
         formats: dict[str, Any],
     ) -> None:
-        """Dispatch a cell to the score, integer, or text writer based on its column."""
         if column_name == "Score":
             self._write_score_cell(worksheet, excel_row, column_index, value, formats)
         elif column_name in self.INTEGER_COLUMNS:
@@ -259,7 +246,6 @@ class DimensionWorkbookWriter:
         value: Any,
         formats: dict[str, Any],
     ) -> None:
-        """Write a Score cell, colored by its good/warning/poor grade."""
         score = self.scorer.safe_score(value)
 
         worksheet.write(
@@ -278,7 +264,6 @@ class DimensionWorkbookWriter:
         is_alt: bool,
         formats: dict[str, Any],
     ) -> None:
-        """Write a numeric cell (#, Invalid Count, Total Count)."""
         worksheet.write_number(
             excel_row,
             column_index,
@@ -295,7 +280,6 @@ class DimensionWorkbookWriter:
         is_alt: bool,
         formats: dict[str, Any],
     ) -> None:
-        """Write a plain text cell."""
         worksheet.write(
             excel_row,
             column_index,
@@ -307,7 +291,6 @@ class DimensionWorkbookWriter:
         self,
         worksheet: Any,
     ) -> None:
-        """Apply the configured column widths."""
         for column_index, width in enumerate(self.COLUMN_WIDTHS):
             worksheet.set_column(column_index, column_index, width)
 
@@ -315,12 +298,10 @@ class DimensionWorkbookWriter:
         self,
         worksheet: Any,
     ) -> None:
-        """Freeze panes below the header row."""
         worksheet.freeze_panes(self.HEADER_ROW + 1, 0)
 
     @staticmethod
     def _excel_value(value: Any) -> Any:
-        """Replace NaN with an empty string for Excel output."""
         if is_missing(value):
             return ""
 
@@ -331,5 +312,4 @@ class DimensionWorkbookWriter:
         score: float,
         formats: dict[str, Any],
     ) -> Any:
-        """Return the cell format matching a score's good/warning/poor grade."""
         return formats[self.scorer.bucket(score)]

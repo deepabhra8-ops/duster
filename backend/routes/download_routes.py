@@ -1,5 +1,3 @@
-"""HTTP endpoints for downloading generated reports, profile maps, uploaded files, staging archives, and sample CSVs."""
-
 import io
 from pathlib import Path
 
@@ -28,8 +26,6 @@ XLSX_MEDIA_TYPE = (
 
 @download_bp.get("/api/uploads/download")
 def download_upload(request: Request, username: str = Depends(require_auth)):
-    """Download an uploaded file."""
-
     kind = request.query_params.get(
         "kind",
         "data",
@@ -80,8 +76,6 @@ def download_job_output(
     kind: str,
     username: str = Depends(require_auth),
 ):
-    """Download a generated DQ report or profile map."""
-
     try:
         job = job_service.get_job(job_id, requester=username)
     except Exception:
@@ -102,11 +96,6 @@ def download_job_output(
     elif kind == "profile":
         filename = f"Source_DQ_Profile_Map_{job_id}.xlsx"
 
-        # Regenerate from the currently-saved (possibly edited) rows on every
-        # download rather than serving whatever was last exported - otherwise an
-        # edit saved after the last explicit export would silently download stale,
-        # pre-edit data. A job with no profile-map rows at all (reason != "ok")
-        # falls through to the "File not ready" 404 below, same as before.
         _, reason = job_service.export_profile_map(job_id, requester=username)
         if reason not in ("ok", "ok_uncached", "no_profile_map"):
             logger.warning(
@@ -115,10 +104,6 @@ def download_job_output(
                 reason,
             )
 
-        # Serve the bytes just generated directly rather than writing them to
-        # disk and immediately reading them back. "ok_uncached" means the disk
-        # cache write failed but the bytes were built successfully regardless -
-        # not a reason to lose the download.
         workbook = getattr(job_service, "last_exported_workbook", None)
 
         if reason in ("ok", "ok_uncached") and workbook:
@@ -168,8 +153,6 @@ def download_staging(
     job_id: str,
     username: str = Depends(require_auth),
 ):
-    """Download job staging output as a ZIP archive."""
-
     try:
         job = job_service.get_job(job_id, requester=username)
     except Exception:
@@ -185,9 +168,6 @@ def download_staging(
         )
 
     try:
-        # Real (unredacted) params, not job["params"] from get_job() above - a
-        # database-staging export needs to reconnect using the job's actual
-        # credentials, which get_job()'s response deliberately strips.
         archive = staging_export_service.export(
             job_id,
             job_service.get_job_params(job_id),
@@ -215,8 +195,6 @@ def download_staging(
 
 @download_bp.get("/api/sample-csv")
 def sample_csv():
-    """Download the sample data CSV."""
-
     content = (
         "CustomerID,Name,Email,Age,Country\n"
         "1,Alice,alice@example.com,28,India\n"
@@ -241,12 +219,6 @@ def sample_csv():
 
 @download_bp.get("/api/sample-lov")
 def sample_lov():
-    """Download the sample LOV CSV."""
-
-    # One wide file covers a whole job: each column header is a LOV name -
-    # exactly the value a DQ8 rule carries in its Rule Parameters cell - and the
-    # cells beneath it are that column's allowed values. Columns are independent,
-    # so a shorter list simply runs out early (the trailing commas below).
     content = (
         "policy.policy_status,policy.policy_type,"
         "claim.claim_status,claim.claim_type,"

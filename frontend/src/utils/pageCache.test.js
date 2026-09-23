@@ -1,10 +1,3 @@
-/**
- * pageCache - the rules that keep a browser-side cache honest.
- *
- * The three failure modes worth pinning: serving one user's data to another,
- * serving results/credential responses at all, and letting a paginated list
- * grow without bound or go stale after a mutation.
- */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -83,8 +76,6 @@ describe("freshness", () => {
 
 describe("invalidation", () => {
   it("drops every cached page of a list, not just the one on screen", () => {
-    // Offset pagination: deleting a job shifts every later page, so a mutation
-    // has to clear all of them.
     for (const page of [1, 2, 3]) {
       writeEntry(buildKey("a", "jobs", { step: "1", page }), [`page ${page}`]);
     }
@@ -95,7 +86,6 @@ describe("invalidation", () => {
 
     expect(readEntry(buildKey("a", "jobs", { step: "1", page: 2 }))).toBeNull();
     expect(readEntry(buildKey("a", "jobs", { step: "3", page: 1 }))).toBeNull();
-    // A different resource is untouched.
     expect(readEntry(buildKey("a", "dashboard"))).not.toBeNull();
   });
 
@@ -128,7 +118,6 @@ describe("bounds", () => {
 
     const key = buildKey("a", "jobs", { page: 1 });
     expect(() => writeEntry(key, [1])).not.toThrow();
-    // The in-memory mirror still serves this tab; only persistence is lost.
     expect(readEntry(key).data).toEqual([1]);
 
     spy.mockRestore();

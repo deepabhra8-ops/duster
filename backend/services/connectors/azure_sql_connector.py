@@ -1,5 +1,3 @@
-"""Azure SQL Database connector, supporting SQL login and Microsoft Entra ID (Azure AD) authentication modes."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -19,15 +17,12 @@ _AUTH_MODES = (SQL_AUTH, AAD_PASSWORD, AAD_SERVICE_PRINCIPAL, AAD_DEFAULT)
 
 @register_connector
 class AzureSqlConnector(DatabaseConnector):
-    """Builds Azure SQL connection strings for SQL-login and Entra ID authentication modes."""
-
     db_type = "azure_sql"
 
     def _auth_mode(
         self,
         details: dict[str, Any],
     ) -> str:
-        """Return the requested authentication mode, defaulting to SQL login."""
         mode = str(details.get("authentication", SQL_AUTH)).strip().lower()
         return mode if mode in _AUTH_MODES else SQL_AUTH
 
@@ -35,7 +30,6 @@ class AzureSqlConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> list[str]:
-        """Return missing required fields for the selected authentication mode."""
         mode = self._auth_mode(details)
         required = ["host", "database"]
 
@@ -54,7 +48,6 @@ class AzureSqlConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build a pyodbc SQLAlchemy connection string for the selected authentication mode."""
         mode = self._auth_mode(details)
         host = details.get("host", "")
         port = details.get("port", 1433)

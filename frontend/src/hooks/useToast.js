@@ -1,7 +1,3 @@
-/**
- * useToast.js - access the app-wide toast notifier (ToastContext.jsx).
- * `const { showToast } = useToast(); showToast({ type: "error", title: "...", message: "..." });`
- */
 import { useContext } from "react";
 import { ToastContext } from "../contexts/ToastContext.jsx";
 

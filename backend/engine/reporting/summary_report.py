@@ -1,5 +1,3 @@
-"""Builds and writes the Summary sheet (one row per DQ dimension plus overall score), delegating worksheet layout."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -19,12 +17,6 @@ logger = get_logger(__name__)
 
 
 def _frame(rows: list[dict], columns: list[str]) -> pl.DataFrame:
-    """Build a report frame with a fixed column order.
-
-    An explicit schema is required for the empty case: polars cannot infer
-    columns from no rows, and the writers still expect the headers to exist so
-    an empty sheet renders with its header row rather than blank.
-    """
     if not rows:
         return pl.DataFrame(schema={name: pl.Utf8 for name in columns})
 
@@ -32,8 +24,6 @@ def _frame(rows: list[dict], columns: list[str]) -> pl.DataFrame:
 
 
 class SummaryReport:
-    """Builds the Dimension/Score/Status summary table and writes it via SummaryWorkbookWriter."""
-
     SHEET_NAME = "Summary"
 
     DIMENSION_ORDER = [
@@ -50,7 +40,6 @@ class SummaryReport:
         scorer: DimensionScorer | None = None,
         workbook_writer: SummaryWorkbookWriter | None = None,
     ) -> None:
-        """Store the scorer and workbook writer collaborators."""
         self.scorer = scorer or DimensionScorer()
         self.workbook_writer = (
             workbook_writer
@@ -61,7 +50,6 @@ class SummaryReport:
         self,
         validation_result: ValidationRunResult,
     ) -> pl.DataFrame:
-        """Build the Dimension/Score/Status DataFrame from the run's dimension results."""
         try:
             rows: list[dict[str, Any]] = []
 
@@ -112,7 +100,6 @@ class SummaryReport:
         output_path: str | Path,
         sheet_name: str = SHEET_NAME,
     ) -> Path:
-        """Write the Summary sheet to a standalone workbook."""
         output_path = Path(
             output_path
         )
@@ -123,9 +110,6 @@ class SummaryReport:
                 exist_ok=True,
             )
 
-            # xlsxwriter directly rather than through a dataframe library's
-            # writer wrapper: every cell below is written with the xlsxwriter
-            # API anyway, so the wrapper only added a dependency.
             with xlsxwriter.Workbook(
                 str(output_path),
                 XLSXWRITER_SAFE_OPTIONS,
@@ -157,7 +141,6 @@ class SummaryReport:
         validation_result: ValidationRunResult,
         sheet_name: str = SHEET_NAME,
     ) -> None:
-        """Add the Summary worksheet and delegate its layout to SummaryWorkbookWriter."""
         try:
             workbook = getattr(writer, "book", writer)
             worksheet = workbook.add_worksheet(
@@ -194,8 +177,6 @@ class SummaryReport:
         self,
         validation_result: ValidationRunResult,
     ) -> list[str]:
-        """Order dimensions by DIMENSION_ORDER, appending any unknown ones alphabetically."""
-
         existing = list(
             validation_result.summary.dimension_results.keys()
         )

@@ -1,23 +1,11 @@
-/**
- * NotificationPanel.jsx - the popover under the bell: a header, and a scrollable, paged list.
- *
- * Paging is by scroll: nearing the bottom asks for the next page. There is also a visible
- * "Load older" button, which is not redundant - it is what a keyboard or screen-reader user
- * reaches (they may never scroll the pane), and it doubles as the loading indicator.
- *
- * Owns no notification state; everything comes from NotificationsContext, so the bell's badge
- * and this list cannot disagree.
- */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "../../hooks/useNotifications.js";
 import { isInternalPath } from "../../utils/notifications.js";
 import NotificationItem from "./NotificationItem.jsx";
 
-/** Ask for the next page when this close to the bottom of the list. */
 const SCROLL_THRESHOLD_PX = 80;
 
-/** Relative times ("2 minutes ago") are recomputed this often while the panel is open. */
 const CLOCK_TICK_MS = 30_000;
 
 export default function NotificationPanel({ id, onClose }) {
@@ -36,7 +24,6 @@ export default function NotificationPanel({ id, onClose }) {
   } = useNotifications();
   const navigate = useNavigate();
 
-  // Only here to force a re-render, so stamps do not go stale under a panel left open.
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -47,9 +34,6 @@ export default function NotificationPanel({ id, onClose }) {
   function handleSelect(notification) {
     markRead(notification.id);
 
-    // Without a usable link there is nowhere to go, so stay open: the person is most likely
-    // working down the list. isInternalPath is a second check on top of the server's - this
-    // is the code that actually navigates.
     if (isInternalPath(notification.link)) {
       onClose();
       navigate(notification.link);
@@ -96,8 +80,6 @@ export default function NotificationPanel({ id, onClose }) {
           </div>
         ) : null}
 
-        {/* role="list" is not redundant: Safari/VoiceOver drop list semantics from a <ul> styled
-            with list-style: none, which is how this one is. */}
         <ul className="notification-list" role="list">
           {items.map((notification) => (
             <NotificationItem key={notification.id} notification={notification} onSelect={handleSelect} />
@@ -135,8 +117,6 @@ export default function NotificationPanel({ id, onClose }) {
             Mark all as read
           </button>
 
-          {/* Deletes, for good, every notification the user has - read or not, loaded or not -
-              so unlike its neighbour it cannot be undone. Kept apart by its red hover. */}
           <button
             type="button"
             className="notification-link-btn is-danger"

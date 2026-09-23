@@ -1,13 +1,3 @@
-/**
- * ViewConnectionModal.jsx - read-only "View connection details" dialog for
- * the Connections manager (Connections.jsx).
- *
- * Mirrors ConnectionWizardModal's reveal step (GET /api/connections/{id}/reveal)
- * but never lets the fields be edited - DatabaseFields is rendered with
- * `readOnly`, and there is no Test/Save footer, just Edit (hands off to the
- * real wizard) and Close. Works for every database type: the field set is
- * driven by DB_FIELD_CONFIGS[db_type], same as the wizard.
- */
 import { useEffect, useState } from "react";
 import { AlertTriangle, Database, Pencil, X } from "lucide-react";
 import { useScrollLock } from "../../hooks/useScrollLock.js";

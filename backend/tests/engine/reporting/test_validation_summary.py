@@ -1,8 +1,3 @@
-"""Unit tests for the validation summary the job runner stores and the UI renders.
-
-Built from a ValidationRunResult with no file I/O - this is what replaced
-re-parsing the report workbook on every request.
-"""
 from __future__ import annotations
 
 from engine.core.result_models import (
@@ -35,11 +30,6 @@ def _detail(rule_id="DQ1", dimension="Completeness", invalid=5, total=100, cde=T
 
 
 def _run_result(details, row_failures=None):
-    # row_failures is deliberately built as the mapping TableValidator actually
-    # produces - {row id: [RowFailure, ...]} - not a flat list. An earlier version
-    # of this helper passed a list, which made build_summary()'s own iteration bug
-    # invisible: over a list it read RowFailure objects, over the real mapping it
-    # read bare row ids and produced blank entries.
     table = TableValidationResult(
         table_name="claim",
         total_rows=100,
@@ -66,7 +56,6 @@ def _run_result(details, row_failures=None):
 
 
 def test_empty_summary_scores_none_not_one():
-    """A run that validated nothing must not read as a perfect score."""
     summary = empty_summary()
 
     assert summary["overall_score"] is None
@@ -115,7 +104,6 @@ def test_rows_land_in_their_dimension_tab_and_all_findings():
 
 
 def test_finding_outside_the_tabbed_dimensions_still_counts():
-    """A Consistency rule has no tab but must still reach All Findings and the score."""
     summary = build_summary(
         _run_result([_detail(rule_id="DQ9", dimension="Consistency", invalid=10)])
     )
@@ -140,13 +128,6 @@ def test_sheet_rows_use_camel_case_keys():
         "status",
     }
     assert row["cde"] is True
-
-
-# ── Checks that could not run ────────────────────────────────────────
-# A rule that could not be performed (no reference list, no configured columns,
-# an unparseable expression, an internal error) carries an all-pass mask, so its
-# raw score is 1.0. Reporting that as 100% told customers a check had passed
-# when it had never executed. These assert it is surfaced as NOT RUN instead.
 
 
 def _not_run_detail(rule_id="DQ8", dimension="Conformity", reason="Reference list not found"):
@@ -195,8 +176,6 @@ def test_findings_row_also_carries_status_and_null_score():
 
 
 def test_a_detail_without_a_status_key_is_treated_as_ok():
-    """Results produced by an engine build predating the status key must not
-    suddenly render as NOT RUN."""
     legacy = _detail()
 
     assert legacy.metadata == {}

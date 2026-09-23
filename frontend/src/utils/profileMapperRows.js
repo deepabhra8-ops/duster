@@ -1,13 +1,5 @@
-/**
- * profileMapperRows.js - schema/table/column row <-> backend `tables` array
- * conversions shared by ProfileMapperJob.jsx's row picker and
- * NewProfileMapperJobModal.jsx's Database step 2 (both render
- * SchemaTreePicker.jsx-shaped rows). Factored out of ProfileMapperJob.jsx
- * so the new-job modal doesn't reimplement the same grouping logic.
- */
 import { EMPTY_ROW } from "../components/profileMapper/SchemaTreePicker.jsx";
 
-/** Real tables (schema/name/primary_key) → UI rows, all locked (only locked rows are ever persisted). */
 export function tablesToRows(tables) {
   if (!tables || tables.length === 0) return [{ ...EMPTY_ROW }];
   const rows = [];
@@ -25,7 +17,6 @@ export function tablesToRows(tables) {
   return rows;
 }
 
-/** Locked UI rows → real tables - grouped by schema+table, Column values become that table's primary_key. */
 export function rowsToTables(rows) {
   const grouped = new Map();
   for (const row of rows) {

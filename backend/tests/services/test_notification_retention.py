@@ -1,10 +1,3 @@
-"""The notification retention sweep: read notifications are deleted 7 days after creation.
-
-The repository (and so the SQL) is faked here - test_notification_repository.py covers which rows
-qualify - so these pin what the sweeper adds: the cutoff it computes, the safety rule that a
-misconfigured window can never mean "delete everything", a loop that survives failures, and that
-the app really starts and stops it.
-"""
 from __future__ import annotations
 
 import time
@@ -65,9 +58,6 @@ class TestSweep:
 
 
 class TestADisabledWindowNeverDeletesAnything:
-    """A window of zero puts the cutoff at 'now' - which would delete every read notification
-    there is. Zero and negative must mean 'off', not 'keep nothing'."""
-
     @pytest.mark.parametrize("days", [0, -1, -30])
     def test_sweep_does_nothing(self, repo, days):
         assert make(repo, days=days).sweep() == 0
@@ -130,7 +120,6 @@ class TestLoop:
         assert repo.purge_read_before.call_count == settled, "it kept sweeping after stop()"
 
     def test_a_failed_sweep_does_not_end_the_loop(self, repo):
-        """A dead sweep is silent while notifications quietly pile up, so one failure must not stop it."""
         calls = {"n": 0}
 
         def flaky(_cutoff):
@@ -150,12 +139,8 @@ class TestLoop:
 
 
 class TestWiredIntoTheApp:
-    """The sweep runs inside the web process, so what matters is that the app starts and stops it."""
-
     @pytest.fixture(autouse=True)
     def quiet_job_reset(self):
-        # create_app() also runs the interrupted-jobs reset at startup, which hits
-        # the database; keep it out of these tests entirely.
         with patch.object(app_module, "_reset_interrupted_jobs", MagicMock()):
             yield
 
@@ -200,11 +185,9 @@ class TestWiredIntoTheApp:
             app_module, "RUN_NOTIFICATION_PURGE", True
         ):
             with TestClient(app_module.create_app()):
-                pass  # leaving the block runs shutdown; it must not raise
+                pass
 
     def test_the_real_sweeper_really_runs_while_the_app_serves(self, monkeypatch, repo):
-        """End to end through the lifespan, with the real thread: it sweeps while serving and is
-        gone once the app has shut down."""
         monkeypatch.setattr(retention_module, "INITIAL_DELAY_SECONDS", 0)
         monkeypatch.setattr(retention_module, "SWEEP_INTERVAL_SECONDS", 0.01)
         retention = make(repo)

@@ -1,5 +1,3 @@
-"""Defines the BaseReferenceProvider contract for looking up reference data (LOVs, reference tables) used by DQ rules."""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -13,15 +11,12 @@ logger = get_logger(__name__)
 
 
 class BaseReferenceProvider(ABC):
-    """Base class for a provider that resolves named reference data."""
-
     provider_type: str = ""
 
     def __init__(
         self,
         context: ExecutionContext,
     ) -> None:
-        """Store the execution context."""
         try:
             self.context = context
             logger.debug(
@@ -43,7 +38,6 @@ class BaseReferenceProvider(ABC):
         reference_name: str,
         reference_config: Mapping[str, Any] | None = None,
     ) -> Any:
-        """Resolve and return the named reference data; implemented by each provider type."""
         logger.error(
             "Unsupported reference lookup for provider type '%s'",
             self.provider_type,
@@ -57,7 +51,6 @@ class BaseReferenceProvider(ABC):
         reference_name: str,
         reference_config: Mapping[str, Any] | None = None,
     ) -> bool:
-        """Return whether the named reference data can be resolved."""
         try:
             self.get(
                 reference_name=reference_name,
@@ -82,7 +75,6 @@ class BaseReferenceProvider(ABC):
         self,
         reference_config: Mapping[str, Any],
     ) -> None:
-        """Validate provider-specific configuration; no-op by default."""
         try:
             logger.debug(
                 "No base configuration validation required for provider type '%s'",
@@ -96,7 +88,6 @@ class BaseReferenceProvider(ABC):
             raise
 
     def metadata(self) -> Mapping[str, Any]:
-        """Return descriptive metadata about this provider."""
         try:
             metadata = {
                 "provider_type": self.provider_type,

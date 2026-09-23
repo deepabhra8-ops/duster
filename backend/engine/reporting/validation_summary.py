@@ -1,17 +1,3 @@
-"""Builds the JSON summary of a validation run: scores, per-dimension rollups, findings.
-
-Lives in the engine because it reads ValidationRunResult/RuleExecutionDetail. Glue
-builds this the moment validation finishes and writes it to Postgres, so the web app
-serves a stored summary instead of re-parsing the report workbook - a re-parse that
-never worked on AWS anyway, where report_path is a bare S3 key.
-
-DimensionResult/ValidationSummary already average per-rule scores per dimension and
-per-dimension scores overall. The one intentional divergence: an empty run's
-ValidationSummary defaults overall_score to 1.0, which would read as a perfect score
-for a job that validated nothing - None is used here instead, which is what the UI
-treats as "no data yet".
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -21,10 +7,6 @@ if TYPE_CHECKING:
     from engine.core.result_models import RuleExecutionDetail, ValidationRunResult
 
 
-# The dimensions with their own gauge and tab in the UI. A finding in another
-# dimension (e.g. a Consistency or Custom rule) still lands in "All Findings" and
-# still counts toward the dimension rollup and overall score - it just has no
-# dedicated tab.
 SHEET_DIMENSIONS = (
     "Completeness",
     "Conformity",
@@ -33,7 +15,6 @@ SHEET_DIMENSIONS = (
 
 
 def empty_summary() -> dict[str, Any]:
-    """The summary shape for a job with no validation results yet."""
     return {
         "overall_score": None,
         "dimensions": {},
@@ -50,7 +31,6 @@ def empty_summary() -> dict[str, Any]:
 def build_summary(
     validation_result: "ValidationRunResult | None",
 ) -> dict[str, Any]:
-    """Build the full job summary from a ValidationRunResult. No file I/O."""
     if validation_result is None:
         return empty_summary()
 
@@ -103,9 +83,6 @@ def build_summary(
         "tables": list(table_groups.values()),
         "findings": findings,
         "sheets": sheets,
-        # How many configured checks could not be performed. Surfaced next to
-        # the score so a run whose score looks fine is not mistaken for a run
-        # that actually checked everything.
         "not_run_count": not_run_count,
     }
 
@@ -114,7 +91,6 @@ def _finding_row(
     table_name: str,
     detail: "RuleExecutionDetail",
 ) -> dict[str, Any]:
-    """RuleExecutionDetail -> the flat findings row the results table renders."""
     return {
         "table": table_name,
         "column": detail.column_name,
@@ -131,13 +107,6 @@ def _sheet_row(
     table_name: str,
     detail: "RuleExecutionDetail",
 ) -> dict[str, Any]:
-    """RuleExecutionDetail -> the camelCase row shape the sheet grid expects.
-
-    A check that could not run carries score None rather than a number. Its
-    underlying score is 1.0 by construction (an all-pass mask), and rendering
-    that as "100%" is precisely the misreport this exists to prevent - the grid
-    shows a NOT RUN badge instead.
-    """
     return {
         "table": table_name,
         "column": detail.column_name,

@@ -1,5 +1,3 @@
-"""Resolves and caches database reference tables (e.g. for DQ9 foreign-key checks) via a DatabaseReader."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -16,8 +14,6 @@ logger = get_logger(__name__)
 
 
 class TableReferenceProvider(BaseReferenceProvider):
-    """Loads and caches reference tables from a database."""
-
     provider_type = "table"
 
     def __init__(
@@ -25,7 +21,6 @@ class TableReferenceProvider(BaseReferenceProvider):
         context: ExecutionContext,
         database_reader: DatabaseReader | None = None,
     ) -> None:
-        """Store the execution context and optional pre-built database reader."""
         super().__init__(context)
         self.database_reader = database_reader
 
@@ -34,7 +29,6 @@ class TableReferenceProvider(BaseReferenceProvider):
         reference_name: str,
         reference_config: Mapping[str, Any] | None = None,
     ) -> DataFrame:
-        """Return the reference table's data, loading and caching it on first use."""
         try:
             config = reference_config or {}
 
@@ -70,10 +64,6 @@ class TableReferenceProvider(BaseReferenceProvider):
 
             reader = self._get_reader(config)
 
-            # Cached at the Spark level (not just in context.reference_data's Python dict)
-            # so every later use of this reference table across the run - DQ9 checks on
-            # multiple columns/tables, repeated get() calls - reuses this one materialized
-            # result instead of re-issuing the JDBC query against the reference table again.
             dataframe = reader.read_table(
                 table_name=table_name,
                 schema=schema,
@@ -100,7 +90,6 @@ class TableReferenceProvider(BaseReferenceProvider):
         reference_name: str,
         reference_config: Mapping[str, Any] | None = None,
     ) -> bool:
-        """Return whether the named reference table exists in the database."""
         try:
             config = reference_config or {}
 
@@ -146,7 +135,6 @@ class TableReferenceProvider(BaseReferenceProvider):
         column_name: str,
         reference_config: Mapping[str, Any] | None = None,
     ) -> DataFrame:
-        """Return one column of a reference table, as a single-column DataFrame."""
         try:
             dataframe = self.get(
                 reference_name=reference_name,
@@ -172,7 +160,6 @@ class TableReferenceProvider(BaseReferenceProvider):
         self,
         reference_name: str | None = None,
     ) -> None:
-        """Clear one cached reference table, or all of them when no name is given."""
         try:
             if reference_name is None:
                 keys = list(
@@ -201,7 +188,6 @@ class TableReferenceProvider(BaseReferenceProvider):
         self,
         config: Mapping[str, Any],
     ) -> DatabaseReader:
-        """Return the configured database reader, building one from a connection string if needed."""
         try:
             if self.database_reader is not None:
                 return self.database_reader

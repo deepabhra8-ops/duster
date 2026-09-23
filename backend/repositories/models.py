@@ -1,9 +1,3 @@
-"""SQLAlchemy ORM models for the application.
-
-Mirrors backend/migrations/*.sql - the migrations are the source of truth and are
-applied manually; nothing here calls create_all().
-"""
-
 from sqlalchemy import (
     BigInteger,
     Column,
@@ -39,7 +33,6 @@ class Job(Base):
     created_by        = Column(String(255))
     error_message     = Column(Text)
 
-    # ── V2 ──────────────────────────────────────────────────────────────
     name                 = Column(String(255))
     description          = Column(Text)
     step                 = Column(String(4))
@@ -54,10 +47,6 @@ class Job(Base):
 
 
 class SavedConnection(Base):
-    """A reusable database connection. Credentials are stored as a single Fernet
-    token in connection_details_encrypted (see common/security/crypto.py); `port` is
-    duplicated out of that blob so the list view needn't decrypt every row."""
-
     __tablename__ = "saved_connections"
 
     id                           = Column(String(32), primary_key=True)
@@ -65,20 +54,12 @@ class SavedConnection(Base):
     db_type                      = Column(String(50), nullable=False)
     description                  = Column(Text)
     connection_details_encrypted = Column(Text, nullable=False)
-    # No catalog cache lives here. Schemas, tables and columns are all read live
-    # from the source per selection (metadata_scan_service) - see migration 007
-    # for why the schema-name cache that used to sit here was removed.
-    # Nullable: rows created by an earlier build predate ownership. See the
-    # migration and SavedConnectionService._require_owner for how those are treated.
     created_by                   = Column(String(255))
     created_at                   = Column(DateTime, nullable=False, server_default=func.now())
     updated_at                   = Column(DateTime, nullable=False, server_default=func.now())
 
 
 class ProfileMapResult(Base):
-    """Profile-map rows for one job, plus the version counter that drives
-    optimistic-concurrency conflict detection on concurrent edits."""
-
     __tablename__ = "profile_map_results"
 
     job_id     = Column(
@@ -96,8 +77,6 @@ class ProfileMapResult(Base):
 
 
 class ProfileMapEdit(Base):
-    """Audit row: one per profile-map cell changed."""
-
     __tablename__ = "profile_map_edits"
 
     id            = Column(BigInteger, primary_key=True, autoincrement=True)
@@ -114,15 +93,10 @@ class ProfileMapEdit(Base):
     version_after = Column(Integer, nullable=False)
     edited_by     = Column(String(255), nullable=False)
     edited_at     = Column(DateTime, nullable=False, server_default=func.now())
-    # Python-generated (str(uuid.uuid4())), never DB-generated - see
-    # engine/profile_map/normalize_rows.py and services/profile_map_service.py.
     row_id        = Column(String(36), nullable=False)
 
 
 class ValidationResult(Base):
-    """Stored DQ summary for a validator job. overall_score is a real column so
-    the dashboard can trend it without unpacking the JSON."""
-
     __tablename__ = "validation_results"
 
     job_id        = Column(
@@ -130,8 +104,6 @@ class ValidationResult(Base):
         ForeignKey("jobs.job_id", ondelete="CASCADE"),
         primary_key=True,
     )
-    # A 0..1 fraction at build_summary's 4-decimal precision, not a percentage -
-    # see migration 004, which widened this from NUMERIC(5,2).
     overall_score = Column(Numeric(6, 4))
     summary       = Column(JSON, nullable=False)
     created_at    = Column(DateTime, nullable=False, server_default=func.now())
@@ -147,13 +119,6 @@ class Session(Base):
 
 
 class Notification(Base):
-    """An in-app notification, shown under the top bar's bell.
-
-    Keyed by `username`, the app's only identity handle (see migration 008). Rows
-    are written by the API and by a trigger on `jobs` when a job finishes, and only
-    ever change in one way: status unread -> read.
-    """
-
     __tablename__ = "notifications"
 
     id         = Column(BigInteger, primary_key=True, autoincrement=True)

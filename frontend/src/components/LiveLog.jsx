@@ -1,11 +1,3 @@
-/**
- * LiveLog.jsx - Streaming log viewer.
- *
- * Renders the job log as short, human-readable status lines (see
- * utils/humanizeLog.js) rather than the raw backend log text - which can
- * otherwise include server file paths and Python stack traces - with
- * severity-based coloring, auto-scrolling to the newest line as it grows.
- */
 import { useEffect, useRef } from "react";
 import { humanizeLogLine, isErrorLine } from "../utils/humanizeLog.js";
 

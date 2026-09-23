@@ -1,4 +1,3 @@
-"""DQ7 - full-match regular expression."""
 from __future__ import annotations
 
 import pytest
@@ -29,8 +28,6 @@ class TestMatching:
         assert _failing(data, result) == 2
 
     def test_the_match_is_anchored_at_both_ends(self, spark, context):
-        """A partial match must not pass - 'XABCX' contains three capitals but
-        is not three capitals."""
         data = spark.createDataFrame([("XABCX",)], ["code"])
 
         result = DQ7PatternRule().validate(
@@ -60,8 +57,6 @@ class TestMatching:
 
 class TestNotConfigured:
     def test_a_blank_pattern_reports_not_run(self, spark, context):
-        """The default used to be ".*", so an unconfigured pattern scored a
-        confident 100% and read as a check that had passed."""
         data = spark.createDataFrame([("anything",), ("at all",)], ["code"])
 
         result = DQ7PatternRule().validate(data, "code", parameters="", context=context)
@@ -72,8 +67,6 @@ class TestNotConfigured:
 
 class TestInvalidPattern:
     def test_an_unparseable_pattern_reports_not_run(self, spark, context):
-        """It used to pass every row instead, so a typo'd regex reported the
-        column as perfectly conformant."""
         data = spark.createDataFrame([("anything",)], ["code"])
 
         result = DQ7PatternRule().validate(

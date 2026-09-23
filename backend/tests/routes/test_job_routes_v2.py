@@ -1,11 +1,3 @@
-"""Unit tests for the V2 job routes: draft lifecycle, profile-map read/edit/export.
-
-The 409 conflict contract gets particular attention: the UI keeps the user's pending
-edits and rebases them on the body of that response, so a conflict must carry both
-the server's current rows and its current version.
-
-Services are patched throughout; no database is touched.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -36,11 +28,7 @@ JOB = {"job_id": "j1", "name": "Nightly profile", "status": "done", "step": "1"}
 ROWS = [{"Table": "claim", "Column": "claim_id", "CDE (X=Yes)": ""}]
 
 
-# ── draft creation ───────────────────────────────────────────────────
-
-
 def test_create_draft_does_no_catalog_work():
-    """Creating a draft is a single insert - catalog levels are read on demand."""
     with patch.object(
         job_routes.saved_connection_service, "get", return_value={"db_type": "postgresql"}
     ), patch.object(
@@ -72,7 +60,6 @@ def test_create_draft_rejects_unknown_connection():
 
 
 def test_create_draft_without_connection():
-    """A flat-file draft has no connection at all."""
     with patch.object(
         job_routes.job_service, "create_draft_job", return_value="j1"
     ) as create:
@@ -84,9 +71,6 @@ def test_create_draft_without_connection():
 
     assert _body(response)["ok"] is True
     assert create.call_args.kwargs["connection_id"] is None
-
-
-# ── validator draft ──────────────────────────────────────────────────
 
 
 def test_validator_draft_requires_source_job_id():
@@ -135,9 +119,6 @@ def test_validator_draft_success():
     assert body["status"] == "draft"
 
 
-# ── draft mutation and start ─────────────────────────────────────────
-
-
 def test_tables_must_be_a_list():
     response = asyncio.run(
         job_routes.update_job_tables(
@@ -149,8 +130,6 @@ def test_tables_must_be_a_list():
 
 
 def test_tables_with_a_duplicate_name_are_rejected():
-    """Results are keyed by table name, so a second 'customers' would silently
-    overwrite the first one's profile."""
     tables = [
         {"name": "customers", "file": "a_customers.csv"},
         {"name": "Customers", "file": "b_customers.csv"},
@@ -234,9 +213,6 @@ def test_delete_running_job_is_409():
     assert _status(response) == 409
 
 
-# ── profile map read ─────────────────────────────────────────────────
-
-
 def test_get_profile_map_returns_rows_and_version():
     with patch.object(job_routes.job_service, "get_job", return_value=JOB), patch.object(
         job_routes.profile_map_service,
@@ -281,9 +257,6 @@ def test_get_profile_map_404s_for_another_users_job():
     assert _status(response) == 404
 
 
-# ── profile map edit ─────────────────────────────────────────────────
-
-
 def _patch_edit(**kwargs):
     return patch.object(job_routes.profile_map_service, "apply_edits", **kwargs)
 
@@ -326,7 +299,6 @@ def test_edit_success_returns_new_version():
 
 
 def test_edit_conflict_returns_409_with_server_rows_and_version():
-    """The UI rebases the user's pending edits on this body, so both must be present."""
     server_rows = [{"Table": "claim", "Column": "claim_id", "CDE (X=Yes)": "X"}]
 
     with patch.object(job_routes.job_service, "get_job", return_value=JOB), _patch_edit(
@@ -359,9 +331,6 @@ def test_edit_validation_error_is_400():
     assert "DQ99" in _body(response)["error"]
 
 
-# ── export ───────────────────────────────────────────────────────────
-
-
 def test_export_returns_filename():
     with patch.object(
         job_routes.job_service,
@@ -385,14 +354,6 @@ def test_export_404s_without_results():
 
 
 class TestProfileMapDownloadSurvivesStorageFailure:
-    """A download must not be lost because the CACHE write failed.
-
-    export_profile_map() builds the workbook bytes first and only then tries to
-    cache them to disk; a failure writing that cache (a full disk, a permissions
-    problem) must not cost the user a download whose content had already been
-    built successfully in memory.
-    """
-
     def test_the_workbook_is_kept_when_the_disk_cache_write_fails(self, monkeypatch):
         from services import job_service as module
         from services.job_service import JobService
@@ -417,9 +378,7 @@ class TestProfileMapDownloadSurvivesStorageFailure:
 
         filename, reason = service.export_profile_map("j1", requester="alice")
 
-        # The caller is told the cache is cold, not that the export failed...
         assert reason == "ok_uncached"
         assert filename.endswith(".xlsx")
-        # ...and the bytes are still available to serve.
         assert service.last_exported_workbook
-        assert service.last_exported_workbook[:2] == b"PK"  # a real .xlsx (zip)
+        assert service.last_exported_workbook[:2] == b"PK"

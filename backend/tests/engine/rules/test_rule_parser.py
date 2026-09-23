@@ -1,6 +1,3 @@
-"""Unit tests for RuleParameterParser: splitting a pipe-separated rule parameter string
-into typed positional values.
-"""
 from __future__ import annotations
 
 from engine.rules.rule_parser import RuleParameterParser as Parser

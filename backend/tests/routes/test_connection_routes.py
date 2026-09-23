@@ -1,12 +1,3 @@
-"""Unit tests for the saved-connection routes.
-
-Focus is the access-control contract, since these routes are the only path by which
-stored database credentials can leave the server: connections are shared for use but
-owner-managed for modification, and a non-owner must get 403 rather than silently
-succeeding or getting a 404 that hides the distinction.
-
-The service layer is patched throughout; no database is touched.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -20,14 +11,6 @@ from services.saved_connection_service import ConnectionPermissionError
 
 
 class _FakeRequest:
-    """Minimal stand-in for fastapi.Request.
-
-    The write routes read the body; list_connections reads `query_params`, which
-    is how it tells its two callers apart - the job wizard sends no params and
-    wants every connection, the Connections page sends `page` and wants one page.
-    A plain dict is enough: the route only ever calls `.get` on it.
-    """
-
     def __init__(self, body=None, query=None):
         self._body = body
         self.query_params = query or {}
@@ -37,7 +20,6 @@ class _FakeRequest:
 
 
 def _body(response):
-    """Return the decoded body whether the route returned a dict or a JSONResponse."""
     if isinstance(response, dict):
         return response
 
@@ -58,11 +40,7 @@ SUMMARY = {
 }
 
 
-# ── listing is shared ────────────────────────────────────────────────
-
-
 def test_list_returns_non_secret_fields():
-    """No `page` param: the job wizard's shape - every connection, unpaginated."""
     with patch.object(
         connection_routes.saved_connection_service, "list_all", return_value=[SUMMARY]
     ):
@@ -75,7 +53,6 @@ def test_list_returns_non_secret_fields():
 
 
 def test_list_paginates_when_a_page_is_asked_for():
-    """With `page`, the Connections manager's shape - one page, filtered in SQL."""
     page = {"connections": [SUMMARY], "total": 1, "totalPages": 1}
 
     with patch.object(
@@ -95,7 +72,6 @@ def test_list_paginates_when_a_page_is_asked_for():
 
 
 def test_list_rejects_a_non_numeric_page():
-    """A bad page is the caller's mistake - a 400, not a 500 from int()."""
     response = connection_routes.list_connections(_FakeRequest(query={"page": "abc"}))
 
     assert _status(response) == 400
@@ -107,9 +83,6 @@ def test_list_rejects_a_page_below_one():
     )
 
     assert _status(response) == 400
-
-
-# ── create ───────────────────────────────────────────────────────────
 
 
 def test_create_uses_authenticated_user_as_owner():
@@ -147,9 +120,6 @@ def test_create_maps_validation_error_to_400():
     assert "Missing required fields" in _body(response)["error"]
 
 
-# ── ownership enforcement ────────────────────────────────────────────
-
-
 @pytest.mark.parametrize(
     "call",
     [
@@ -163,7 +133,6 @@ def test_create_maps_validation_error_to_400():
     ],
 )
 def test_non_owner_gets_403(call):
-    """403, not 404 - the caller may legitimately see and use this connection."""
     denied = ConnectionPermissionError("Only the user who created this connection can edit it.")
 
     with patch.object(
@@ -201,9 +170,6 @@ def test_delete_missing_connection_is_404():
     assert _status(response) == 404
 
 
-# ── reveal ───────────────────────────────────────────────────────────
-
-
 def test_reveal_returns_decrypted_details_for_owner():
     with patch.object(
         connection_routes.saved_connection_service,
@@ -218,7 +184,6 @@ def test_reveal_returns_decrypted_details_for_owner():
 
 
 def test_reveal_surfaces_rotated_key_error():
-    """A rotated CONNECTION_ENCRYPTION_KEY must produce a readable message, not a 500 blank."""
     with patch.object(
         connection_routes.saved_connection_service,
         "reveal",
@@ -230,16 +195,7 @@ def test_reveal_surfaces_rotated_key_error():
     assert "could not be decrypted" in _body(response)["error"]
 
 
-# ── catalog, one level at a time ─────────────────────────────────────
-
-
 def test_schemas_are_read_live_from_the_source():
-    """Schemas are no longer cached on the connection row (migration 007).
-
-    Storing them made saving a connection wait on a catalog query the user had
-    not asked for, and the cached list went stale whenever a schema was added to
-    the source. They are now read on demand, like tables and columns.
-    """
     with patch.object(
         connection_routes.saved_connection_service,
         "list_schemas",
@@ -261,12 +217,6 @@ def test_schemas_missing_connection_is_404():
 
 
 def test_schemas_report_a_failure_without_leaking_driver_text():
-    """The raw exception must not reach the client.
-
-    Now that this path talks to the database on every call it is the one that can
-    fail, so it carries the sanitiser the refresh endpoint used to own: raw driver
-    text would hand an authenticated user host names, ports and network topology.
-    """
     raw = "could not connect to db-prod-01.internal:5432"
 
     with patch.object(
@@ -281,11 +231,10 @@ def test_schemas_report_a_failure_without_leaking_driver_text():
     assert _status(response) == 400
     assert raw not in error
     assert "db-prod-01.internal" not in error
-    assert error  # a real, non-empty message is still returned
+    assert error
 
 
 def test_refresh_is_an_alias_of_the_live_read():
-    """Kept only so a browser running a pre-007 bundle does not 404."""
     with patch.object(
         connection_routes.saved_connection_service,
         "list_schemas",
@@ -297,11 +246,6 @@ def test_refresh_is_an_alias_of_the_live_read():
 
 
 def test_saving_a_connection_does_no_catalog_work():
-    """The point of the change: creating a connection is a plain insert.
-
-    It used to run a schema query first, which is what put "Saving connection and
-    reading schemas..." in front of the user on a step that only needed an insert.
-    """
     import asyncio
 
     created = {"id": "abc123", "name": "Warehouse", "db_type": "postgresql"}
@@ -321,7 +265,6 @@ def test_saving_a_connection_does_no_catalog_work():
 
     scan.assert_not_called()
     assert response["data"] == created
-    # No schemas key and no schemas_error: the client has nothing to wait on.
     assert "schemas" not in response["data"]
     assert "schemas_error" not in response
 def test_tables_requires_a_schema():

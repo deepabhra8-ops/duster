@@ -1,4 +1,3 @@
-"""Tests for the shared Salesforce HTTP session: timeouts, retries, error wording."""
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -18,14 +17,7 @@ from common.salesforce_session import (
 
 
 class TestTimeouts:
-    """The override delegates to requests.Session.request, so that is what is
-    patched - via mock.patch, which restores it afterwards. Assigning to
-    requests.Session.request directly would leak the stub into every other test
-    in the process."""
-
     def test_every_request_gets_a_default_timeout(self):
-        """The regression this prevents: simple_salesforce builds a bare Session
-        with no timeout, so a hung endpoint blocks the caller forever."""
         session = build_salesforce_session()
 
         with patch.object(requests.Session, "request", return_value="sent") as parent:
@@ -56,27 +48,14 @@ class TestRetries:
     def test_rate_limit_and_server_errors_are_retried(self):
         forcelist = build_salesforce_session().get_adapter("https://x").max_retries.status_forcelist
 
-        # 429 is Salesforce's rate-limit response; 5xx are transient.
         assert 429 in forcelist
         assert 503 in forcelist
 
     def test_retry_after_is_respected(self):
-        """Salesforce tells us how long to wait on a 429 - honouring it is the
-        difference between backing off and hammering an already-throttled org."""
         assert build_salesforce_session().get_adapter("https://x").max_retries.respect_retry_after_header
 
 
 class TestOlderUrllib3:
-    """AWS Glue ships a urllib3 older than 1.26, where the kwarg naming the
-    retriable methods is `method_whitelist` rather than `allowed_methods`.
-
-    This is not a theoretical compatibility note. Passing the newer name there
-    raised TypeError while this module was being imported, and because the
-    engine imports it transitively from data_sources/__init__, that single
-    keyword failed *every* Glue run - profiling and validation, Salesforce
-    source or not - before a row was read.
-    """
-
     @staticmethod
     def _old_retry_class():
         class OldRetry(Retry):
@@ -107,9 +86,6 @@ class TestOlderUrllib3:
         assert session._timeout == (CONNECT_TIMEOUT_SECONDS, READ_TIMEOUT_SECONDS)
 
     def test_a_session_is_built_even_with_no_usable_retry_api(self, monkeypatch):
-        """Last resort: a Salesforce connection without retries is still a
-        working connection. Nothing about retry configuration justifies taking
-        the engine down."""
         def unusable(*args, **kwargs):
             raise TypeError("nothing here is supported")
 
@@ -132,6 +108,4 @@ class TestErrorMessages:
         assert "expired" in message.lower()
 
     def test_an_ordinary_error_is_left_alone(self):
-        """Only conditions an operator can act on get reworded; everything else
-        keeps its original traceback rather than being flattened into prose."""
         assert describe_salesforce_error(ValueError("something else broke")) is None

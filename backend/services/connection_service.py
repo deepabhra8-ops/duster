@@ -1,5 +1,3 @@
-"""Resolves a database type to its connector and drives connection-string building and connection testing."""
-
 from typing import Any
 
 from core.config import DEFAULT_DATABASE_CONNECT_TIMEOUT
@@ -12,15 +10,11 @@ logger = get_logger(__name__)
 
 
 class ConnectionService:
-    """Resolves a database type to its connector and drives it."""
-
     def build_connection_string(
         self,
         db_type: str,
         details: dict[str, Any],
     ) -> str:
-        """Build a SQLAlchemy-compatible connection string."""
-
         connector = connector_registry.get(db_type)
 
         if connector is None:
@@ -32,8 +26,6 @@ class ConnectionService:
         self,
         params: dict[str, Any],
     ) -> str:
-        """Resolve a connection string from raw job params, preferring databaseType + connectionDetails over a stored connection_string."""
-
         database_type = params.get("databaseType", "")
         connection_details = params.get("connectionDetails", {})
 
@@ -55,8 +47,6 @@ class ConnectionService:
         db_type: str,
         details: dict[str, Any],
     ) -> list[str]:
-        """Return missing required fields for a database type."""
-
         connector = connector_registry.get(db_type)
 
         if connector is None:
@@ -68,8 +58,6 @@ class ConnectionService:
         self,
         connection_string: str,
     ) -> dict[str, Any]:
-        """Test a legacy SQLAlchemy connection string."""
-
         try:
             from sqlalchemy import create_engine, text
 
@@ -100,8 +88,6 @@ class ConnectionService:
         db_type: str,
         details: dict[str, Any],
     ) -> dict[str, Any]:
-        """Test a database connection using structured connection details."""
-
         if not db_type:
             return {
                 "ok": False,

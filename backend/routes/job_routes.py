@@ -1,5 +1,3 @@
-"""HTTP endpoints for creating, executing, retrieving, and listing DQ Validator jobs, delegating to JobService."""
-
 import io
 import uuid
 from typing import Any
@@ -36,14 +34,6 @@ MALFORMED_TABLES_MESSAGE = (
 
 
 def _tables_are_malformed(tables: list[Any]) -> bool:
-    """Return whether any entry is not a table object with a usable name.
-
-    config_builder._build_tables calls table.get("name") on every entry, so a list
-    of bare strings - which the Validator's upload flow used to post - got all the
-    way through draft creation and only failed later, deep inside the engine, as
-    "'str' object has no attribute 'get'". Both routes that accept `tables` check
-    this so the request is rejected instead of a job run being wasted on it.
-    """
     return any(
         not isinstance(table, dict) or not str(table.get("name", "")).strip()
         for table in tables
@@ -51,11 +41,6 @@ def _tables_are_malformed(tables: list[Any]) -> bool:
 
 
 def _duplicate_table_name(tables: list[dict[str, Any]]) -> str | None:
-    """Return the first table name that appears twice (ignoring case), else None.
-
-    The profiling engine keys each table's results by name, so a second table with
-    the same name would silently overwrite the first one's results.
-    """
     seen: set[str] = set()
 
     for table in tables:
@@ -70,7 +55,6 @@ def _duplicate_table_name(tables: list[dict[str, Any]]) -> str | None:
 
 
 def _tables_problem(tables: list[Any]) -> str | None:
-    """Return why a `tables` payload can't be stored, or None if it can."""
     if _tables_are_malformed(tables):
         return MALFORMED_TABLES_MESSAGE
 
@@ -90,18 +74,12 @@ async def run_pipeline(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Create a job and start its pipeline execution asynchronously."""
     try:
         params = await request.json()
         params = params if isinstance(params, dict) else {}
-        
-        # Use full UUID for job IDs per new schema
+
         job_id = str(uuid.uuid4())
 
-        # Step 3 (validation) needs a rulebook/profile map to run at all - verify
-        # the file exists on disk. Checked here before the job is created so a
-        # missing file is rejected immediately instead of surfacing as a job that
-        # briefly shows "running" and then fails deep inside the engine.
         step = str(params.get("step", "1"))
 
         if step == "3":
@@ -109,9 +87,6 @@ async def run_pipeline(
                 job_id,
                 params,
             )
-            # None means no profile map was named at all, which is this
-            # check's whole subject - treat it as missing rather than
-            # dereferencing it.
             if profile_map_path is None or not profile_map_path.is_file():
                 logger.warning(
                     "Rejected Step 3 job: no rulebook/profile map found for '%s'",
@@ -124,8 +99,6 @@ async def run_pipeline(
 
         job_service.create_job(job_id=job_id, params=params, owner=username)
 
-        # The DQ engine run itself happens in the background; the job row is
-        # already 'queued', so the response does not need to wait for it.
         job_service.submit_job(job_id)
 
         logger.info("Triggered validation job '%s'", job_id)
@@ -137,8 +110,6 @@ async def run_pipeline(
 
 @job_bp.post("/api/job/{job_id}/cancel")
 def cancel_job(job_id, username: str = Depends(require_auth)):
-    """Request cancellation of a queued or running job."""
-
     try:
         result = job_service.request_cancel(job_id, requester=username)
 
@@ -159,8 +130,6 @@ def cancel_job(job_id, username: str = Depends(require_auth)):
 
 @job_bp.get("/api/job/{job_id}")
 def job_status(job_id, username: str = Depends(require_auth)):
-    """Return the current status and summary of a job."""
-
     try:
         job = job_service.get_job(job_id, requester=username)
 
@@ -177,8 +146,6 @@ def job_status(job_id, username: str = Depends(require_auth)):
 
 @job_bp.get("/api/jobs")
 def list_jobs(request: Request, username: str = Depends(require_auth)):
-    """Return jobs with search, sorting, archiving, and pagination."""
-
     try:
         page = int(
             request.query_params.get(
@@ -218,8 +185,6 @@ def list_jobs(request: Request, username: str = Depends(require_auth)):
         "desc",
     )
 
-    # The V2 UI keeps separate Profile Mapper (step 1) and Validator (step 3)
-    # lists, both filtered server-side.
     step = request.query_params.get("step", "").strip()
     status = request.query_params.get("status", "").strip()
     db_type = request.query_params.get("dbType", "").strip()
@@ -259,22 +224,11 @@ def list_jobs(request: Request, username: str = Depends(require_auth)):
         raise
 
 
-# =====================================================================
-# DRAFT LIFECYCLE
-# =====================================================================
-
-
 @job_bp.post("/api/jobs/draft")
 async def create_draft(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Create a draft job.
-
-    No catalog work happens here. The UI reads schemas/tables/columns live from the
-    connection endpoints while the user builds the job, so creating a draft is a
-    single insert regardless of how large the source database is.
-    """
     try:
         body = await request.json()
         body = body if isinstance(body, dict) else {}
@@ -307,7 +261,6 @@ async def create_draft(
         profile_map_file = body.get("profile_map_file")
         lov_file = body.get("lov_file")
 
-        # Prevent path traversal
         if profile_map_file and ("/" in profile_map_file or "\\" in profile_map_file or ".." in profile_map_file):
             return JSONResponse(
                 {"ok": False, "error": "Invalid profile_map_file path"},
@@ -339,9 +292,6 @@ async def create_draft(
         if profile_map_file:
             params["profile_map_file"] = profile_map_file
 
-        # At most one LOV file per job: the config names the single file this
-        # job validates against, rather than the run picking up whatever else
-        # happens to be sitting in the shared upload area.
         if lov_file:
             params["lov_file"] = lov_file
 
@@ -368,7 +318,6 @@ async def create_validator_draft(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Create a Validator draft from a completed Profile Mapper job."""
     try:
         body = await request.json()
         body = body if isinstance(body, dict) else {}
@@ -430,7 +379,6 @@ async def update_job_tables(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Replace a draft job's table selection."""
     try:
         body = await request.json()
         body = body if isinstance(body, dict) else {}
@@ -483,7 +431,6 @@ async def update_job_details(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Rename or re-describe a job."""
     try:
         body = await request.json()
         body = body if isinstance(body, dict) else {}
@@ -510,7 +457,6 @@ async def update_job_details(
 
 @job_bp.post("/api/job/{job_id}/start")
 def start_job(job_id: str, username: str = Depends(require_auth)):
-    """Start a draft job running."""
     try:
         result = job_service.start_draft_job(job_id, requester=username)
 
@@ -525,8 +471,6 @@ def start_job(job_id: str, username: str = Depends(require_auth)):
                 status_code=400,
             )
 
-        # Pre-flight refusals, each naming the input that is actually missing.
-        # These used to reach the engine and come back as an opaque failed run.
         start_errors = {
             "no_tables": "Select at least one table before running",
             "bad_tables": MALFORMED_TABLES_MESSAGE,
@@ -556,7 +500,6 @@ def start_job(job_id: str, username: str = Depends(require_auth)):
 
 @job_bp.delete("/api/job/{job_id}")
 def delete_job(job_id: str, username: str = Depends(require_auth)):
-    """Delete a job that isn't currently running."""
     try:
         result = job_service.delete_job(job_id, requester=username)
 
@@ -579,21 +522,11 @@ def delete_job(job_id: str, username: str = Depends(require_auth)):
         )
 
 
-# =====================================================================
-# PROFILE MAP
-# =====================================================================
-
 @job_bp.post("/api/profile-map/inspect")
 async def inspect_profile_map(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Store an uploaded profile map workbook and read its tables/columns back.
-
-    The workbook is parsed from the request's own bytes rather than re-read back
-    from storage after saving, so the parse doesn't depend on however the saver
-    left the stream positioned.
-    """
     try:
         form = await request.form()
         file = form.get("file")
@@ -601,13 +534,6 @@ async def inspect_profile_map(
             return JSONResponse({"error": "No file uploaded"}, status_code=400)
 
         saver = UploadFileSaver()
-        # "profile_map", not "profile": that is the kind name every other part
-        # of the upload path is keyed by (UPLOAD_KINDS, UPLOAD_ALLOWED_EXTENSIONS,
-        # get_upload_dir). With "profile" the extension allow-list lookup fell
-        # through to an empty tuple, so every file - a perfectly valid .xlsx
-        # included - was rejected as an unsupported type.
-        # Read the upload ONCE, up front, and keep our own copy - see the
-        # docstring above.
         raw = await file.read()
 
         if len(raw) > MAX_UPLOAD_SIZE_BYTES:
@@ -615,7 +541,6 @@ async def inspect_profile_map(
                 f"File exceeds the {MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)} MB limit"
             )
 
-        # Rewound so the saver sees a full stream to upload.
         await file.seek(0)
 
         saved = await saver.save(file, kind="profile_map")
@@ -624,8 +549,6 @@ async def inspect_profile_map(
         tables = result.get("tables", [])
 
         if not tables:
-            # Parsed, but nothing usable in it - a distinct problem from a corrupt
-            # file, and one the user can actually fix.
             return JSONResponse(
                 {
                     "error": (
@@ -643,9 +566,6 @@ async def inspect_profile_map(
             "tables": tables,
         }
     except ValueError as exc:
-        # Raised by the saver (bad extension, bad magic bytes, over the size cap)
-        # and by the reader (unreadable workbook). All are the user's to fix, and
-        # all carry a message worth showing instead of a generic one.
         logger.warning("Rejected uploaded profile map: %s", exc)
         return JSONResponse({"error": str(exc)}, status_code=400)
     except Exception:
@@ -659,7 +579,6 @@ async def inspect_profile_map(
 
 @job_bp.get("/api/job/{job_id}/profile-map")
 def get_profile_map(job_id: str, username: str = Depends(require_auth)):
-    """Return a job's profile-map rows and their current version."""
     try:
         job = job_service.get_job(job_id, requester=username)
 
@@ -697,15 +616,6 @@ async def update_profile_map(
     request: Request,
     username: str = Depends(require_auth),
 ):
-    """Apply profile-map cell edits and added rule rows under optimistic concurrency.
-
-    Body is {version, edits, additions}. `edits` changes cells on existing rows;
-    `additions` appends analyst-added rule rows to a column. Both are applied in one
-    transaction, so a Save carrying either or both either lands whole or not at all.
-
-    A stale `version` yields 409 carrying the server's current rows, so the UI can
-    show what changed underneath the user instead of silently overwriting it.
-    """
     try:
         job = job_service.get_job(job_id, requester=username)
 
@@ -779,7 +689,6 @@ async def update_profile_map(
 
 @job_bp.post("/api/job/{job_id}/profile-map/export")
 def export_profile_map(job_id: str, username: str = Depends(require_auth)):
-    """Render the current profile-map rows to .xlsx, including any edits."""
     try:
         filename, reason = job_service.export_profile_map(job_id, requester=username)
 
@@ -805,7 +714,6 @@ def export_profile_map(job_id: str, username: str = Depends(require_auth)):
 
 @job_bp.get("/api/job/{job_id}/profile-map/edits")
 def get_profile_map_edits(job_id: str, username: str = Depends(require_auth)):
-    """Return the audit trail of profile-map cell edits, newest first."""
     try:
         job = job_service.get_job(job_id, requester=username)
 

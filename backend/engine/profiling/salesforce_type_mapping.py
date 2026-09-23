@@ -1,14 +1,4 @@
-"""
-Type mapping utility for resolving source datatypes to target SQL datatypes.
-Provides lightweight string representations for the profiling map.
-"""
-
-
 def map_salesforce_type(sf_type: str) -> str:
-    """
-    Map Salesforce's native metadata field types to standard SQL datatype strings.
-    Based on PostgreSQL/Standard SQL types for broad compatibility.
-    """
     if not sf_type:
         return "VARCHAR(65535)"
 

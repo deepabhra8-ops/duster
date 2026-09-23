@@ -1,8 +1,3 @@
-"""Unit tests for the /api/run pre-flight rulebook check: a Step 3 (validation) run must
-be rejected synchronously - before any job is created - when no rulebook/profile map
-.xlsx can be resolved on disk, instead of being accepted and only failing once the job
-is already shown as "running" deep inside the pipeline.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +11,6 @@ from services.job_service import job_service
 
 @pytest.fixture(autouse=True)
 def isolate_job_filesystem(tmp_path, monkeypatch):
-    """Redirect every job/profile-map path the route touches into a temp directory, so
-    these tests never write into (or read stale files from) the real runtime/ folder."""
     jobs_dir = tmp_path / "jobs"
     profile_map_uploads_dir = tmp_path / "uploads" / "profile_map"
     jobs_dir.mkdir(parents=True)
@@ -30,8 +23,6 @@ def isolate_job_filesystem(tmp_path, monkeypatch):
 
 
 class _FakeRequest:
-    """Minimal stand-in for fastapi.Request - run_pipeline() only ever calls request.json()."""
-
     def __init__(self, body: dict):
         self._body = body
 
@@ -40,8 +31,6 @@ class _FakeRequest:
 
 
 def _call(body: dict, username: str = "tester"):
-    # Called as a plain function (bypassing FastAPI's dependency injection), so
-    # `username` - normally resolved via Depends(require_auth) - is passed directly.
     return asyncio.run(run_pipeline(_FakeRequest(body), username=username))
 
 
@@ -82,7 +71,6 @@ def test_step3_with_rulebook_present_is_accepted(monkeypatch, isolate_job_filesy
 
 
 def test_step1_is_unaffected_by_the_rulebook_check(monkeypatch):
-    """Step 1 (profiling) generates its own profile map - it has no rulebook to check."""
     created = []
     monkeypatch.setattr(job_service, "create_job", lambda **kw: created.append(kw))
     monkeypatch.setattr(job_service, "run_job", lambda job_id: None)
@@ -100,12 +88,6 @@ def test_step1_is_unaffected_by_the_rulebook_check(monkeypatch):
 
 
 def test_step3_missing_profile_map_path_does_not_crash(monkeypatch):
-    """resolve_profile_map_path returns None when no map is named.
-
-    Regression guard: the route used to call .is_file() on it straight away,
-    which raised AttributeError instead of returning the 400 this check exists
-    to produce.
-    """
     from services.config_builder import config_builder
 
     monkeypatch.setattr(

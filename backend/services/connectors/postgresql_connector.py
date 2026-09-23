@@ -1,5 +1,3 @@
-"""PostgreSQL database connector."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -10,8 +8,6 @@ from services.connectors.registry import register_connector
 
 @register_connector
 class PostgresqlConnector(DatabaseConnector):
-    """Builds PostgreSQL connection strings."""
-
     db_type = "postgresql"
     required_fields = ("host", "username", "password")
 
@@ -19,7 +15,6 @@ class PostgresqlConnector(DatabaseConnector):
         self,
         details: dict[str, Any],
     ) -> str:
-        """Build a psycopg2 SQLAlchemy connection string."""
         database = details.get("database", "")
 
         return (

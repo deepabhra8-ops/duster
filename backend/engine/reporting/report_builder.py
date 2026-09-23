@@ -1,5 +1,3 @@
-"""Assembles and writes the full DQ validation report workbook (Summary, per-dimension, All Findings, Failed Rows sheets)."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -29,8 +27,6 @@ logger = get_logger(__name__)
 
 
 class ReportBuilder:
-    """Builds and writes the DQ validation report by composing the summary, dimension, findings, and failed-rows sub-reports."""
-
     SUMMARY_SHEET = "Summary"
     ALL_FINDINGS_SHEET = "All DQ Findings"
     FAILED_ROWS_SHEET = "Failed Rows"
@@ -43,7 +39,6 @@ class ReportBuilder:
         all_findings_report: AllFindingsReport | None = None,
         failed_rows_report: FailedRowsReport | None = None,
     ) -> None:
-        """Store the sub-report collaborators, defaulting to their standard implementations."""
         self.summary_report = (
             summary_report
             or SummaryReport()
@@ -71,7 +66,6 @@ class ReportBuilder:
         self,
         validation_result: ValidationRunResult,
     ) -> dict[str, pl.DataFrame]:
-        """Build every report sheet as a DataFrame, keyed by sheet name."""
         reports: dict[
             str,
             pl.DataFrame,
@@ -132,7 +126,6 @@ class ReportBuilder:
         validation_result: ValidationRunResult,
         output_path: str | Path,
     ) -> Path:
-        """Write the full report workbook (all sheets) to output_path."""
         output_path = Path(
             output_path
         )
@@ -142,8 +135,6 @@ class ReportBuilder:
             exist_ok=True,
         )
 
-        # xlsxwriter directly rather than through a dataframe library's writer
-        # wrapper: every sheet below is written with the xlsxwriter API anyway.
         with xlsxwriter.Workbook(
             str(output_path),
             XLSXWRITER_SAFE_OPTIONS,
@@ -190,7 +181,6 @@ class ReportBuilder:
         output_path: str | Path,
         sheet_name: str,
     ) -> Path:
-        """Write a single named report sheet to output_path."""
         output_path = Path(
             output_path
         )
@@ -206,8 +196,6 @@ class ReportBuilder:
                 f"{', '.join(available_sheets)}"
             )
 
-        # xlsxwriter directly rather than through a dataframe library's writer
-        # wrapper: every sheet below is written with the xlsxwriter API anyway.
         with xlsxwriter.Workbook(
             str(output_path),
             XLSXWRITER_SAFE_OPTIONS,
@@ -255,7 +243,6 @@ class ReportBuilder:
         writer: Any,
         validation_result: ValidationRunResult,
     ) -> None:
-        """Write the Summary sheet."""
         self.summary_report.write_to_workbook(
             writer=writer,
             validation_result=validation_result,
@@ -267,8 +254,6 @@ class ReportBuilder:
         writer: Any,
         validation_result: ValidationRunResult,
     ) -> None:
-        """Write every per-dimension sheet."""
-
         dimension_reports = (
             self.dimension_report.build(
                 validation_result
@@ -311,8 +296,6 @@ class ReportBuilder:
         validation_result: ValidationRunResult,
         sheet_name: str,
     ) -> None:
-        """Write a single named dimension sheet."""
-
         dimension = (
             self._dimension_from_sheet_name(
                 sheet_name
@@ -338,8 +321,6 @@ class ReportBuilder:
         writer: Any,
         validation_result: ValidationRunResult,
     ) -> None:
-        """Write the All DQ Findings sheet."""
-
         dataframe = (
             self.all_findings_report.build(
                 validation_result
@@ -357,7 +338,6 @@ class ReportBuilder:
         writer: Any,
         validation_result: ValidationRunResult,
     ) -> None:
-        """Write the Failed Rows sheet."""
         self.failed_rows_report.write_to_workbook(
             writer=writer,
             validation_result=validation_result,
@@ -368,15 +348,6 @@ class ReportBuilder:
         self,
         validation_result: ValidationRunResult,
     ) -> list[str]:
-        """Return the names of every sheet this result would produce.
-
-        Deliberately avoids all_findings_report.build() and failed_rows_report.build() here -
-        both trigger real Spark actions (a createDataFrame + count, and a per-table collect())
-        - since write_sheet() only needs this to validate a sheet name before building the one
-        actually-requested sheet for real. dimension_report.build() stays: it's pure
-        Python/pandas grouping over already-in-memory rule_details, no Spark action involved.
-        """
-
         dimension_reports = self.dimension_report.build(
             validation_result
         )
@@ -397,8 +368,6 @@ class ReportBuilder:
     def _dimension_from_sheet_name(
         sheet_name: str,
     ) -> str:
-        """Return the dimension name a sheet name maps to."""
-
         return str(
             sheet_name
         ).strip()

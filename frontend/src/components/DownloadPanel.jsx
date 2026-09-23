@@ -1,12 +1,3 @@
-/**
- * DownloadPanel.jsx - Artifact downloads for a completed job.
- *
- * Each button is enabled only when its corresponding flag is true:
- *   Report  → has_report
- *   Profile → has_profile
- *   Staging → has_staging
- * Clicking opens the backend download URL in a new tab.
- */
 import { downloadUrl } from "../api/api.js";
 import { openInNewTab } from "../utils/helpers.js";
 import { IconChart, IconMap, IconArchive } from "./Icons.jsx";

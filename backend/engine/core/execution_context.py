@@ -1,5 +1,3 @@
-"""Defines ExecutionContext, the shared runtime state (project info, mode, source/staging/report config, rules, reference data) passed to every engine component for one pipeline run."""
-
 from __future__ import annotations
 
 import threading
@@ -12,16 +10,11 @@ from utils.lov_naming import match_lov_name
 
 logger = get_logger(__name__)
 
-# Guards the lazy reference-data load. Module-level rather than per-instance
-# because ExecutionContext is a frozen-ish dataclass shared by every engine
-# component in a run, and one run has one context.
 _REFERENCE_DATA_LOCK = threading.Lock()
 
 
 @dataclass
 class ExecutionContext:
-    """Execution-scoped state shared across profiling and validation engine components."""
-
     project_name: str
     run_timestamp: str
     mode: int = 1
@@ -46,22 +39,18 @@ class ExecutionContext:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_source_config(self, key: str, default: Any = None) -> Any:
-        """Return a value from the source configuration."""
         return self.source_config.get(key, default)
 
     def get_staging_config(self, key: str, default: Any = None) -> Any:
-        """Return a value from the staging configuration."""
         return self.staging_config.get(key, default)
 
     def get_report_config(self, key: str, default: Any = None) -> Any:
-        """Return a value from the report configuration."""
         return self.report_config.get(key, default)
 
     def get_rule_definition(
         self,
         rule_id: str,
     ) -> Mapping[str, Any]:
-        """Return the rule master definition for a rule id."""
         return self.rule_master.get(rule_id, {})
 
     def get_reference_data(
@@ -69,30 +58,9 @@ class ExecutionContext:
         name: str,
         default: Any = None,
     ) -> Any:
-        """Return reference data by name, loading a configured LOV on first use.
-
-        This used to be a bare dict lookup into a mapping that nothing ever
-        populated, so it always returned the default. DQ8 and DQ9 read their
-        reference data through here and treat "not found" as "cannot check",
-        which meant both rules silently reported every row as passing on data
-        they had never looked at.
-
-        A LOV named in metadata["lov_tables"] is now resolved on demand through
-        LovProvider (which understands both local paths and the s3:// URIs the
-        Glue run discovers) and cached, so each file is read once per run.
-
-        Reference *tables* for DQ9 are not resolved here: unlike LOVs, nothing
-        in the job config yet says which connection and schema a reference table
-        should be read from. Until that exists, DQ9 correctly reports NOT RUN
-        rather than a fabricated pass.
-        """
         if name in self.reference_data:
             return self.reference_data[name]
 
-        # Tables are validated concurrently, so several threads can miss the
-        # cache for the same LOV at once. Without this they would each read and
-        # parse the same file; the second check inside the lock means only the
-        # first one does.
         with _REFERENCE_DATA_LOCK:
             if name in self.reference_data:
                 return self.reference_data[name]
@@ -106,17 +74,11 @@ class ExecutionContext:
             return loaded
 
     def _load_lov(self, name: str) -> Any | None:
-        """Load a LOV declared in metadata['lov_tables'], or None if there isn't one."""
         lov_tables = self.get_metadata("lov_tables", {})
 
         if not name or not lov_tables:
             return None
 
-        # Not a bare `name in lov_tables`. lov_tables is keyed by the names the
-        # uploaded CSVs declare in their column headers, which are routinely
-        # qualified by table (`Customer.CustomerName`) where the profile map's
-        # DQ8 parameter is not (`CustomerName`). An exact-key gate reported
-        # "check not run" for a file that was present and correct.
         resolved = match_lov_name(lov_tables, name)
 
         if resolved is None:
@@ -129,17 +91,11 @@ class ExecutionContext:
             )
             return None
 
-        # Imported here, not at module scope: lov_provider imports this module,
-        # so a top-level import would be circular.
         from engine.reference_data.lov_provider import LovProvider
 
         try:
             return LovProvider(self).get(resolved)
         except Exception:
-            # Deliberately swallowed to a warning. The caller (DQ8) turns a None
-            # into a NOT RUN result, which is the honest outcome - the check
-            # could not be performed. Raising here would fail the whole table
-            # over one unreadable reference file.
             logger.warning(
                 "Could not load LOV '%s' for project '%s'; the check will report "
                 "as not run",
@@ -154,7 +110,6 @@ class ExecutionContext:
         name: str,
         value: Any,
     ) -> None:
-        """Store reference data for reuse by later operations in this run."""
         try:
             if isinstance(self.reference_data, dict):
                 self.reference_data[name] = value
@@ -188,7 +143,6 @@ class ExecutionContext:
         key: str,
         value: Any,
     ) -> None:
-        """Store a transient runtime metadata value."""
         try:
             self.metadata[key] = value
             logger.debug(
@@ -209,17 +163,14 @@ class ExecutionContext:
         key: str,
         default: Any = None,
     ) -> Any:
-        """Return a stored runtime metadata value."""
         return self.metadata.get(key, default)
 
     @property
     def is_profiling_mode(self) -> bool:
-        """Return whether this run is in profiling mode (mode 1)."""
         return self.mode == 1
 
     @property
     def is_curation_mode(self) -> bool:
-        """Return whether this run is in curation/validation mode (mode 2)."""
         return self.mode == 2
 
     @classmethod
@@ -228,7 +179,6 @@ class ExecutionContext:
         config: Mapping[str, Any],
         run_timestamp: str,
     ) -> "ExecutionContext":
-        """Build an ExecutionContext from a pipeline configuration mapping."""
         project_name = config.get(
             "project_name",
             "Project",
@@ -264,11 +214,6 @@ class ExecutionContext:
                 source_config=source,
                 staging_config=staging,
                 report_config=reports,
-                # {lov_name: path-or-s3-uri}. dq_glue_job.py discovers these by
-                # listing the input bucket's lov/ prefix and has always put them
-                # in the config; nothing read them until now, which is why DQ8
-                # never found a reference list. LovProvider._resolve_path reads
-                # this key.
                 metadata={"lov_tables": dict(config.get("lov_tables", {}))},
             )
         except Exception:

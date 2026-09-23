@@ -1,5 +1,3 @@
-"""Reads uploaded CSV and Excel files and builds preview data (columns and rows) for the API."""
-
 from __future__ import annotations
 
 import csv
@@ -15,8 +13,6 @@ logger = get_logger(__name__)
 
 
 class UploadPreviewReader:
-    """Read uploaded CSV and Excel files for preview."""
-
     _SUPPORTED_EXTENSIONS = (".csv", ".xlsx")
 
     def read(
@@ -24,7 +20,6 @@ class UploadPreviewReader:
         file_path: Path,
         rows: int = 50,
     ) -> dict[str, Any]:
-        """Read an uploaded file and return its preview columns and rows."""
         self._validate_rows(rows)
 
         try:
@@ -53,14 +48,12 @@ class UploadPreviewReader:
         cls,
         file_path: Path,
     ) -> bool:
-        """Return whether the file format supports previewing."""
         suffix = file_path.suffix.lower()
 
         return suffix in cls._SUPPORTED_EXTENSIONS
 
     @classmethod
     def supported_extensions(cls) -> tuple[str, ...]:
-        """Return the file extensions supported by the reader."""
         return cls._SUPPORTED_EXTENSIONS
 
     @classmethod
@@ -70,7 +63,6 @@ class UploadPreviewReader:
         suffix: str,
         rows: int,
     ) -> dict[str, Any]:
-        """Read a preview from a file-like buffer without PySpark."""
         if suffix not in cls._SUPPORTED_EXTENSIONS:
             supported = ", ".join(cls.supported_extensions())
             raise ValueError(
@@ -88,11 +80,6 @@ class UploadPreviewReader:
         buffer: Any,
         rows: int,
     ) -> dict[str, Any]:
-        """Read CSV preview from buffer using standard csv module."""
-        # We need a text reader. If buffer is BytesIO, wrap it.
-        # But if it's already a file object open in text mode, handle that.
-        
-        # Read the whole buffer into memory as text (it's small anyway)
         content = buffer.read()
         if isinstance(content, bytes):
             text = content.decode("utf-8", errors="replace")
@@ -125,7 +112,6 @@ class UploadPreviewReader:
         buffer: Any,
         rows: int,
     ) -> dict[str, Any]:
-        """Read Excel preview from buffer."""
         workbook = load_workbook(buffer, read_only=True, data_only=True)
 
         try:
@@ -157,7 +143,6 @@ class UploadPreviewReader:
     def _validate_rows(
         rows: int,
     ) -> None:
-        """Validate the requested preview row count."""
         if not isinstance(rows, int):
             raise ValueError(
                 "Preview rows must be an integer"
@@ -172,7 +157,6 @@ class UploadPreviewReader:
     def _validate_file(
         file_path: Path,
     ) -> None:
-        """Validate that the preview target exists and is a file."""
         if not file_path.exists():
             raise FileNotFoundError(
                 f"File not found: {file_path}"

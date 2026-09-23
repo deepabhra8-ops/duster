@@ -1,21 +1,3 @@
-"""Reads and edits stored profile-map rows.
-
-Only four cells per row are editable - everything else is computed by profiling
-and is read-only. Edits are validated here, applied atomically with a version
-bump, and recorded per cell in the audit table.
-
-An analyst can also add a rule row to a profiled column, for a rule profiling
-did not suggest. An added row clones its source row's profiling metadata (so the
-column's stats stay identical across its rules) and carries only its own rule,
-parameters and notes. Its row_id is minted here, server-side, and returned in the
-same response - a client never invents one.
-
-Rule IDs are checked against core.config.VALID_RULE_IDS rather than the
-engine's rule registry: the web container ships without the engine package (see
-Dockerfile stage 2). The engine remains the authority at execution time; this is
-an earlier, friendlier rejection of typos.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -44,13 +26,8 @@ PARAMS_FIELD = "Rule Parameters"
 NOTES_FIELD = "Analyst Notes"
 CDE_FIELD = "CDE (X=Yes)"
 
-# What an analyst may set on a rule row they add. Everything else on the new row
-# is inherited from the source row's profiling output, not client input.
 ADDABLE_FIELDS = (RULES_FIELD, PARAMS_FIELD, NOTES_FIELD)
 
-# Audit `field` values marking a row that did not exist before / no longer exists
-# (the column is a plain VARCHAR(64) with no CHECK, so a label rather than a real
-# field name is fine).
 ROW_ADDED_FIELD = "(rule row added)"
 ROW_REMOVED_FIELD = "(rule row removed)"
 
@@ -58,10 +35,7 @@ _VALID_RULE_IDS_UPPER = {rule.upper() for rule in VALID_RULE_IDS}
 
 
 class ProfileMapService:
-    """Validation and orchestration around ProfileMapRepository."""
-
     def get_results(self, job_id: str) -> dict[str, Any] | None:
-        """Return {rows, version} for a job, or None if profiling hasn't produced any."""
         return profile_map_repository.get_or_backfill(job_id)
 
     def save_results(
@@ -69,7 +43,6 @@ class ProfileMapService:
         job_id: str,
         rows: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Store freshly profiled rows (version resets to 1)."""
         normalized_rows = normalize_rows(rows)
         return profile_map_repository.save(job_id, normalized_rows)
 
@@ -82,23 +55,6 @@ class ProfileMapService:
         additions: list[dict[str, Any]] | None = None,
         removals: list[str] | None = None,
     ) -> dict[str, Any]:
-        """Validate and apply a batch of cell edits, added rule rows and removals.
-
-        `edits` is [{row_id, changes: {field: value}}]. Rows are matched by
-        row_id, never by array index.
-
-        `additions` is [{source_row_id, changes: {rule/params/notes}}] - each one
-        appends a rule row to the column that `source_row_id` belongs to.
-
-        `removals` is [row_id] - rule rows to drop.
-
-        All three are applied in one transaction, so a Save carrying any mix of them
-        lands whole or not at all. Removals run before additions, so swapping one rule
-        for another in a single save doesn't trip the duplicate-rule check.
-
-        Raises ValueError on invalid input, KeyError if the job has no profile map,
-        and ProfileMapVersionConflict if `version` is stale.
-        """
         stored = profile_map_repository.get_or_backfill(job_id)
 
         if stored is None:
@@ -140,7 +96,6 @@ class ProfileMapService:
                 old_value = row.get(field)
 
                 if str(old_value or "") == value:
-                    # Client echoed an unchanged value - nothing to record.
                     continue
 
                 row[field] = value
@@ -162,7 +117,6 @@ class ProfileMapService:
             self._add_rule_row(rows, index, addition, audit_entries)
 
         if not audit_entries:
-            # Nothing actually changed; don't burn a version on a no-op save.
             return {"rows": stored["rows"], "version": stored["version"]}
 
         return profile_map_repository.apply_edits(
@@ -174,7 +128,6 @@ class ProfileMapService:
         )
 
     def list_edits(self, job_id: str, limit: int = 200) -> list[dict[str, Any]]:
-        """Return a job's profile-map edit history, newest first."""
         return profile_map_repository.list_edits(job_id, limit)
 
     def _add_rule_row(
@@ -184,7 +137,6 @@ class ProfileMapService:
         addition: dict[str, Any],
         audit_entries: list[dict[str, Any]],
     ) -> None:
-        """Append one analyst-added rule row to its source row's column, in place."""
         if not isinstance(addition, dict):
             raise ValueError("Each added row must be an object")
 
@@ -196,8 +148,6 @@ class ProfileMapService:
         source = index.get(source_row_id)
 
         if source is None:
-            # Same contract as an edit: the client identifies the column by a row
-            # the server gave it, never by inventing an id of its own.
             raise ValueError(f"Unknown source_row_id: {source_row_id}")
 
         changes = addition.get("changes")
@@ -217,8 +167,6 @@ class ProfileMapService:
         table = str(source.get(TABLE_KEY, ""))
         column = str(source.get(COLUMN_KEY, ""))
 
-        # One rule may only apply to a column once - two rows for the same rule would
-        # run it twice and score the column twice, with no way to tell them apart.
         if rule in self._rules_for_column(rows, table, column):
             raise ValueError(f"'{column}' already has a {rule} rule")
 
@@ -253,7 +201,6 @@ class ProfileMapService:
         raw_row_id: Any,
         audit_entries: list[dict[str, Any]],
     ) -> None:
-        """Drop one rule row, in place, keeping its column present in the map."""
         row_id = str(raw_row_id or "").strip()
 
         if not row_id:
@@ -267,9 +214,6 @@ class ProfileMapService:
         table = str(row.get(TABLE_KEY, ""))
         column = str(row.get(COLUMN_KEY, ""))
 
-        # A column with no rows at all would vanish from the profile map - and with it
-        # the source row an analyst needs to add a rule back. Skipping a column is what
-        # Enabled is for, so keep the last rule and point the user at it.
         siblings = [
             candidate
             for candidate in rows
@@ -285,7 +229,6 @@ class ProfileMapService:
             )
 
         for offset, candidate in enumerate(rows):
-            # Identity, not equality: two rows could be value-equal.
             if candidate is row:
                 del rows[offset]
                 break
@@ -309,7 +252,6 @@ class ProfileMapService:
         table: str,
         column: str,
     ) -> set[str]:
-        """Rule ids already applied to one column, upper-cased."""
         return {
             str(row.get(RULES_FIELD, "")).strip().upper()
             for row in rows
@@ -323,11 +265,6 @@ class ProfileMapService:
         table: str,
         column: str,
     ) -> int:
-        """Index just past this column's last row, keeping a column's rules contiguous.
-
-        The UI groups rows by column and the exported workbook preserves row order,
-        so an added rule belongs beside its siblings rather than at the end.
-        """
         position = len(rows)
 
         for offset, row in enumerate(rows):
@@ -341,7 +278,6 @@ class ProfileMapService:
 
     @classmethod
     def _validate_cell(cls, field: str, raw_value: Any) -> str:
-        """Return the normalized value for one edited cell, or raise ValueError."""
         if field not in PROFILE_MAP_EDITABLE_FIELDS:
             raise ValueError(f"'{field}' is not editable")
 
@@ -361,12 +297,10 @@ class ProfileMapService:
 
     @staticmethod
     def _normalize_cde(value: str) -> str:
-        """CDE is a flag rendered as a checkbox: 'X' when set, empty when not."""
         return "X" if value.strip().upper() in ("X", "TRUE", "YES", "1") else ""
 
     @staticmethod
     def _normalize_rule_ids(value: str) -> str:
-        """Validate and normalize a single rule ID (from one-rule-per-row UI)."""
         if not value:
             return ""
 

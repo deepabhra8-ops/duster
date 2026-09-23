@@ -1,5 +1,3 @@
-"""Safely persists uploaded files to their configured upload directory, sanitizing untrusted filenames."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -18,20 +16,11 @@ logger = get_logger(__name__)
 
 
 class UploadFileSaver:
-    """Safely persist uploaded files."""
-
     async def save(
         self,
         file: Any,
         kind: str,
     ) -> dict[str, str]:
-        """Validate, sanitize, and store an uploaded file to the local uploads directory.
-
-        Returns {"filename", "location"}. `filename` is the sanitized,
-        UUID-prefixed name every other part of the system keys off; `location`
-        is the local path, for logging and diagnostics rather than for
-        reopening the file.
-        """
         original_filename = self._get_filename(file)
 
         filename = self._sanitize_filename(
@@ -93,7 +82,6 @@ class UploadFileSaver:
     def _get_filename(
         file: Any,
     ) -> str:
-        """Extract and validate the client-provided (still untrusted) filename."""
         filename = str(
             getattr(
                 file,
@@ -117,7 +105,6 @@ class UploadFileSaver:
     def _sanitize_filename(
         original_filename: str,
     ) -> str:
-        """Sanitize a client-provided filename for safe filesystem use."""
         import uuid
 
         filename = secure_filename(
@@ -134,7 +121,6 @@ class UploadFileSaver:
                 "Invalid filename"
             )
 
-        # Prefix with UUID to prevent collisions between identical filenames
         return f"{uuid.uuid4().hex}_{filename}"
 
     @staticmethod
@@ -142,7 +128,6 @@ class UploadFileSaver:
         kind: str,
         filename: str,
     ) -> None:
-        """Reject a filename whose extension isn't allowed for this upload kind."""
         allowed = UPLOAD_ALLOWED_EXTENSIONS.get(
             kind,
             (),
@@ -168,8 +153,6 @@ class UploadFileSaver:
     def _prepare_upload_directory(
         kind: str,
     ) -> Path:
-        """Resolve and ensure the upload directory for a kind exists."""
-
         try:
             upload_dir = get_upload_dir(
                 kind
@@ -195,8 +178,6 @@ class UploadFileSaver:
         filename: str,
         upload_dir: Path,
     ) -> Path:
-        """Resolve the destination path and verify it stays inside the upload directory."""
-
         destination = get_upload_file_path(
             kind,
             filename,
@@ -233,7 +214,6 @@ class UploadFileSaver:
     async def _reset_file_position(
         file: Any,
     ) -> None:
-        """Reset the uploaded file stream to the start before writing."""
         seek = getattr(
             file,
             "seek",
@@ -251,7 +231,6 @@ class UploadFileSaver:
     def _get_file_object(
         file: Any,
     ) -> Any:
-        """Return the underlying (sync) file stream backing an uploaded file."""
         file_object = getattr(
             file,
             "file",
@@ -270,7 +249,6 @@ class UploadFileSaver:
         file_object: Any,
         filename: str,
     ) -> None:
-        """Reject content whose bytes contradict the (already-validated) extension."""
         header = file_object.read(4096)
         file_object.seek(0)
 
@@ -293,14 +271,6 @@ class UploadFileSaver:
         destination: Path,
         max_bytes: int = MAX_UPLOAD_SIZE_BYTES,
     ) -> None:
-        """Stream the uploaded file to the destination, enforcing the size cap as it writes.
-
-        The size cap the app advertises (see app.py's upload middleware) only checks
-        the client-supplied Content-Length header before the body is read - a request
-        with no/false Content-Length would otherwise let an unbounded stream reach
-        disk. Counting bytes here, per file, closes that gap; a partial file is
-        removed rather than left behind if the cap is hit or the write fails.
-        """
         chunk_size = 1024 * 1024
         written = 0
 

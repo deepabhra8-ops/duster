@@ -1,5 +1,3 @@
-"""CLI/programmatic entry point for Step 3: runs validation via ValidationEngine and writes the DQ report."""
-
 from __future__ import annotations
 
 import argparse
@@ -22,8 +20,6 @@ logger = get_logger(__name__)
 
 
 class DQValidator:
-    """Runs DQ validation against a configured source and writes the validation report."""
-
     @log_and_reraise(logger, "Failed to initialize DQ validator")
     def __init__(
         self,
@@ -31,7 +27,6 @@ class DQValidator:
         progress_callback: Callable[[int, int], None] | None = None,
         cancel_event: threading.Event | None = None,
     ) -> None:
-        """Build the execution context and engine components for this run."""
         self.config = config
         self.progress_callback = progress_callback
         self.cancel_event = cancel_event
@@ -53,18 +48,11 @@ class DQValidator:
 
     @log_and_reraise(logger, "DQ validation failed")
     def run(self) -> Path:
-        """Validate the configured tables and write the DQ report; returns the report path."""
         _, result = self.validate_and_report()
         return result
 
     @log_and_reraise(logger, "DQ validation failed")
     def validate_and_report(self) -> tuple[Any, Path]:
-        """Validate, write the report, and return (validation_result, report_path).
-
-        One Spark pass yields both outputs. The Glue job needs the in-memory result
-        as well as the workbook - it builds the JSON summary it stores in Postgres
-        from the result directly, rather than re-parsing the report it just wrote.
-        """
         profile_map = self._load_profile_map()
 
         validation_result = self.engine.validate(
@@ -74,8 +62,6 @@ class DQValidator:
             cancel_event=self.cancel_event,
         )
 
-        # Catch cancellation requested right at the tail of validate(), before the
-        # report - the single most expensive step left - gets written.
         if self.cancel_event is not None and self.cancel_event.is_set():
             raise JobCancelledError("Job cancelled by user")
 
@@ -93,8 +79,6 @@ class DQValidator:
 
     @staticmethod
     def _release_cached_sources(validation_result) -> None:
-        """Unpersist each table's cached source DataFrame now that report writing - the last
-        consumer of TableValidationResult.passed_rows/failed_rows - has finished reading it."""
         for table_result in validation_result.tables.values():
             cached_source = table_result.metadata.get("_cached_source")
 
@@ -102,14 +86,6 @@ class DQValidator:
                 cached_source.unpersist()
 
     def _load_profile_map(self):
-        """Load the profile map used to drive validation.
-
-        Prefers `profile_map_rows` supplied directly in the config - the rows the
-        analyst edited in the browser, passed through by the Glue job - and falls
-        back to reading an uploaded workbook. Both paths are supported: the rows
-        path avoids an Excel round-trip, the file path keeps offline bulk-editing
-        and previously exported maps working.
-        """
         rows = self.config.get("profile_map_rows")
 
         if rows:
@@ -126,7 +102,6 @@ class DQValidator:
         )
 
     def _get_tables(self) -> list[Mapping[str, Any]]:
-        """Return the configured source table definitions."""
         source_config = self.config.get(
             "source",
             {},
@@ -145,7 +120,6 @@ class DQValidator:
         return tables
 
     def _get_profile_map_path(self) -> Path:
-        """Return the configured profile map path."""
         configured_path = self.config.get(
             "profile_map_file",
             "",
@@ -161,7 +135,6 @@ class DQValidator:
         )
 
     def _get_output_path(self) -> Path:
-        """Return the configured DQ report output path."""
         reports_config = self.config.get(
             "reports",
             {},
@@ -193,7 +166,6 @@ class DQValidator:
         )
 
     def _default_report_filename(self) -> str:
-        """Return the default report filename, including the job id when known."""
         job_id = self.config.get(
             "job_id",
             "",
@@ -215,7 +187,6 @@ class DQValidator:
 def load_config(
     config_path: str | Path,
 ) -> dict[str, Any]:
-    """Load and parse a YAML pipeline configuration file."""
     path = Path(config_path)
 
     if not path.is_file():
@@ -239,7 +210,6 @@ def load_config(
 
 
 def main() -> None:
-    """CLI entry point: load --config and run DQValidator against it."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

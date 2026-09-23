@@ -1,9 +1,3 @@
-"""Unit tests for engine.storage.jdbc_dialects: per-dialect JDBC URL/driver resolution, and
-the Redshift/Snowflake/Databricks column-type-mapping workaround.
-
-Only the two prepare_dataframe_for_jdbc_write() tests need a real DataFrame - everything
-else here is pure SQLAlchemy URL parsing, no Spark involved.
-"""
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -133,7 +127,7 @@ def test_prepare_dataframe_for_jdbc_write_overrides_boolean_binary_and_nested_co
     assert overrides == "`is_active` BOOLEAN, `payload` STRING, `tags` STRING"
     row = transformed.collect()[0]
     assert row["is_active"] is True
-    assert row["payload"] == "aGk="  # base64("hi")
+    assert row["payload"] == "aGk="
     assert row["tags"] == '["a","b"]'
 
 

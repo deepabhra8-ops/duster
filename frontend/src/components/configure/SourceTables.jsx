@@ -1,31 +1,3 @@
-/**
- * SourceTables.jsx
- *
- * Database flow:
- *
- *   Schema
- *      ↓
- *   Table
- *      ↓
- *   Primary Key Column
- *
- * Metadata:
- *   POST /api/metadata
- *
- * Search:
- *   Debounced 350ms
- *
- * Duplicate rule:
- *   schema + table must be unique.
- *
- * Examples:
- *
- *   Analytics + customer   ✅
- *   Analytics + policy     ✅
- *   billing   + customer   ✅
- *   Analytics + customer   ❌
- */
-
 import {
   useCallback,
   useEffect,
@@ -47,11 +19,6 @@ import {
 
 const DEBOUNCE_MS = 350;
 
-
-/* ============================================================
-   DEBOUNCE HOOK
-   ============================================================ */
-
 function useDebouncedValue(
   value,
   delay = DEBOUNCE_MS
@@ -72,11 +39,6 @@ function useDebouncedValue(
   return debounced;
 }
 
-
-/* ============================================================
-   SEARCHABLE METADATA DROPDOWN
-   ============================================================ */
-
 function MetadataSearchDropdown({
   label,
   value = "",
@@ -96,14 +58,10 @@ function MetadataSearchDropdown({
   const wrapperRef =
     useRef(null);
 
-
-  /* Keep input synchronized with selected value. */
   useEffect(() => {
     setSearch(value || "");
   }, [value]);
 
-
-  /* Close dropdown when clicking outside. */
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (
@@ -133,13 +91,6 @@ function MetadataSearchDropdown({
       .trim()
       .toLowerCase();
 
-
-  /*
-   * Backend already performs search.
-   *
-   * We also filter locally so the UI remains
-   * responsive when the returned list is large.
-   */
   const visibleItems =
     items
       .filter((item) =>
@@ -259,11 +210,6 @@ function MetadataSearchDropdown({
   );
 }
 
-
-/* ============================================================
-   FILE SEARCH INPUT
-   ============================================================ */
-
 function FileSearchInput({
   value,
   files = [],
@@ -377,11 +323,6 @@ function FileSearchInput({
   );
 }
 
-
-/* ============================================================
-   DATABASE TABLE ROW
-   ============================================================ */
-
 function DatabaseTableRow({
   index,
   table,
@@ -393,11 +334,6 @@ function DatabaseTableRow({
   onUpdate,
   onRemove,
 }) {
-
-  /* ----------------------------------------------------------
-     Table metadata
-     ---------------------------------------------------------- */
-
   const [
     tableOptions,
     setTableOptions,
@@ -462,11 +398,6 @@ function DatabaseTableRow({
       connectionDetails &&
       Object.keys(connectionDetails).length > 0
     );
-
-
-  /* ----------------------------------------------------------
-     Load tables
-     ---------------------------------------------------------- */
 
   useEffect(() => {
 
@@ -543,13 +474,6 @@ function DatabaseTableRow({
             ? result.data.items
             : [];
 
-
-        /*
-         * Remove tables which are already selected
-         * under the SAME schema.
-         *
-         * Same table under another schema remains valid.
-         */
         const selectedTables =
           new Set(
             (existingTables || [])
@@ -662,11 +586,6 @@ function DatabaseTableRow({
     existingTables,
     index,
   ]);
-
-
-  /* ----------------------------------------------------------
-     Load columns
-     ---------------------------------------------------------- */
 
   useEffect(() => {
 
@@ -797,11 +716,6 @@ function DatabaseTableRow({
     debouncedColumnSearch,
   ]);
 
-
-  /* ----------------------------------------------------------
-     Schema selected
-     ---------------------------------------------------------- */
-
   const handleSchemaSelect = (
     schema
   ) => {
@@ -818,12 +732,6 @@ function DatabaseTableRow({
 
     setDuplicateError("");
 
-
-    /*
-     * Same schema is allowed.
-     *
-     * Only schema + table must be unique.
-     */
     onUpdate(
       index,
       "schema",
@@ -853,11 +761,6 @@ function DatabaseTableRow({
 
   };
 
-
-  /* ----------------------------------------------------------
-     Table selected
-     ---------------------------------------------------------- */
-
   const handleTableSelect = (
     tableName
   ) => {
@@ -883,13 +786,6 @@ function DatabaseTableRow({
       return;
     }
 
-
-    /*
-     * ONLY schema + table combination
-     * must be unique.
-     *
-     * Case-insensitive.
-     */
     const duplicate =
       (existingTables || [])
         .some(
@@ -946,10 +842,6 @@ function DatabaseTableRow({
         message,
       });
 
-
-      /*
-       * Do NOT update the table.
-       */
       return;
     }
 
@@ -976,11 +868,6 @@ function DatabaseTableRow({
 
   };
 
-
-  /* ----------------------------------------------------------
-     Primary key selected
-     ---------------------------------------------------------- */
-
   const handlePrimaryKeySelect = (
     column
   ) => {
@@ -993,11 +880,6 @@ function DatabaseTableRow({
 
   };
 
-
-  /* ----------------------------------------------------------
-     Render
-     ---------------------------------------------------------- */
-
   return (
     <div className="table-row-card">
 
@@ -1007,10 +889,6 @@ function DatabaseTableRow({
           gap: "10px",
         }}
       >
-
-        {/* ==================================================
-            SCHEMA
-        ================================================== */}
 
         <MetadataSearchDropdown
           label="Schema"
@@ -1037,11 +915,6 @@ function DatabaseTableRow({
             handleSchemaSelect
           }
         />
-
-
-        {/* ==================================================
-            TABLE
-        ================================================== */}
 
         <MetadataSearchDropdown
           label="Table"
@@ -1074,11 +947,6 @@ function DatabaseTableRow({
             handleTableSelect
           }
         />
-
-
-        {/* ==================================================
-            PRIMARY KEY COLUMN
-        ================================================== */}
 
         <MetadataSearchDropdown
           label="Primary Key Column"
@@ -1147,11 +1015,6 @@ function DatabaseTableRow({
     </div>
   );
 }
-
-
-/* ============================================================
-   DATABASE SOURCE TABLES
-   ============================================================ */
 
 function DatabaseSourceTables({
   tables = [],
@@ -1245,11 +1108,6 @@ function DatabaseSourceTables({
   );
 }
 
-
-/* ============================================================
-   MAIN SOURCE TABLES
-   ============================================================ */
-
 export default function SourceTables({
   tables = [],
   srcType,
@@ -1265,11 +1123,6 @@ export default function SourceTables({
 
   const isFlat =
     srcType === SOURCE_TYPES.FLAT_FILE;
-
-
-  /* ----------------------------------------------------------
-     Database schema state
-     ---------------------------------------------------------- */
 
   const [
     schemas,
@@ -1312,22 +1165,10 @@ export default function SourceTables({
       Object.keys(connectionDetails).length > 0
     );
 
-
-  /*
-   * Stable connection key.
-   *
-   * Prevents object identity from causing
-   * unnecessary effect executions.
-   */
   const connectionKey =
     JSON.stringify(
       connectionDetails || {}
     );
-
-
-  /* ----------------------------------------------------------
-     Load schemas
-     ---------------------------------------------------------- */
 
   const loadSchemas = useCallback(
     async (search = "") => {
@@ -1456,12 +1297,6 @@ export default function SourceTables({
     ]
   );
 
-
-  /* ----------------------------------------------------------
-     Automatically load schemas.
-     Also runs again after database connection changes.
-     ---------------------------------------------------------- */
-
   useEffect(() => {
 
     if (
@@ -1484,11 +1319,6 @@ export default function SourceTables({
     debouncedSchemaSearch,
     loadSchemas,
   ]);
-
-
-  /* ==========================================================
-     FLAT FILE
-     ========================================================== */
 
   if (isFlat) {
 
@@ -1646,11 +1476,6 @@ export default function SourceTables({
       </div>
     );
   }
-
-
-  /* ==========================================================
-     DATABASE
-     ========================================================== */
 
   return (
     <DatabaseSourceTables

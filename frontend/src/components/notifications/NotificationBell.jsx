@@ -1,17 +1,3 @@
-/**
- * NotificationBell.jsx - the top bar's bell: unread badge plus the popover it opens.
- *
- * Accessibility:
- *  - The button's name carries the count ("Notifications, 3 unread"), so it is known before it is
- *    opened, and it is a disclosure control (aria-expanded / aria-controls) for a non-modal dialog.
- *  - A changing aria-label is not announced by screen readers on its own, so a polite live region
- *    says "N unread notifications" when the count changes - that is what makes a notification
- *    arriving in real time perceivable without looking at the badge.
- *  - The visible badge is aria-hidden: the label and live region already say it, and reading "3"
- *    on top of that would be noise.
- *  - Escape closes and returns focus to the bell; a press outside closes too (as AccountMenu does).
- *  - The panel sits right after the button in the DOM, so Tab moves into it naturally.
- */
 import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "../../hooks/useNotifications.js";
 import NotificationPanel from "./NotificationPanel.jsx";
@@ -19,7 +5,6 @@ import "../../styles/notifications.css";
 
 const PANEL_ID = "notification-panel";
 
-/** The pill is small; past this it reads "99+" rather than growing. */
 const BADGE_MAX = 99;
 
 export default function NotificationBell() {
@@ -32,10 +17,6 @@ export default function NotificationBell() {
     if (!open) return undefined;
 
     function onPointerDown(event) {
-      // A toast is not "outside" in any sense the user would recognise: it is the app answering
-      // something they just did in this panel, and it is pinned under the bell - i.e. it can sit
-      // right over the panel's header. Closing the panel because they pressed the toast's dismiss
-      // button would throw away where they were working.
       if (event.target.closest?.(".toast-viewport")) return;
 
       if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
@@ -58,8 +39,6 @@ export default function NotificationBell() {
   }, [open]);
 
   function toggle() {
-    // Opening is the moment to be sure of what is shown: another tab may have changed things,
-    // and the stream may have been down.
     if (!open) refresh();
 
     setOpen(!open);

@@ -1,5 +1,3 @@
-"""Defines the BaseProfiler contract shared by all table profiling implementations."""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -18,15 +16,12 @@ logger = get_logger(__name__)
 
 
 class BaseProfiler(ABC):
-    """Base class for a profiler that produces a TableProfileResult for a table."""
-
     profiler_type: str = ""
 
     def __init__(
         self,
         context: ExecutionContext,
     ) -> None:
-        """Store the execution context."""
         try:
             self.context = context
             logger.debug(
@@ -48,7 +43,6 @@ class BaseProfiler(ABC):
         data: DataFrame,
         table_config: Mapping[str, Any],
     ) -> TableProfileResult:
-        """Profile a table's data; implemented by each profiler type."""
         logger.error(
             "Unsupported profile operation for profiler type '%s'",
             self.profiler_type,
@@ -61,7 +55,6 @@ class BaseProfiler(ABC):
         self,
         table_config: Mapping[str, Any],
     ) -> bool:
-        """Return whether this profiler supports the given table config; True by default."""
         try:
             logger.debug(
                 "Default profiler support check passed for type '%s'",
@@ -79,7 +72,6 @@ class BaseProfiler(ABC):
         self,
         table_config: Mapping[str, Any],
     ) -> None:
-        """Validate profiler-specific configuration; no-op by default."""
         try:
             logger.debug(
                 "No base configuration validation required for profiler type '%s'",
@@ -96,16 +88,6 @@ class BaseProfiler(ABC):
         self,
         data: DataFrame,
     ) -> list[dict[str, Any]]:
-        """Compute every column's dtype and statistics via one combined aggregate query.
-
-        Shared by every profiler that profiles an already-read Spark DataFrame (database,
-        Salesforce, ...) rather than issuing a separate `.select(...).first()` per column -
-        each a distinct Spark action that, without a cache sitting in front of it, re-reads
-        the source from scratch. A 50-column table meant up to 51 scans (1 for the row count,
-        50 for the per-column stats) instead of 1. Building one list of aliased aggregate
-        expressions and running it through a single `.select(*exprs).first()` computes every
-        column's stats - and the row count - in a single pass, regardless of column count.
-        """
         try:
             fields = list(data.schema.fields)
 
@@ -120,7 +102,6 @@ class BaseProfiler(ABC):
                 dtype = field.dataType.simpleString()
                 is_boolean = is_boolean_dtype(dtype)
 
-                # Min/max are evaluated by the DB for all types (even if we ignore them later)
                 min_expr = spark_min(column)
                 max_expr = spark_max(column)
 
@@ -182,7 +163,6 @@ class BaseProfiler(ABC):
 
 
     def metadata(self) -> Mapping[str, Any]:
-        """Return descriptive metadata about this profiler."""
         try:
             metadata = {
                 "profiler_type": self.profiler_type,

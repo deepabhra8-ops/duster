@@ -1,34 +1,7 @@
-/**
- * app-chrome.css - one visual language for the controls that appear on every
- * page: the toolbar search, the filter dropdowns, the status pills, the numbers
- * in tables, and the list footer.
- *
- * The New Job wizards were redesigned first (new-job-modal.css), which left the
- * pages around them on the older chrome: a 14px search box next to a 13px
- * select next to a 13.5px modal field, three different corner radii, and
- * proportional digits in table cells where the modals use tabular ones. This
- * file pulls those to the modal's values so a control looks the same wherever
- * it appears.
- *
- * Loaded AFTER global.css in main.jsx, so equal-specificity rules here win
- * without needing !important or inflated selectors.
- *
- * Deliberately NOT touched: table header backgrounds. --table-head-bg exists
- * precisely so a header row reads as a header against the card, and changing it
- * was explicitly out of scope.
- */
-
-/* -- Shared control metrics ---------------------------------- */
-
 :root {
-  /* One radius and one type size for every toolbar/footer control, matching
-     .njm's fields. Tokens rather than repeated literals so the next control
-     added picks up the same values by construction. */
   --control-radius: 9px;
   --control-font: 13.5px;
 }
-
-/* -- Toolbar search ------------------------------------------ */
 
 .search-input {
   padding: 9px 12px 9px 36px;
@@ -41,8 +14,6 @@
   transition: border-color .18s, box-shadow .18s;
 }
 
-/* Was --navy at full opacity, which made the placeholder read as entered text -
-   the one thing a placeholder must not do. Same grey the modals use. */
 .search-input::placeholder {
   color: #94A3B8;
   opacity: 1;
@@ -53,11 +24,6 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
 }
 
-/* -- Filter dropdowns ---------------------------------------- */
-
-/* A native <select>, so the arrow is the platform's rather than the lucide
-   chevron SearchableSelect draws. appearance:none plus the same chevron as a
-   background image is what makes the two look like one control. */
 .filter-select {
   appearance: none;
   -webkit-appearance: none;
@@ -80,15 +46,6 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
 }
 
-/* -- Status pills -------------------------------------------- */
-
-/* The `.pill` base and four of its six colour variants did not exist.
-   global.css defines only .pill-teal and .pill-gray, so every OTHER status -
-   Completed, Error, In-Progress, Queued - rendered as bare unstyled text next
-   to a grey "Draft" chip, which is why a finished job and a failed one looked
-   identical in the list. Same lightweight-tint-plus-dark-text pairing the two
-   existing variants already use, so the set is now complete rather than
-   half-defined. */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -121,10 +78,6 @@
   color: var(--amber);
 }
 
-/* Job status pills: the fill IS the status colour (--status-* in global.css),
-   the same one the progress bar and the dashboard chart use, so a status looks
-   identical everywhere. Dark text on the pastel fills, white on Cancelling's
-   deeper blue. */
 .pill-status-done { background: var(--status-done); color: var(--dgray); }
 .pill-status-error { background: var(--status-error); color: var(--dgray); }
 .pill-status-cancelled { background: var(--status-cancelled); color: var(--dgray); }
@@ -133,8 +86,6 @@
 .pill-status-cancelling { background: var(--status-cancelling); color: var(--white); }
 .pill-status-draft { background: var(--status-draft); color: var(--dgray); }
 
-/* Icon + label, so a status is legible without relying on hue. Shares the
-   colour variants above rather than defining its own. */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -156,18 +107,11 @@
   animation: spin 1s linear infinite;
 }
 
-/* The resting states get a dot, not an outline ring - a hollow circle at 13px
-   reads as an empty checkbox. */
 .status-pill .status-pill-icon:not(.is-spinning) {
   fill: currentColor;
   fill-opacity: .18;
 }
 
-/* -- Numbers in tables --------------------------------------- */
-
-/* Proportional digits made a column of percentages ragged - "100%" sat wider
-   than "60%" by more than the extra digit. Tabular figures line them up, the
-   same treatment the modals' character counters get. */
 .progress-bar-label,
 .list-footer-summary,
 .pagination-bar button {
@@ -179,8 +123,6 @@
   color: var(--mgray);
   font-weight: 600;
 }
-
-/* -- List footer --------------------------------------------- */
 
 .list-footer {
   display: flex;
@@ -214,8 +156,6 @@
   color: var(--mgray);
   text-transform: none;
   letter-spacing: 0;
-  /* global.css styles bare `label` as an uppercase block; without this the
-     three words stack into three lines beside the select. */
   white-space: nowrap;
 }
 
@@ -225,8 +165,6 @@
   font-size: 12.5px;
 }
 
-/* The pager itself: square-ish buttons, the current page filled. margin-top is
-   dropped because .list-footer already owns the spacing above it. */
 .list-footer .pagination-bar {
   margin-top: 0;
   gap: 4px;

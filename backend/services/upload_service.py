@@ -1,5 +1,3 @@
-"""Coordinates upload validation, persistence, listing, and preview by delegating to the upload helper classes."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,8 +20,6 @@ logger = get_logger(__name__)
 
 
 class UploadService:
-    """Orchestrates upload saving, listing, and preview for the routes layer."""
-
     @log_and_reraise(logger, "Failed to initialize upload service")
     def __init__(
         self,
@@ -32,7 +28,6 @@ class UploadService:
         archive_policy: UploadArchivePolicy | None = None,
         preview_reader: UploadPreviewReader | None = None,
     ) -> None:
-        """Wire up upload collaborators and ensure upload directories exist."""
         self.file_saver = (
             file_saver
             or UploadFileSaver()
@@ -60,7 +55,6 @@ class UploadService:
         files: list[Any],
         kind: str = "data",
     ) -> dict[str, Any]:
-        """Validate and save a batch of uploaded files, returning results per file."""
         validation_error = self._validate_upload_request(
             files=files,
             kind=kind,
@@ -121,7 +115,6 @@ class UploadService:
         sort_order: str = "desc",
         include_archived: bool = False,
     ) -> dict[str, Any]:
-        """List uploaded files with archive status applied, then filtered, sorted, and paginated."""
         files = self.file_lister.list_all()
 
         files = self.archive_policy.apply(
@@ -178,7 +171,6 @@ class UploadService:
         filename: str = "",
         rows: int = 50,
     ) -> dict[str, Any]:
-        """Return a preview of an uploaded CSV or Excel file."""
         validation_error = self._validate_preview_request(
             kind=kind,
             filename=filename,
@@ -260,7 +252,6 @@ class UploadService:
         kind: str,
         filename: str,
     ) -> Path:
-        """Resolve the filesystem path for an uploaded file."""
         self._validate_upload_kind(kind)
 
         path = get_upload_file_path(
@@ -283,7 +274,6 @@ class UploadService:
         files: list[Any],
         kind: str,
     ) -> dict[str, Any] | None:
-        """Return an error payload if the upload kind or file list is invalid."""
         if kind not in UPLOAD_KINDS:
             logger.warning(
                 "Unsupported upload kind '%s'",
@@ -306,7 +296,6 @@ class UploadService:
     def _get_valid_files(
         files: list[Any],
     ) -> list[Any]:
-        """Return only files that carry a filename."""
         return [
             file
             for file in files
@@ -322,7 +311,6 @@ class UploadService:
         file: Any,
         kind: str,
     ) -> dict[str, Any]:
-        """Save one uploaded file, returning its result or error."""
         original_filename = str(
             getattr(
                 file,
@@ -381,7 +369,6 @@ class UploadService:
         uploaded: list[dict[str, str]],
         errors: list[dict[str, str]],
     ) -> dict[str, Any]:
-        """Build the aggregate result payload for a batch upload."""
         if errors and not uploaded:
             logger.warning(
                 "All uploads failed for kind '%s'",
@@ -403,10 +390,6 @@ class UploadService:
                 if uploaded
                 else ""
             ),
-            # Where the file actually landed: an S3 key or a local path, depending on
-            # how the saver stored it. Reported for diagnostics only - callers that
-            # need to find the file again go by `filename`, which is stable across
-            # both storage modes.
             "path": (
                 uploaded[0]["location"]
                 if uploaded
@@ -428,7 +411,6 @@ class UploadService:
     def _validate_upload_kind(
         kind: str,
     ) -> None:
-        """Raise if the upload kind is unsupported."""
         if kind not in UPLOAD_KINDS:
             logger.warning(
                 "Unsupported upload kind '%s'",
@@ -443,7 +425,6 @@ class UploadService:
         kind: str,
         filename: str,
     ) -> dict[str, Any] | None:
-        """Return an error payload if the preview request is invalid."""
         if not filename:
             logger.warning(
                 "Preview requested without a filename"

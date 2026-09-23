@@ -1,5 +1,3 @@
-"""Builds the complete DQ pipeline configuration dictionary for a job from job parameters, source, LOV, staging, and report settings."""
-
 from pathlib import Path
 from typing import Any
 
@@ -29,15 +27,11 @@ logger = get_logger(__name__)
 
 
 class ConfigBuilder:
-    """Builds DQ pipeline configuration for a job."""
-
     def build(
         self,
         job_id: str,
         params: dict[str, Any],
     ) -> dict[str, Any]:
-        """Build the complete DQ pipeline configuration."""
-
         job_dir = ensure_job_directory(job_id)
 
         source_type = params.get(
@@ -74,9 +68,6 @@ class ConfigBuilder:
             params,
         )
 
-        # The single LOV this job was created with, if any. LOV uploads land in
-        # a shared area, so the job names its own file rather than the run
-        # sweeping up every list anyone has ever uploaded.
         lov_file = str(params.get("lov_file", "") or "")
 
         lov_configuration = (
@@ -130,9 +121,6 @@ class ConfigBuilder:
                 "report_file": get_report_job_path(job_id).as_posix(),
             },
             "lov_tables": lov_configuration,
-            # Read by the Glue run, which resolves the file straight from S3;
-            # empty means this job has no LOV and its DQ8 rules will report as
-            # not run, which is the honest outcome.
             "lov_file": lov_file,
         }
 
@@ -149,10 +137,6 @@ class ConfigBuilder:
 
             configuration["source"]["db"] = source_db
 
-        # A validator job sourced from a Profile Mapper job reads that job's stored
-        # rows - including the analyst's edits - instead of a workbook. The Glue run
-        # loads them by id rather than having them inlined here, which keeps the
-        # YAML (and its redacted local audit copy) small and readable.
         source_job_id = params.get("profile_map_source_job_id")
 
         if source_job_id:
@@ -164,8 +148,6 @@ class ConfigBuilder:
         self,
         params: dict[str, Any],
     ):
-        """Return the registered connector for this job's databaseType, or None if there
-        isn't one (unconfigured/unknown type - callers fall back to generic behavior)."""
         database_type = str(
             params.get("databaseType", "")
         ).strip().lower()
@@ -177,9 +159,6 @@ class ConfigBuilder:
         params: dict[str, Any],
         connection_details: dict[str, Any],
     ) -> dict[str, Any]:
-        """Return whatever extra fields this job's connector says its accelerator data
-        source needs directly, beyond connection_string (e.g. BigQuery's
-        service_account_json, Salesforce's username/password/security_token/domain)."""
         connector = self._get_connector(params)
 
         if connector is None:
@@ -192,12 +171,6 @@ class ConfigBuilder:
         source_type: str,
         params: dict[str, Any],
     ) -> str:
-        """Resolve the accelerator's data-source implementation name for this source type.
-
-        Most database connectors are read through the generic JDBC-based DatabaseDataSource
-        ("database"); a connector overrides accelerator_source_type() when it needs its own
-        (e.g. Salesforce → SalesforceDataSource, since it has no JDBC driver at all).
-        """
         if source_type in ("csv", "flat_file"):
             return "csv"
 
@@ -213,8 +186,6 @@ class ConfigBuilder:
         self,
         params: dict[str, Any],
     ) -> Path:
-        """Return the configured data upload directory."""
-
         from core.storage_layout import get_data_upload_dir
 
         data_dir = get_data_upload_dir()
@@ -227,13 +198,6 @@ class ConfigBuilder:
 
     @staticmethod
     def resolve_connection(params: dict[str, Any]) -> dict[str, Any]:
-        """Return (databaseType, connectionDetails) for a job, resolving a saved connection.
-
-        When the job references a saved connection, credentials are decrypted here
-        rather than travelling from the browser - the job's stored params keep only
-        the connection_id, so credentials no longer sit in plaintext in jobs.params.
-        Falls back to whatever the request supplied directly for the ad-hoc path.
-        """
         connection_id = params.get("connection_id")
 
         if not connection_id:
@@ -266,8 +230,6 @@ class ConfigBuilder:
         source_type: str,
         params: dict[str, Any],
     ) -> str:
-        """Build the connection string when the source is a database."""
-
         connection_string = params.get(
             "connection_string",
             "",
@@ -301,8 +263,6 @@ class ConfigBuilder:
         source_type: str,
         params: dict[str, Any],
     ) -> list[dict[str, Any]]:
-        """Build source table configuration entries."""
-
         logger.debug(
             "Building tables from pipeline params: %s",
             params.get("tables", []),
@@ -311,11 +271,6 @@ class ConfigBuilder:
         tables: list[dict[str, Any]] = []
 
         for table in params.get("tables", []):
-            # A bare string here (which the Validator's upload flow used to store)
-            # would raise AttributeError on the .get() calls below, deep inside
-            # config building, and surface as an opaque failed Glue job. The routes
-            # reject this shape now; this is the backstop for anything already
-            # persisted, and it says what is actually wrong.
             if not isinstance(table, dict):
                 raise ValueError(
                     f"Malformed source table entry {table!r}: expected an object "
@@ -356,14 +311,6 @@ class ConfigBuilder:
         job_id: str,
         params: dict[str, Any],
     ) -> Path | None:
-        """Resolve the profile map (rulebook) path for the current pipeline step.
-
-        Public so callers (e.g. the /api/run pre-flight check) can validate a
-        Step 3 rulebook actually exists before a job is created, using the same
-        resolution order execution will use - rather than discovering a missing
-        file only after the job is already marked "running".
-        """
-
         job_dir = get_job_dir(job_id)
 
         profile_map_file = params.get(
@@ -391,7 +338,6 @@ class ConfigBuilder:
                 / profile_map_file
             )
 
-            # Preserve the filename even if it doesn't exist locally, so Glue can pull it from S3
             return uploaded_profile_map
 
         return None
@@ -404,19 +350,12 @@ class ConfigBuilder:
         connection_string: str,
         params: dict[str, Any],
     ) -> dict[str, Any]:
-        """Build the staging configuration: database staging for curation runs against a database source, CSV otherwise."""
-
         staging_path = str(
             get_staging_dir(job_id)
         ) + "/"
 
         connector = self._get_connector(params)
 
-        # A connector opts out via supports_database_staging() (e.g. Salesforce has no real
-        # connection_string - see _build_connection_string - and isn't a valid staging
-        # destination), in which case curation-mode staging falls back to CSV. No connector
-        # resolved at all (e.g. a legacy raw connection_string with no databaseType) is
-        # treated as "unknown, assume staging is supported" - the pre-registry default.
         supports_staging = (
             connector.supports_database_staging()
             if connector is not None
@@ -428,11 +367,6 @@ class ConfigBuilder:
             and source_type == "database"
             and supports_staging
         ):
-            # Resolved rather than read straight off params: a job created against
-            # a saved connection stores only connection_id, so reading
-            # params["connectionDetails"] here yielded {} and silently dropped the
-            # connector-specific staging credentials (BigQuery's service account
-            # JSON, for one) that connection_string alone does not carry.
             resolved = self.resolve_connection(params)
             connection_details = resolved["connectionDetails"]
 

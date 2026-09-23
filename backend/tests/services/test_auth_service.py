@@ -1,7 +1,3 @@
-"""Unit tests for AuthService.login - credential verification and legacy upgrade.
-
-Both repositories are patched throughout; no database is touched.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -61,7 +57,7 @@ class TestSuccessfulLogin:
 class TestLegacyUpgrade:
     def test_plaintext_row_is_rewritten_as_a_hash(self, service, repos):
         users, _ = repos
-        users.get_by_username.return_value = _user(PASSWORD)  # stored plaintext
+        users.get_by_username.return_value = _user(PASSWORD)
 
         assert service.login("alice", PASSWORD) == "session-abc"
         users.set_password.assert_called_once_with("alice", PASSWORD)
@@ -79,8 +75,6 @@ class TestLegacyUpgrade:
         users.get_by_username.return_value = _user(PASSWORD)
         users.set_password.side_effect = RuntimeError("database is down")
 
-        # The password was correct; a write problem afterwards is operational,
-        # not an authentication decision.
         assert service.login("alice", PASSWORD) == "session-abc"
 
     def test_wrong_password_never_triggers_an_upgrade(self, service, repos):

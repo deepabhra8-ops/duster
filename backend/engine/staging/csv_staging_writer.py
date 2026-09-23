@@ -1,5 +1,3 @@
-"""CSV implementation of BaseStagingWriter: writes curated rows to a "{table}_clean.csv" file."""
-
 from __future__ import annotations
 
 import shutil
@@ -20,8 +18,6 @@ logger = get_logger(__name__)
 
 @register_staging_writer
 class CsvStagingWriter(BaseStagingWriter):
-    """Writes curated rows to a CSV file in the configured staging directory."""
-
     staging_type = "csv"
 
     def write(
@@ -30,7 +26,6 @@ class CsvStagingWriter(BaseStagingWriter):
         data: DataFrame,
         staging_config: Mapping[str, Any],
     ) -> Path:
-        """Write a table's curated rows to '{table_name}_clean.csv'."""
         try:
             output_directory = self._get_output_directory(
                 staging_config
@@ -46,9 +41,6 @@ class CsvStagingWriter(BaseStagingWriter):
                 / f"{table_name}_clean.csv"
             )
 
-            # Cache so the write below and the row-count log after it share one
-            # materialization of `data` instead of each independently recomputing whatever
-            # filter/transform chain produced it.
             cached = data.cache()
 
             try:
@@ -76,13 +68,6 @@ class CsvStagingWriter(BaseStagingWriter):
         data: DataFrame,
         output_path: Path,
     ) -> None:
-        """Write a Spark DataFrame to a single named CSV file at output_path.
-
-        Spark's CSV writer always produces a directory of part-files (plus a _SUCCESS
-        marker), not one named file, so this writes to a temporary sibling directory and
-        moves the single part file into place - preserving the "one flat CSV file per
-        table" contract downstream code (staging export, CSV globbing) relies on.
-        """
         temp_directory = (
             output_path.parent
             / f".{output_path.stem}_{uuid.uuid4().hex}"
@@ -106,7 +91,6 @@ class CsvStagingWriter(BaseStagingWriter):
             if part_files:
                 shutil.move(str(part_files[0]), str(output_path))
             else:
-                # An empty DataFrame may not produce a part file at all.
                 output_path.write_text("", encoding="utf-8")
         finally:
             shutil.rmtree(temp_directory, ignore_errors=True)
@@ -115,7 +99,6 @@ class CsvStagingWriter(BaseStagingWriter):
         self,
         staging_config: Mapping[str, Any],
     ) -> bool:
-        """Return whether the staging config requests CSV staging."""
         try:
             staging_type = str(
                 staging_config.get(
@@ -141,7 +124,6 @@ class CsvStagingWriter(BaseStagingWriter):
         self,
         staging_config: Mapping[str, Any],
     ) -> None:
-        """Validate that an output directory is configured or resolvable."""
         try:
             output_directory = self._get_output_directory(
                 staging_config
@@ -166,7 +148,6 @@ class CsvStagingWriter(BaseStagingWriter):
         self,
         staging_config: Mapping[str, Any],
     ) -> Path:
-        """Resolve the CSV staging output directory from config or context metadata."""
         try:
             configured_path = staging_config.get(
                 "output_dir",

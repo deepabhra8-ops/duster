@@ -1,4 +1,3 @@
-"""DQ4 - decimal precision, against a real Spark DataFrame."""
 from __future__ import annotations
 
 import pytest
@@ -58,7 +57,6 @@ class TestPrecision:
 
 class TestNonNumeric:
     def test_text_fails(self, spark, context):
-        """A non-numeric value in a numeric column is a finding, not a pass."""
         data = spark.createDataFrame([("abc",)], ["amount"])
 
         result = DQ4DecimalPrecisionRule().validate(
@@ -68,7 +66,6 @@ class TestNonNumeric:
         assert _failing(data, result) == 1
 
     def test_scientific_notation_is_exempt(self, spark, context):
-        """Its decimal places are an artefact of the notation, not the value."""
         data = spark.createDataFrame([("1.23456e10",)], ["amount"])
 
         result = DQ4DecimalPrecisionRule().validate(
@@ -107,7 +104,6 @@ class TestEdgeCases:
         assert _failing(data, result) == 0
 
     def test_a_real_double_column_is_handled(self, spark, context):
-        """Not every source arrives as text."""
         data = spark.createDataFrame([(1.5,), (1.555,)], "amount: double")
 
         result = DQ4DecimalPrecisionRule().validate(

@@ -1,5 +1,3 @@
-"""Database implementation of BaseStagingWriter: writes curated rows to a staging schema via SQLAlchemy."""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -20,8 +18,6 @@ logger = get_logger(__name__)
 
 @register_staging_writer
 class DatabaseStagingWriter(BaseStagingWriter):
-    """Writes curated rows into a database staging schema."""
-
     staging_type = "database"
 
     def write(
@@ -30,7 +26,6 @@ class DatabaseStagingWriter(BaseStagingWriter):
         data: DataFrame,
         staging_config: Mapping[str, Any],
     ) -> Any:
-        """Create the staging schema if needed and write a table's curated rows into it."""
         engine = None
 
         try:
@@ -101,8 +96,6 @@ class DatabaseStagingWriter(BaseStagingWriter):
                 db_config=db_config,
             )
 
-            # write_table() already counts `data` once (for its own log line) as it writes -
-            # reuse that instead of counting a second time here.
             row_count = writer.write_table(
                 data=data,
                 table_name=str(table_name).lower(),
@@ -148,7 +141,6 @@ class DatabaseStagingWriter(BaseStagingWriter):
         self,
         staging_config: Mapping[str, Any],
     ) -> bool:
-        """Return whether the staging config requests database staging."""
         try:
             staging_type = str(
                 staging_config.get(
@@ -174,7 +166,6 @@ class DatabaseStagingWriter(BaseStagingWriter):
         self,
         staging_config: Mapping[str, Any],
     ) -> None:
-        """Validate that a database connection string is configured."""
         try:
             db_config = staging_config.get(
                 "db",
@@ -208,7 +199,6 @@ class DatabaseStagingWriter(BaseStagingWriter):
         schema: str,
         dialect: str,
     ) -> None:
-        """Create the staging schema if the dialect supports it; failures are logged, not raised."""
         if not schema:
             return
 
@@ -254,7 +244,6 @@ class DatabaseStagingWriter(BaseStagingWriter):
     def _escape_identifier(
         identifier: str,
     ) -> str:
-        """Escape a schema name for safe interpolation into DDL."""
         return str(identifier).replace(
             '"',
             '""',

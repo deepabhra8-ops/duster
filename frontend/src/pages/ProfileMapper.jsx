@@ -1,82 +1,3 @@
-/**
- * ProfileMapper.jsx - Profile Map landing page.
- *
- * One card holding a `.uploads-toolbar` (search + two filter dropdowns +
- * search, left-aligned, then New Job pushed to the extreme right) stacked
- * above a `.profile-mapper-table` div - layout otherwise unchanged from
- * the original design pass (see docs/ux-plan.md §5).
- *
- * Rows are real again: GET /api/jobs?step=1 (JobRepository/JobService),
- * filtered to Profile Mapper jobs and enriched with name/description/
- * databaseType/connectionName/sourceType/progress (see job_service.py's
- * list_jobs) - search/status/database-type-filter/sort/pagination are all
- * server-side, same
- * debounced-search + load-callback pattern Jobs.jsx uses. The "DB Type"
- * column reads jobTypeLabel(job): "Flat File" for
- * a flat-file job (sourceType - added to list_jobs alongside the
- * already-there databaseType, exactly so this column could tell the two
- * apart), else the resolved database type's label (DB_TYPE_LABELS) - was
- * blank/"-" for flat-file jobs before, since they have no databaseType.
- * Was mocked for a stretch
- * (MOCK_PROFILE_MAPPER_JOBS, constants/mockProfileMapperJobs.js) while the
- * "New Job" modal's own backend wiring was being built out; switched back
- * now that Create actually needs a newly-made job to show up here and be
- * reachable at /profile-mapper/:jobId, which a static mock array can't do.
- * Cancel and Delete are real again too (cancelJob/deleteJob), matching
- * backend's own status guards (cancel: queued/running only; delete:
- * anything except queued/running/cancelling).
- *
- * Status vocabulary matches the real one: draft (created, not started) →
- * queued/running → done, or → error, or → cancelling → cancelled. There
- * is no "paused" - the backend has no pause capability, only cancel (see
- * ProfileMapperJob.jsx's header comment) - so table rows have no Pause
- * button. The status pill and the filter dropdown both display these
- * through jobStatusLabel() (helpers.js - shared with Validator.jsx's own
- * jobs table) rather than the raw value, e.g. "running" reads "In-Progress".
- *
- * The table (header included) always renders once loaded, even with zero
- * rows - only a genuine fetch error swaps it out for the alert. An empty
- * result shows a message *inside* the table (one <td colSpan={8}>, matching
- * the header's column count) rather than hiding the header/toolbar, so the
- * columns stay visible instead of the page looking broken - worded
- * depending on *why* it's empty: "No jobs yet…" when no search/filter is
- * active (there simply are no jobs), "No jobs match your search/filter."
- * when one is (search and/or statusFilter non-empty), so a user who hasn't
- * touched either isn't told to go check filters they never set. Loading
- * state renders the same way - the header
- * stays put and only the body's row swaps to "Loading…" - rather than
- * blanking the whole card, which used to jump the toolbar/pagination
- * position on every fetch. NewProfileMapperJobModal's Create calls
- * `onCreated` (reset to page 1 + a fresh load()) instead of navigating
- * away, so a newly created job shows up right here in the table - see
- * its own header comment.
- *
- * Below the header, `.profile-mapper-layout` splits into a wider main
- * column (the card above, unchanged) and a narrower
- * `.profile-mapper-side` column holding one vertical card - empty
- * placeholder for now, no content wired up yet. New classes rather than
- * reusing ProfileMapperJob.jsx's `.job-layout*` - those now carry a fixed
- * 640px height sized for that page's own content, which doesn't apply
- * here; this layout just stretches both columns to match each other
- * naturally (`align-items: stretch`), same as `.job-layout` did before
- * that fixed height was added.
- *
- * Run / View Results: a draft job (built but never started - see
- * NewProfileMapperJobModal.jsx) gets a ▶ Run button that calls POST
- * /api/job/{id}/start (startJob); a job that's actually "done" gets a View
- * Results button that routes to /profile-mapper/:jobId. Both are disabled
- * outside their one applicable status rather than surfacing a backend error
- * for a state the UI can just prevent - the one case that *does* reach the
- * backend (a draft with no table/file configured yet) comes back as a 400
- * whose message gets reworded into something a non-engineer can act on
- * (friendlyStartError below) and shown as an error toast.
- *
- * Paging, debounced search, filtering, sorting, the fetch itself, and the
- * silent poll that keeps active rows moving all live in useJobList - this page
- * and Validator.jsx ran identical copies of that logic, differing only in the
- * step they query and one toast message, so every fix had to be made twice.
- * See hooks/useJobList.js for the polling and toast-on-completion mechanics.
- */
 import { useState } from "react";
 import { CircleX, Play, Plus, Trash2, Eye } from "lucide-react";
 import RefreshButton from "../components/RefreshButton.jsx";
@@ -99,7 +20,6 @@ import { useToast } from "../hooks/useToast.js";
 
 const DB_TYPE_LABELS = Object.fromEntries(DATABASE_TYPE_OPTIONS.map((o) => [o.value, o.label]));
 
-/** "Type" column: "Flat File" for flat-file jobs, else the resolved database type's label. */
 function jobTypeLabel(job) {
   if (job.sourceType === SOURCE_TYPES.FLAT_FILE || job.sourceType === "csv") return SOURCE_LABELS[SOURCE_TYPES.FLAT_FILE];
   return DB_TYPE_LABELS[job.databaseType] || job.databaseType || "-";
@@ -112,12 +32,8 @@ export default function ProfileMapper() {
 
   const [newJobOpen, setNewJobOpen] = useState(false);
   const [busyId, setBusyId] = useState(null);
-  /* Phase 5: ConfirmDialog state instead of window.confirm */
   const [confirmState, setConfirmState] = useState(null);
 
-  // Paging, debounced search, filtering, sorting, the fetch and the silent poll
-  // all live in useJobList - shared verbatim with Validator.jsx, which runs the
-  // same list against step 3.
   const {
     state,
     reload: load,
@@ -195,8 +111,6 @@ export default function ProfileMapper() {
 
       <div className="profile-mapper-main page-fill">
         <div className="card">
-          {/* Same toolbar class and control order as every other jobs list:
-                search, then filters, then the primary action on the right. */}
           <div className="uploads-toolbar">
             <input
               type="text"
@@ -251,10 +165,6 @@ export default function ProfileMapper() {
                 <option value="asc">↑ Oldest first</option>
               </select>
             </div>
-            {/* Refresh and the primary action form one right-aligned group.
-                .jobs-toolbar-action's margin-left:auto only moves that button,
-                so a sibling placed before it would stay packed against the
-                filters instead of sitting beside it. */}
             <div className="jobs-toolbar-action row" style={{ gap: "8px", alignItems: "center" }}>
               <RefreshButton onRefresh={load} refreshing={refreshing} lastUpdated={lastUpdated} />
               <button
@@ -268,7 +178,6 @@ export default function ProfileMapper() {
             </div>
           </div>
 
-          {/* Jobs table */}
           <div className="profile-mapper-table">
             {state.error ? (
               <div className="alert alert-err"><IconError style={{ verticalAlign: "text-bottom" }} /> {state.error}</div>
@@ -329,9 +238,6 @@ export default function ProfileMapper() {
                               <td style={{ paddingLeft: "32px" }} data-label="Status">
                                 <span className="status-with-error">
                                   <StatusPill status={j.status} />
-                                  {/* The reason is one click away rather than one
-                                      page away - see JobErrorButton for why it is
-                                      fetched on demand. */}
                                   {j.status === "error" ? (
                                     <JobErrorButton jobId={j.job_id} jobName={j.name || j.project} />
                                   ) : null}
@@ -355,11 +261,6 @@ export default function ProfileMapper() {
                                   >
                                     <Play size={16} aria-hidden="true" />
                                   </button>
-                                  {/* Icon-only, like its three neighbours. As a text button this
-                                      was single-handedly the widest thing in the row, and the
-                                      Actions column is the one column whose content is fixed -
-                                      width spent here is width taken from Name and Description,
-                                      which are not. The label lives on in title/aria-label. */}
                                   <button
                                     type="button"
                                     className="btn btn-ghost btn-icon-only"
@@ -427,7 +328,6 @@ export default function ProfileMapper() {
         }}
       />
 
-      {/* Phase 5: ConfirmDialog replaces window.confirm for destructive job delete */}
       <ConfirmDialog
         open={Boolean(confirmState)}
         title="Delete Job"

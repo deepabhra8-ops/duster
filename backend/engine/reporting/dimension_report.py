@@ -1,5 +1,3 @@
-"""Builds and writes the per-DQ-dimension report sheets from a ValidationRunResult, delegating scoring and worksheet layout."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,12 +20,6 @@ logger = get_logger(__name__)
 
 
 def _frame(rows: list[dict], columns: list[str]) -> pl.DataFrame:
-    """Build a report frame with a fixed column order.
-
-    An explicit schema is required for the empty case: polars cannot infer
-    columns from no rows, and the writers still expect the headers to exist so
-    an empty sheet renders with its header row rather than blank.
-    """
     if not rows:
         return pl.DataFrame(schema={name: pl.Utf8 for name in columns})
 
@@ -35,8 +27,6 @@ def _frame(rows: list[dict], columns: list[str]) -> pl.DataFrame:
 
 
 class DimensionReport:
-    """Groups rule execution details by DQ dimension and builds/writes each dimension's report sheet."""
-
     DEFAULT_COLUMNS = [
         "#",
         "Table",
@@ -88,7 +78,6 @@ class DimensionReport:
         scorer: DimensionScorer | None = None,
         workbook_writer: DimensionWorkbookWriter | None = None,
     ) -> None:
-        """Store the scorer and workbook writer collaborators."""
         self.scorer = scorer or DimensionScorer()
         self.workbook_writer = (
             workbook_writer
@@ -99,7 +88,6 @@ class DimensionReport:
         self,
         validation_result: ValidationRunResult,
     ) -> dict[str, pl.DataFrame]:
-        """Group every rule detail by dimension and build one DataFrame per dimension."""
         try:
             dimension_rows: dict[str, list[Any]] = {}
 
@@ -131,7 +119,6 @@ class DimensionReport:
         validation_result: ValidationRunResult,
         dimension: str,
     ) -> pl.DataFrame:
-        """Build the DataFrame for a single named dimension."""
         try:
             normalized_dimension = self._normalize_dimension(dimension)
 
@@ -161,15 +148,11 @@ class DimensionReport:
         output_path: str | Path,
         sheet_name: str | None = None,
     ) -> Path:
-        """Write one dimension sheet (if named) or every dimension sheet to a standalone workbook."""
         output_path = Path(output_path)
 
         try:
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # xlsxwriter directly rather than through a dataframe library's
-            # writer wrapper: every cell below is written with the xlsxwriter
-            # API anyway, so the wrapper only added a dependency.
             with xlsxwriter.Workbook(
                 str(output_path),
                 XLSXWRITER_SAFE_OPTIONS,
@@ -213,13 +196,10 @@ class DimensionReport:
         sheet_name: str,
         dimension: str | None = None,
     ) -> None:
-        """Add a new worksheet and delegate its layout to DimensionWorkbookWriter."""
         try:
             workbook = getattr(writer, "book", writer)
             safe_sheet_name = self._sheet_name(sheet_name)
 
-            # xlsxwriter's own registry replaces the writer-level sheet map
-            # that used to back this check.
             if workbook.get_worksheet_by_name(safe_sheet_name) is not None:
                 raise ValueError(f"Worksheet '{safe_sheet_name}' already exists.")
 
@@ -250,7 +230,6 @@ class DimensionReport:
         self,
         details: list[RuleExecutionDetail],
     ) -> pl.DataFrame:
-        """Convert a list of rule details into the dimension sheet's row format."""
         rows = [
             self._detail_to_row(index=index, detail=detail)
             for index, detail in enumerate(details, start=1)
@@ -263,7 +242,6 @@ class DimensionReport:
         index: int,
         detail: RuleExecutionDetail,
     ) -> dict[str, Any]:
-        """Convert one rule execution detail into a report row dict."""
         return {
             "#": index,
             "Table": detail.table_name,
@@ -281,7 +259,6 @@ class DimensionReport:
         self,
         dimension_rows: dict[str, list[Any]],
     ) -> list[str]:
-        """Order dimensions by DIMENSION_ORDER, appending any unknown ones alphabetically."""
         existing = list(dimension_rows.keys())
 
         ordered = [
@@ -301,14 +278,12 @@ class DimensionReport:
 
     @staticmethod
     def _normalize_dimension(dimension: Any) -> str:
-        """Return a stripped dimension string, or '' for None."""
         if dimension is None:
             return ""
 
         return str(dimension).strip()
 
     def _sheet_name(self, dimension: str) -> str:
-        """Sanitize a dimension name into a valid, length-limited Excel sheet name."""
         name = str(dimension).strip()
 
         if not name:
@@ -326,5 +301,4 @@ class DimensionReport:
 
     @staticmethod
     def _dimension_from_sheet_name(sheet_name: str) -> str:
-        """Return the dimension name a sheet name maps to."""
         return str(sheet_name).strip()

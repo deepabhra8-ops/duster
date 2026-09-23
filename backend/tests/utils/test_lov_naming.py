@@ -1,5 +1,3 @@
-"""Unit tests for LOV name matching - pure string work, no Spark involved."""
-
 from utils.lov_naming import match_lov_name
 
 
@@ -14,7 +12,6 @@ def test_case_differences_still_match():
 
 
 def test_an_unqualified_parameter_matches_a_table_qualified_header():
-    """The reported bug: the CSV header is qualified, the DQ8 parameter is not."""
     assert match_lov_name(["Customer.CustomerName"], "CustomerName") == (
         "Customer.CustomerName"
     )
@@ -25,7 +22,6 @@ def test_a_qualified_parameter_matches_an_unqualified_header():
 
 
 def test_an_ambiguous_trailing_segment_matches_nothing():
-    """Guessing between two lists is worse than declining to validate."""
     assert match_lov_name(["Customer.Status", "Policy.Status"], "Status") is None
 
 

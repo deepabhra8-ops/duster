@@ -1,14 +1,3 @@
-"""Renders stored profile-map rows to a formatted .xlsx workbook.
-
-Deliberately does not use engine.profile_map.ProfileMapWriter: the web container
-ships without the engine package (Dockerfile stage 2 copies only config/,
-repositories/, routes/, services/, utils/), so that class isn't importable here.
-xlsxwriter is already a dependency via the existing requirements.
-
-Export happens on demand rather than at run time, which is what makes a downloaded
-workbook reflect the analyst's edits instead of the raw profiling output.
-"""
-
 from __future__ import annotations
 
 import io
@@ -23,9 +12,6 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-# Column order of the generated sheet. Mirrors the engine's ProfileMapWriter.COLUMNS
-# so an exported workbook is interchangeable with a Glue-generated one - the
-# validator's .xlsx upload path has to be able to read either.
 COLUMNS = (
     "Row ID",
     "Enabled",
@@ -45,10 +31,6 @@ COLUMNS = (
     "Analyst Notes",
 )
 
-# The exported header text (above) has to match the engine's ProfileMapWriter
-# so a re-uploaded workbook is readable by the validator, but the stored rows
-# (from profile_map_service) key applicable-rule values as plain "Applicable
-# Rules" - map the display header to the row key it actually reads from.
 _COLUMN_TO_ROW_KEY = {
     "Applicable Rule\n(Single ID)": "Applicable Rules",
 }
@@ -59,13 +41,9 @@ _INVALID_SHEET_CHARS = ("[", "]", ":", "*", "?", "/", "\\")
 
 
 class ProfileMapExporter:
-    """Builds a profile-map workbook from JSON rows."""
-
     def build(self, rows: list[dict[str, Any]]) -> bytes:
-        """Return the .xlsx bytes for these rows, one sheet per source table."""
         buffer = io.BytesIO()
-        
-        # Filter out disabled rows
+
         enabled_rows = [
             row for row in rows 
             if str(row.get("Enabled", "Y")).strip().upper() == "Y"
@@ -94,7 +72,6 @@ class ProfileMapExporter:
                 )
 
             if not enabled_rows:
-                # xlsxwriter refuses to save a workbook with no sheets.
                 workbook.add_worksheet("Profile Map")
         finally:
             workbook.close()
@@ -106,7 +83,6 @@ class ProfileMapExporter:
     def _group_by_table(
         rows: list[dict[str, Any]],
     ) -> dict[str, list[dict[str, Any]]]:
-        """Group rows by their Table value, preserving first-seen order."""
         grouped: dict[str, list[dict[str, Any]]] = {}
 
         for row in rows:
@@ -123,7 +99,6 @@ class ProfileMapExporter:
         header_format: Any,
         cell_format: Any,
     ) -> None:
-        """Write one table's rows as a formatted, filterable sheet."""
         worksheet = workbook.add_worksheet(sheet_name)
 
         widths = [len(column) + 2 for column in COLUMNS]
@@ -148,19 +123,6 @@ class ProfileMapExporter:
 
     @staticmethod
     def _safe_sheet_name(table_name: str, used: set[str] | None = None) -> str:
-        """Sanitize a table name into a valid, length-limited, unique Excel sheet name.
-
-        Uniqueness is not cosmetic. Two distinct tables whose names share their
-        first 31 characters - "Customer_Account_Master_Record_Alpha" and
-        "..._Beta" - both truncate to "Customer_Account_Master_Record_", and
-        xlsxwriter raises DuplicateWorksheetName, which failed the entire export
-        rather than just that sheet. Mirrors ProfileMapWriter._safe_sheet_name,
-        which already deduplicates this way.
-
-        The suffix does not lose information: the untruncated table name is also
-        written into each row's "Table" column, and that is what both readers key
-        the profile map by.
-        """
         sheet_name = str(table_name).strip()
 
         for character in _INVALID_SHEET_CHARS:

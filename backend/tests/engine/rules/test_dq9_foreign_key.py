@@ -1,7 +1,3 @@
-"""Spark-based unit test for DQ9ForeignKeyRule.validate(): checks column values against a
-reference DataFrame stored in the execution context, and gracefully skips the check when
-configuration or the reference table is missing.
-"""
 from __future__ import annotations
 
 import pytest
@@ -34,13 +30,6 @@ def test_values_not_present_in_the_reference_table_fail(spark, context):
     assert values_and_pass == [("US", True), ("XX", False), (None, True)]
 
 
-# The three cases below all mean "this check could not be performed". Each must
-# do two things: not fail every row (the reference data's absence is not the
-# data's fault), and report itself as NOT RUN so the scorer excludes it. Before,
-# they only did the first - which made an unperformable check score a perfect
-# 1.0 and inflated the customer-visible dimension score.
-
-
 def test_missing_reference_column_configuration_is_not_run(spark, context):
     data = spark.createDataFrame([("anything",)], schema=["country_code"])
 
@@ -54,8 +43,6 @@ def test_missing_reference_column_configuration_is_not_run(spark, context):
 
 
 def test_missing_reference_table_is_not_run(spark, context):
-    """The reference table was never loaded into the context - the check must not fail
-    every row just because the reference data isn't available."""
     data = spark.createDataFrame([("anything",)], schema=["country_code"])
 
     result = DQ9ForeignKeyRule().validate(

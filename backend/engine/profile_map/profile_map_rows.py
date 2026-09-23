@@ -1,14 +1,3 @@
-"""Converts a profile map into the flat JSON rows the UI renders and the API stores.
-
-Lives in the engine because it reads TableRuleConfiguration/RuleConfiguration, the
-engine's own result types. Glue calls this the moment profiling finishes and writes
-the result straight to Postgres; the web app only ever handles the resulting JSON.
-
-Row keys are the literal workbook headers (minus the leading "#", which is display
-numbering derived from array position) so a stored row and an exported worksheet row
-are the same shape.
-"""
-
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -39,16 +28,6 @@ COLUMNS = (
 def build_rows(
     tables: Mapping[str, TableRuleConfiguration],
 ) -> list[dict[str, Any]]:
-    """Turn a profile map (one TableRuleConfiguration per table) into flat JSON rows.
-
-    One row per profiled column across every table. Reads the snake_case metadata
-    keys ProfileMapBuilder produces (dtype/total_count/null_count/distinct_count/
-    min_value/max_value) - this path never goes through Excel, so there are no
-    capitalized sheet headers to read here.
-
-    "Null %" and "Unique %" aren't stored anywhere; they're derived the same way the
-    workbook writer derives them, so both outputs always agree.
-    """
     rows: list[dict[str, Any]] = []
 
     for table_name, configuration in tables.items():
@@ -84,7 +63,6 @@ def build_rows(
 
 
 def _stringify(value: Any) -> str:
-    """Render a metadata value as a string, with None becoming empty."""
     if value is None:
         return ""
 
@@ -92,7 +70,6 @@ def _stringify(value: Any) -> str:
 
 
 def _percentage(part: Any, total: Any) -> str:
-    """Format part/total as a percentage string, guarding zero/invalid totals."""
     try:
         part = float(part)
         total = float(total)

@@ -1,16 +1,3 @@
-/**
- * useScrollLock - the page behind an open modal must not scroll.
- *
- * The two cases a plain `body { overflow: hidden }` gets wrong, and which this
- * hook exists to handle:
- *
- *   - Nesting. A wizard can raise a ConfirmDialog on top of itself. If each
- *     modal unlocked on unmount, closing the inner one would release the lock
- *     while the outer modal is still open, and the page would start scrolling
- *     underneath it again.
- *   - Layout shift. Hiding the scrollbar reclaims its width, so the page jumps
- *     sideways as a modal opens unless that width is replaced with padding.
- */
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -62,7 +49,6 @@ describe("nesting", () => {
     );
     expect(document.body.style.overflow).toBe("hidden");
 
-    // Inner dialog closes; the outer modal is still open.
     rerender(
       <>
         <Modal open />

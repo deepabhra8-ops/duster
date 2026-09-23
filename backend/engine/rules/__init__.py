@@ -1,5 +1,3 @@
-"""DQ rule implementations (DQ1-DQ11); importing this package registers every rule with the rule registry."""
-
 from engine.rules import dq1_completeness
 from engine.rules import dq2_date_format
 from engine.rules import dq3_string_length

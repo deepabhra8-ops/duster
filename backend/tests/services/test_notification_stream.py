@@ -1,11 +1,3 @@
-"""The notification event stream, driven as a plain async generator.
-
-The HTTP layer cannot be tested for this: Starlette's TestClient buffers a whole
-response before returning it, so an endless stream would never come back. The
-generator holds all the behaviour anyway - what it sends, when it pings, when it
-gives up - and takes its collaborators as arguments, so it is exercised here with
-a scripted repository and a tiny poll interval.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -21,8 +13,6 @@ def _row(nid):
 
 
 class FakeRepository:
-    """Answers list_since from a script, one entry per poll; an Exception entry is raised."""
-
     def __init__(self, script, unread=1):
         self.script = list(script)
         self.unread = unread
@@ -67,7 +57,6 @@ async def _take(stream, count):
 
 
 def _parse(frame):
-    """Split one SSE frame into {field: value}."""
     return dict(line.split(": ", 1) for line in frame.strip().split("\n"))
 
 
@@ -97,8 +86,6 @@ def test_a_batch_is_sent_oldest_first_and_the_cursor_moves_past_it():
     sent = [json.loads(_parse(f)["data"])["notification"]["id"] for f in frames[1:4]]
 
     assert sent == [5, 6, 9]
-    # First poll starts from where the stream was opened, the next from the last id sent -
-    # otherwise the same rows would be pushed again on every tick.
     assert repo.polls[0] == ("alice", 4)
 
 
@@ -107,7 +94,7 @@ def test_the_next_poll_asks_only_for_what_is_newer_than_the_last_id_sent():
 
     async def run():
         stream = _stream(repo, after_id=10, heartbeat=0.005)
-        await _take(stream, 3)  # retry, the event, then a heartbeat once it goes quiet
+        await _take(stream, 3)
 
     asyncio.run(run())
 
@@ -123,7 +110,6 @@ def test_a_quiet_stream_sends_heartbeats_so_proxies_do_not_close_it():
 
 
 def test_a_failed_poll_does_not_end_the_stream_or_lose_the_cursor():
-    """A database blip must not make every open tab reconnect at once."""
     repo = FakeRepository([RuntimeError("db blip"), [_row(3)]])
 
     frames = asyncio.run(_take(_stream(repo, after_id=2), 2))
@@ -133,12 +119,11 @@ def test_a_failed_poll_does_not_end_the_stream_or_lose_the_cursor():
 
 
 def test_the_stream_ends_when_the_session_is_no_longer_valid():
-    """So it cannot quietly outlive a sign-out or an expired session."""
     checks = []
 
     def session_check(session_id):
         checks.append(session_id)
-        return None  # signed out
+        return None
 
     async def run():
         return [f async for f in _stream(FakeRepository([]), session_check=session_check, heartbeat=0.005)]
@@ -155,7 +140,7 @@ def test_the_stream_ends_if_the_session_now_belongs_to_someone_else():
 
     frames = asyncio.run(asyncio.wait_for(run(), timeout=5))
 
-    assert len(frames) == 1  # only the retry hint, then it stopped
+    assert len(frames) == 1
 
 
 def test_a_valid_session_keeps_the_stream_open():
@@ -173,8 +158,7 @@ class TestFormatEvent:
         assert format_event("x", {}) == "event: x\ndata: {}\n\n"
 
     def test_a_newline_in_a_value_cannot_break_out_of_the_data_line(self):
-        """SSE frames are newline-delimited, so a raw newline in a title would let it inject fields."""
         frame = format_event("notification", {"title": "a\n\nevent: evil\ndata: x"})
 
-        assert frame.count("\n") == 3  # event line, data line, blank terminator
+        assert frame.count("\n") == 3
         assert json.loads(_parse(frame)["data"])["title"] == "a\n\nevent: evil\ndata: x"

@@ -4,6 +4,8 @@ import Login from "./pages/Login.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import DashboardPage from "./pages/Dashboards/DashboardPage.jsx";
 import DataSourcesPage from "./pages/Dashboards/DataSourcesPage.jsx";
+import RuleEditorPage from "./pages/QualityRules/RuleEditorPage.jsx";
+import RunResultsPage from "./pages/QualityRules/RunResultsPage.jsx";
 import ConnectionsPage from "./pages/Connections/ConnectionsPage.jsx";
 import IngestionConfigPage from "./pages/Connections/IngestionConfigPage.jsx";
 import PostgresFormPage from "./pages/Connections/NewConnection/PostgresFormPage.jsx";
@@ -81,6 +83,22 @@ export default function App() {
               element={
                 <AuthenticatedLayout>
                   <DataSourcesPage />
+                </AuthenticatedLayout>
+              }
+            />
+            <Route
+              path="/quality-rules"
+              element={
+                <AuthenticatedLayout>
+                  <RuleEditorPage />
+                </AuthenticatedLayout>
+              }
+            />
+            <Route
+              path="/quality-rules/runs"
+              element={
+                <AuthenticatedLayout>
+                  <RunResultsPage />
                 </AuthenticatedLayout>
               }
             />
@@ -204,6 +222,26 @@ export default function App() {
                 element={
                   <PreviewLayout>
                     <DashboardPage />
+                  </PreviewLayout>
+                }
+              />
+            ) : null}
+            {import.meta.env.DEV ? (
+              <Route
+                path="/dev/quality-rules-preview"
+                element={
+                  <PreviewLayout>
+                    <RuleEditorPage />
+                  </PreviewLayout>
+                }
+              />
+            ) : null}
+            {import.meta.env.DEV ? (
+              <Route
+                path="/dev/quality-run-results-preview"
+                element={
+                  <PreviewLayout>
+                    <RunResultsPage />
                   </PreviewLayout>
                 }
               />

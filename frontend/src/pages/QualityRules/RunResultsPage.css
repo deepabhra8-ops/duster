@@ -1,0 +1,85 @@
+.run-results-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+}
+
+.run-results-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.run-results-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.run-results-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.run-results-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.run-results-worst-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 31px;
+}
+
+.run-results-worst-pill {
+  height: 24px;
+  font-size: 13px;
+  padding: 0 10px;
+}
+
+.run-results-worst-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.run-results-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.run-results-rollup .dtable td,
+.run-results-rollup .dtable th {
+  height: 28px;
+}
+
+.run-results-stack-wrap {
+  padding: 14px 16px 12px;
+}
+
+.run-results-filters {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.run-results-table-scroll {
+  overflow-y: auto;
+}
+
+.run-results-table-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border-subtle);
+}

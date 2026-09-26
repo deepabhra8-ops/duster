@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { label: "Dashboards", to: "/dashboards/dimensions" },
   { label: "Connections", to: "/connections" },
   { label: "Catalog", disabled: true },
-  { label: "Quality rules", disabled: true },
+  { label: "Quality rules", to: "/quality-rules" },
   { label: "Jobs", disabled: true },
 ];
 

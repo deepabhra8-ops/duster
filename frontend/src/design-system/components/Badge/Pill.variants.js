@@ -4,6 +4,8 @@ export const PILL_TONES = {
   danger: "pill-danger",
   data: "pill-data",
   neutral: "pill-neutral",
+  error: "pill-error",
+  skip: "pill-skip",
 };
 
 export const STATUS_DOT_TONES = {
@@ -12,4 +14,6 @@ export const STATUS_DOT_TONES = {
   danger: "status-dot-danger",
   syncing: "status-dot-syncing",
   idle: "status-dot-idle",
+  error: "status-dot-error",
+  skip: "status-dot-skip",
 };

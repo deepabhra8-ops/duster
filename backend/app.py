@@ -29,10 +29,12 @@ from routes.job_routes import job_bp
 from routes.download_routes import download_bp
 from routes.lov_routes import lov_bp
 from routes.notification_routes import notification_bp, notification_stream_bp
+from routes.quality_rule_routes import quality_rules_bp
 from repositories.job_repository import JobRepository
 from services import job_runner
 from services.connection_health_service import connection_heartbeat_sweep
 from services.notification_retention import notification_retention
+from services.dq_run_service import dq_run_service
 from utils.logger import configure_logging, get_logger, new_request_id, set_request_id
 
 
@@ -62,6 +64,11 @@ def _reset_interrupted_jobs() -> None:
         job_runner.reset_interrupted_jobs(JobRepository())
     except Exception:
         _logger.exception("Could not reset interrupted jobs on startup")
+
+    try:
+        dq_run_service.reset_interrupted()
+    except Exception:
+        _logger.exception("Could not reset interrupted data-quality runs on startup")
 
 
 def create_app() -> FastAPI:
@@ -166,6 +173,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_bp, dependencies=protected_dependencies)
     app.include_router(lov_bp, dependencies=protected_dependencies)
     app.include_router(notification_bp, dependencies=protected_dependencies)
+    app.include_router(quality_rules_bp, dependencies=protected_dependencies)
 
     app.include_router(notification_stream_bp)
 

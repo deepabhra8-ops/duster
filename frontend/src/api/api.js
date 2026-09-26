@@ -237,6 +237,31 @@ export const listDatabaseMetadata = (
 
 export const fetchDashboardSummary = () => get("/dashboard/summary");
 
+export const listQualityRuleTemplates = () => get("/quality-rules/templates");
+export const listQualityRules = () => get("/quality-rules");
+export const fetchQualityRule = (ruleId) => get(`/quality-rules/${encodeURIComponent(ruleId)}`);
+export const createQualityRule = (rule) => post("/quality-rules", rule);
+export const updateQualityRule = (ruleId, rule) =>
+  request(http.put(`/quality-rules/${encodeURIComponent(ruleId)}`, rule));
+export const setQualityRuleEnabled = (ruleId, enabled) =>
+  patch(`/quality-rules/${encodeURIComponent(ruleId)}`, { enabled });
+export const duplicateQualityRule = (ruleId) => post(`/quality-rules/${encodeURIComponent(ruleId)}/duplicate`);
+export const deleteQualityRule = (ruleId) => del(`/quality-rules/${encodeURIComponent(ruleId)}`);
+
+// Resolving a scope reads metadata from every matching connection, so a dry run
+// over "everything" can outlast the default JSON timeout.
+export const dryRunQualityRules = (body) => post("/quality-rules/dry-run", body, { timeout: TRANSFER_TIMEOUT });
+
+export const startQualityRun = (body) => post("/quality-rules/runs", body);
+export const listQualityRuns = ({ page = 1, pageSize = 20 } = {}) =>
+  get("/quality-rules/runs", { params: { page, pageSize } });
+export const fetchQualityRun = (runId = "latest") => get(`/quality-rules/runs/${encodeURIComponent(runId)}`);
+export const fetchQualityRunResults = (runId = "latest", { status = "ALL", page = 1, pageSize = 50 } = {}) =>
+  get(`/quality-rules/runs/${encodeURIComponent(runId)}/results`, { params: { status, page, pageSize } });
+export const cancelQualityRun = (runId) => post(`/quality-rules/runs/${encodeURIComponent(runId)}/cancel`);
+export const qualityRunResultsCsvUrl = (runId = "latest") =>
+  `${API_BASE_URL}/quality-rules/runs/${encodeURIComponent(runId)}/results.csv`;
+
 export const listNotifications = ({ limit = 20, before, unreadOnly = false } = {}) =>
   get("/notifications", {
     params: { limit, before: before || undefined, unread: unreadOnly || undefined },

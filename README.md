@@ -75,6 +75,32 @@ pytest                    # all tests
 pytest -m "not spark"     # skip tests needing a real local SparkSession
 ```
 
+### Data quality rules
+
+The Quality rules pages (`/quality-rules`, `/quality-rules/runs`) run a scoped,
+template-based DQ engine (`backend/engine/quality/`). The design it follows: a rule is
+a record (template + params + threshold + severity) kept separate from a
+catalog/schema/table/column scope, and every rule × table is checked in one Spark
+aggregate pass per table.
+
+- **Catalog = saved connection.** A scope's catalog glob matches saved-connection
+  names, so `*` means every connection. Schemas, tables and columns come from each
+  source's own metadata, and columns are re-checked against the live Spark schema
+  when a run starts.
+- **Storage** is the app database. `dq_rules` holds the rules, `dq_runs` the runs, and
+  `dq_results` is append-only, one row per rule × target with raw pass/total counts.
+  Scores (row-weighted, table average, thresholds met) are rolled up from those counts
+  when a run is read, never stored.
+- **Templates** live in `engine/quality/templates.py`. Add one with `register(...)`, and
+  mirror its metadata in `frontend/src/pages/QualityRules/ruleRegistry.js`.
+- **API** is under `/api/quality-rules`: CRUD on rules, `POST /dry-run` (plans without
+  scanning), `POST /runs` (async, returns 202), `GET /runs/{id|latest}` with rollups,
+  `GET /runs/{id}/results` (paged, worst first) and `/results.csv`.
+
+Apply `migrations/004_data_quality.sql` with `python scripts/run_migrations.py`. Tuning
+knobs (`DQ_DEFAULT_PARALLEL_TABLES`, `DQ_MAX_EXPRS_PER_PASS`, `DQ_RUN_WORKERS`, …) are in
+`core/config/data_quality_config.py`.
+
 ## Frontend
 
 React 18 (JavaScript, no TypeScript) + Vite 5 + React Router v7 + Axios.

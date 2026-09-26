@@ -7,12 +7,14 @@ export const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [status, setStatus] = useState("checking");
   const [username, setUsername] = useState(null);
+  const [email, setEmail] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     apiMe().then(({ ok, data }) => {
       if (cancelled) return;
       setUsername(ok ? data.username : null);
+      setEmail(ok ? data.email : null);
       setStatus(ok ? "authenticated" : "anonymous");
     });
     return () => {
@@ -23,6 +25,7 @@ export function AuthProvider({ children }) {
   const resetToAnonymous = useCallback(() => {
     purgeClientState();
     setUsername(null);
+    setEmail(null);
     setStatus("anonymous");
   }, []);
 
@@ -35,6 +38,7 @@ export function AuthProvider({ children }) {
     const res = await apiLogin(u, password);
     if (res.ok) {
       setUsername(res.data.username);
+      setEmail(res.data.email);
       setStatus("authenticated");
     }
     return res;
@@ -46,7 +50,7 @@ export function AuthProvider({ children }) {
   }, [resetToAnonymous]);
 
   return (
-    <AuthContext.Provider value={{ status, username, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ status, username, email, login, logout }}>{children}</AuthContext.Provider>
   );
 }
 

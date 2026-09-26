@@ -16,3 +16,8 @@ export const SCORE_BAR_COLOR_VAR = {
   warn: "var(--warning)",
   bad: "var(--danger)",
 };
+
+export function scoreColorVar(score) {
+  const bucket = scoreBucket(score);
+  return bucket ? SCORE_BAR_COLOR_VAR[bucket] : "var(--ink-faint)";
+}

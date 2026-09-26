@@ -82,6 +82,16 @@ export const deleteConnection = (id) => del(`/connections/${id}`);
 
 export const revealConnection = (id) => get(`/connections/${id}/reveal`);
 
+export const heartbeatConnection = (id) => post(`/connections/${id}/heartbeat`);
+
+export const getIngestionConfig = (id) => get(`/connections/${id}/ingestion`);
+
+export const saveIngestionConfig = (id, latencyRequirement, schedulingOwnership) =>
+  patch(`/connections/${id}/ingestion`, {
+    latencyRequirement,
+    schedulingOwnership,
+  });
+
 export const listConnectionSchemas = (id) => get(`/connections/${id}/schemas`);
 
 export const refreshConnectionSchemas = (id) =>

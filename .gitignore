@@ -74,3 +74,8 @@ desktop.ini
 .claude/
 /docs/
 CHANGES.md
+frontend/design/mockups/
+
+# Docker - local-machine overrides, never the Dockerfiles/.dockerignore themselves
+docker-compose.override.yml
+docker-compose.override.yaml

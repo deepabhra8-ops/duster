@@ -81,6 +81,12 @@ class DatabaseConnector(ABC):
                 "error": describe_connection_error(exc, self.error_patterns),
             }
 
+    def heartbeat(
+        self,
+        details: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.test(details)
+
     def accelerator_source_type(self) -> str:
         return "database"
 

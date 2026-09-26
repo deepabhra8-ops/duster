@@ -47,10 +47,3 @@ export function scoreDelta(scoreTrend) {
     label: `${Math.abs(Math.round(diffPct))}%`,
   };
 }
-
-export function scoreColorVar(score) {
-  if (typeof score !== "number") return undefined;
-  if (score >= 90) return "var(--success)";
-  if (score >= 70) return "var(--warning)";
-  return "var(--danger)";
-}

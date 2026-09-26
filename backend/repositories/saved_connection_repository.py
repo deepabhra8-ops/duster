@@ -167,6 +167,55 @@ class SavedConnectionRepository:
             logger.exception("Failed to delete saved connection '%s'", connection_id)
             raise
 
+    def update_health(
+        self,
+        connection_id: str,
+        status: str,
+        error: str | None,
+        tested_at: datetime,
+        schema_count: int | None = None,
+        table_count: int | None = None,
+    ) -> dict[str, Any] | None:
+        try:
+            with get_db_session() as session:
+                row = session.get(SavedConnection, connection_id)
+
+                if row is None:
+                    return None
+
+                row.last_test_status = status
+                row.last_test_error = error
+                row.last_tested_at = tested_at
+
+                if schema_count is not None:
+                    row.schema_count = schema_count
+
+                if table_count is not None:
+                    row.table_count = table_count
+
+                session.commit()
+
+                return self._to_summary(row)
+        except Exception:
+            logger.exception("Failed to update health for connection '%s'", connection_id)
+            raise
+
+    def mark_rotation_reminded(self, connection_id: str, when: datetime) -> None:
+        try:
+            with get_db_session() as session:
+                row = session.get(SavedConnection, connection_id)
+
+                if row is None:
+                    return
+
+                row.rotation_reminded_at = when
+                session.commit()
+        except Exception:
+            logger.exception(
+                "Failed to record rotation reminder for connection '%s'", connection_id
+            )
+            raise
+
     @staticmethod
     def _to_summary(row: SavedConnection) -> dict[str, Any]:
         return {
@@ -176,6 +225,13 @@ class SavedConnectionRepository:
             "description": row.description,
             "created_by": row.created_by,
             "created_at": row.created_at,
+            "last_tested_at": row.last_tested_at,
+            "last_test_status": row.last_test_status,
+            "last_test_error": row.last_test_error,
+            "schema_count": row.schema_count,
+            "table_count": row.table_count,
+            "last_rotated_at": row.last_rotated_at,
+            "rotation_reminded_at": row.rotation_reminded_at,
         }
 
 

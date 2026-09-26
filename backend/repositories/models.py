@@ -58,6 +58,30 @@ class SavedConnection(Base):
     created_at                   = Column(DateTime, nullable=False, server_default=func.now())
     updated_at                   = Column(DateTime, nullable=False, server_default=func.now())
 
+    last_tested_at               = Column(DateTime)
+    last_test_status             = Column(String(20), nullable=False, default="unknown")
+    last_test_error              = Column(Text)
+    schema_count                 = Column(Integer)
+    table_count                  = Column(Integer)
+    last_rotated_at              = Column(DateTime)
+    rotation_reminded_at         = Column(DateTime)
+
+
+class IngestionConfig(Base):
+    __tablename__ = "ingestion_configs"
+
+    connection_id        = Column(
+        String(32),
+        ForeignKey("saved_connections.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    system_type          = Column(String(20), nullable=False)
+    latency_requirement  = Column(String(20), nullable=False)
+    scheduling_ownership = Column(String(20), nullable=False)
+    ingestion_mode       = Column(String(10), nullable=False)
+    created_at           = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at           = Column(DateTime, nullable=False, server_default=func.now())
+
 
 class ProfileMapResult(Base):
     __tablename__ = "profile_map_results"

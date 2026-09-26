@@ -1,16 +1,51 @@
+import { Plus, RefreshCw, ExternalLink } from "lucide-react";
 import { StatusRow } from "../Badge/StatusDot.jsx";
+import { Button } from "../Button/Button.jsx";
 
 const EM_DASH = "—";
 
+const VARIANT_CLASS = {
+  connected: "",
+  warning: "is-warning",
+  error: "is-error",
+  syncing: "is-syncing",
+  ghost: "is-ghost",
+};
+
 function sourceGlyph(dbType) {
-  return String(dbType || "").slice(0, 2).toUpperCase() || "??";
+  return String(dbType || "").toUpperCase() || "??";
 }
 
-export function ConnectionCard({ name, host, dbType, statusTone = "idle", statusLabel, statusDetail, stats, onMenu }) {
+/**
+ * variant: "connected" (default) | "warning" | "error" | "syncing" | "ghost". Each variant
+ * swaps the card's body content for the state a real connection can be in, per the
+ * Connections mockup: connected/warning both show the schemas/tables/avg-score stat row
+ * (warning only differs by its amber border + status label); error swaps the stats for an
+ * explanation + a retry action; syncing swaps them for a live progress bar; ghost (not yet
+ * connected) drops the status row entirely for a short description + a connect action.
+ */
+export function ConnectionCard({
+  variant = "connected",
+  name,
+  host,
+  dbType,
+  statusTone = "idle",
+  statusLabel,
+  statusDetail,
+  stats,
+  onMenu,
+  errorNote,
+  onRetry,
+  syncPercent,
+  description,
+  connectTo,
+  connectDisabled,
+}) {
   const { schemas = EM_DASH, tables = EM_DASH, avgScore = EM_DASH } = stats || {};
+  const cardClass = ["conn-card", VARIANT_CLASS[variant]].filter(Boolean).join(" ");
 
   return (
-    <div className="conn-card">
+    <div className={cardClass}>
       <div className="conn-card-head">
         <div className="conn-icon">{sourceGlyph(dbType)}</div>
         <div>
@@ -28,23 +63,65 @@ export function ConnectionCard({ name, host, dbType, statusTone = "idle", status
         ) : null}
       </div>
 
-      <StatusRow tone={statusTone} label={statusLabel} detail={statusDetail} />
+      {variant !== "ghost" ? <StatusRow tone={statusTone} label={statusLabel} detail={statusDetail} /> : null}
 
-      <div className="conn-stats">
-        <div>
-          <div className="conn-stat-label">Schemas</div>
-          <div className="conn-stat-value">{schemas}</div>
+      {variant === "error" ? (
+        <>
+          <div className="conn-error-note">{errorNote}</div>
+          <button type="button" className="btn btn-secondary btn-xs" style={{ alignSelf: "flex-start" }} onClick={onRetry}>
+            <RefreshCw size={12} aria-hidden="true" />
+            Retry connection
+          </button>
+        </>
+      ) : variant === "syncing" ? (
+        <div className="conn-sync-row">
+          <span className="score-bar-track" style={{ flex: 1 }}>
+            <span className="score-bar-fill" style={{ width: `${syncPercent}%`, background: "var(--data)" }} />
+          </span>
+          <span className="conn-sync-label">{syncPercent}%</span>
         </div>
-        <div>
-          <div className="conn-stat-label">Tables</div>
-          <div className="conn-stat-value">{tables}</div>
+      ) : variant === "ghost" ? (
+        <>
+          <div className="conn-ghost-desc">{description}</div>
+          <Button
+            register="secondary"
+            size="xs"
+            style={{ alignSelf: "flex-start" }}
+            to={connectDisabled ? undefined : connectTo}
+            disabled={connectDisabled}
+            title={connectDisabled ? "Coming soon" : undefined}
+          >
+            <ExternalLink size={12} aria-hidden="true" />
+            {connectDisabled ? "Coming soon" : "Connect"}
+          </Button>
+        </>
+      ) : (
+        <div className="conn-stats">
+          <div>
+            <div className="conn-stat-label">Schemas</div>
+            <div className="conn-stat-value">{schemas}</div>
+          </div>
+          <div>
+            <div className="conn-stat-label">Tables</div>
+            <div className="conn-stat-value">{tables}</div>
+          </div>
+          <div>
+            <div className="conn-stat-label">Avg score</div>
+            <div className="conn-stat-value">{avgScore}</div>
+          </div>
         </div>
-        <div>
-          <div className="conn-stat-label">Avg score</div>
-          <div className="conn-stat-value">{avgScore}</div>
-        </div>
-      </div>
+      )}
     </div>
+  );
+}
+
+/** The dashed "add a new item" tile that closes out a grid of cards (e.g. ConnectionCards). */
+export function AddTile({ label = "Add connection", onClick }) {
+  return (
+    <button type="button" className="add-tile" onClick={onClick}>
+      <Plus aria-hidden="true" />
+      <span>{label}</span>
+    </button>
   );
 }
 

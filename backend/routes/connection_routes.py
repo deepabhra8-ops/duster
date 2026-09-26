@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from routes.auth_routes import require_auth
+from services.connection_health_service import run_heartbeat
 from services.connection_service import connection_service
 from services.saved_connection_service import (
     ConnectionPermissionError,
@@ -211,6 +212,23 @@ def reveal_connection(
     except Exception:
         logger.exception("Failed to reveal saved connection '%s'", connection_id)
         return _error("Failed to read the connection", 500)
+
+
+@connection_bp.post("/api/connections/{connection_id}/heartbeat")
+def heartbeat_connection(
+    connection_id: str,
+    username: str = Depends(require_auth),
+):
+    try:
+        updated = run_heartbeat(connection_id)
+
+        if updated is None:
+            return _error("Connection not found", 404)
+
+        return {"ok": True, "data": updated}
+    except Exception:
+        logger.exception("Failed to run heartbeat for connection '%s'", connection_id)
+        return _error("Failed to check the connection", 500)
 
 
 @connection_bp.get("/api/connections/{connection_id}/schemas")

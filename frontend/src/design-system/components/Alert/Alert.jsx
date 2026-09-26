@@ -17,6 +17,12 @@ const ICONS = {
       <path d="M12 8v5M12 16h.01" />
     </svg>
   ),
+  info: (
+    <svg className="dalert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v.01M12 12v4" />
+    </svg>
+  ),
 };
 
 export function Alert({ tone = "danger", title, children }) {

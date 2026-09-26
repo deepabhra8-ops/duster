@@ -13,7 +13,7 @@ export default function NotFound() {
         </Alert>
         <div style={{ marginTop: "var(--space-4)" }}>
           <Link to={DEFAULT_ROUTE}>
-            <Button register="primary">Back to Control Room</Button>
+            <Button register="primary">Back to Dashboards</Button>
           </Link>
         </div>
       </Panel>

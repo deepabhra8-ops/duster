@@ -32,7 +32,8 @@ class UserRepository:
             with get_db_session() as session:
                 row = session.execute(
                     text(
-                        "SELECT user_name AS username, password_hash, is_active, expiry_date "
+                        "SELECT user_name AS username, password_hash, is_active, expiry_date, "
+                        "user_email_id AS email "
                         f"FROM {_USERS_TABLE} WHERE user_name = :username"
                     ),
                     {"username": username},

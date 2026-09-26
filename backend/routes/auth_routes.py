@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from core.config import SESSION_COOKIE_NAME, SESSION_COOKIE_SECURE, SESSION_TTL_SECONDS
+from repositories.user_repository import user_repository
 from services.auth_service import auth_service
 from utils.logger import get_logger
 
@@ -62,7 +63,9 @@ async def login(request: Request, response: Response):
             )
 
         _set_session_cookie(response, session_id)
-        return {"ok": True, "username": username.strip()}
+        clean_username = username.strip()
+        user = user_repository.get_by_username(clean_username)
+        return {"ok": True, "username": clean_username, "email": user.get("email") if user else None}
     except Exception:
         logger.exception("Unexpected login route failure")
         raise
@@ -84,4 +87,5 @@ async def logout(request: Request, response: Response):
 async def me(request: Request):
     session_id = request.cookies.get(SESSION_COOKIE_NAME)
     username = auth_service.get_current_user(session_id)
-    return {"ok": True, "username": username}
+    user = user_repository.get_by_username(username) if username else None
+    return {"ok": True, "username": username, "email": user.get("email") if user else None}

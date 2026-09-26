@@ -23,10 +23,11 @@ export const STORAGE_KEYS = {
   RECENT_JOBS: "dq_recent_jobs",
 };
 
-export const DEFAULT_ROUTE = "/control-room";
+export const DEFAULT_ROUTE = "/dashboards/dimensions";
 
 export const PAGE_META = {
-  "control-room": { title: "Control Room", subtitle: "Fleet-level health, connections, and recent activity." },
+  "dashboards/dimensions": { title: "Dashboard", subtitle: "Data health across the five core quality dimensions." },
+  "dashboards/data-sources": { title: "Data sources", subtitle: "Freshness, volume, distribution, schema and lineage per source." },
 };
 
 export const STEPS = {

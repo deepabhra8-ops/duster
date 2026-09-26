@@ -1,0 +1,40 @@
+# Build context for frontend/Dockerfile is frontend/ itself.
+
+node_modules
+dist
+dist-ssr
+.vite
+coverage
+
+# Design reference mockups - not part of the built bundle
+design
+
+# Tests - not needed to build the production bundle
+src/**/*.test.js
+src/**/*.test.jsx
+src/test
+
+# Secrets / env files - never bake these into an image
+.env
+.env.*
+!.env.example
+
+# Logs and local files
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode
+.idea
+*.swp
+*~
+
+# Version control
+.git
+.gitignore

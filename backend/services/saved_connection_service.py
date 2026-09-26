@@ -49,6 +49,15 @@ class SavedConnectionService:
     def get(self, connection_id: str) -> dict[str, Any] | None:
         return saved_connection_repository.get(connection_id)
 
+    def get_for_edit(self, connection_id: str, username: str) -> dict[str, Any] | None:
+        existing = saved_connection_repository.get(connection_id)
+
+        if existing is None:
+            return None
+
+        self._require_owner(existing, username, action="configure")
+        return existing
+
     def create(
         self,
         name: str,

@@ -1,7 +1,7 @@
 import { fetchDashboardSummary } from "../api/api.js";
 
 /**
- * Normalizes /api/dashboard/summary into the shape ControlRoomPage consumes.
+ * Normalizes /api/dashboard/summary into the shape DashboardPage consumes.
  * Only this file (and connectionsService.js) is allowed to import api/api.js —
  * pages and hooks depend on this service, never on the axios client directly.
  */

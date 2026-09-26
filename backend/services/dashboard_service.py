@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import Date, cast, func
 
 from core.db import get_db_session
 from repositories.models import Job, SavedConnection, ValidationResult
@@ -104,7 +104,7 @@ class DashboardService:
     def _score_trend(session: Any, username: str) -> list[dict[str, Any]]:
         since = datetime.utcnow() - timedelta(days=TREND_DAYS)
 
-        day = func.date(ValidationResult.created_at).label("day")
+        day = cast(ValidationResult.created_at, Date).label("day")
 
         rows = (
             session.query(

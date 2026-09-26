@@ -14,6 +14,7 @@ from core.config import (
     DEBUG,
     HOST,
     MAX_UPLOAD_SIZE_BYTES,
+    RUN_CONNECTION_HEARTBEAT,
     RUN_NOTIFICATION_PURGE,
     PORT,
     THREADED,
@@ -22,6 +23,7 @@ from core.config import (
 from routes.health_routes import health_bp
 from routes.auth_routes import auth_bp, require_auth
 from routes.connection_routes import connection_bp
+from routes.ingestion_routes import ingestion_bp
 from routes.upload_routes import upload_bp
 from routes.job_routes import job_bp
 from routes.download_routes import download_bp
@@ -29,6 +31,7 @@ from routes.lov_routes import lov_bp
 from routes.notification_routes import notification_bp, notification_stream_bp
 from repositories.job_repository import JobRepository
 from services import job_runner
+from services.connection_health_service import connection_heartbeat_sweep
 from services.notification_retention import notification_retention
 from utils.logger import configure_logging, get_logger, new_request_id, set_request_id
 
@@ -69,11 +72,17 @@ def create_app() -> FastAPI:
     async def lifespan(_: FastAPI):
         _reset_interrupted_jobs()
         _start_sweep("notification retention sweep", RUN_NOTIFICATION_PURGE, notification_retention.start)
+        _start_sweep(
+            "connection heartbeat sweep",
+            RUN_CONNECTION_HEARTBEAT,
+            connection_heartbeat_sweep.start,
+        )
 
         try:
             yield
         finally:
             _stop_sweep("notification retention sweep", notification_retention.stop)
+            _stop_sweep("connection heartbeat sweep", connection_heartbeat_sweep.stop)
 
     app = FastAPI(title="DUSTER", lifespan=lifespan)
 
@@ -149,6 +158,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_bp)
     protected_dependencies = [Depends(require_auth)]
     app.include_router(connection_bp, dependencies=protected_dependencies)
+    app.include_router(ingestion_bp, dependencies=protected_dependencies)
     app.include_router(upload_bp, dependencies=protected_dependencies)
     app.include_router(job_bp, dependencies=protected_dependencies)
     app.include_router(download_bp, dependencies=protected_dependencies)

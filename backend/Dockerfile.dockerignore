@@ -1,0 +1,73 @@
+# Build context for backend/Dockerfile is the repo root (it needs the root
+# requirements.txt). This keeps everything irrelevant to the backend image
+# out of that context.
+
+# Version control / tooling / docs
+.git
+.gitignore
+.claude
+docs
+*.md
+
+# Frontend - not needed to build the backend image
+frontend
+
+# Python virtualenv and caches - never bake a host venv into an image
+venv
+.venv*
+**/__pycache__
+**/*.py[cod]
+**/*.pyd
+*.egg-info
+.eggs
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+.coverage.*
+htmlcov
+
+# App runtime data - generated at runtime, mount as a volume instead
+runtime
+dq_parameter.yaml
+
+# Backend test/dev-only content not needed in the image
+backend/tests
+backend/test.xlsx
+backend/pytest.ini
+
+# Secrets / env files - never bake credentials into an image
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+
+# Data files
+*.csv
+*.parquet
+*.xlsx
+*.xls
+~$*
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode
+.idea
+*.swp
+*~
+
+# Spark / JVM local artifacts
+spark-warehouse
+metastore_db
+derby.log

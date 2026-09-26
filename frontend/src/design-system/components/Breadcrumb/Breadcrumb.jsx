@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { ScoreBadge } from "../ScoreBadge/ScoreBadge.jsx";
 
 /**
@@ -12,10 +13,10 @@ export function Breadcrumb({ segments, currentScore }) {
     <nav className="crumb" aria-label="Schema breadcrumb">
       {ancestors.map((seg, i) => (
         <span key={seg.href || seg.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <a href={seg.href || "#"} className="crumb-link">
+          <Link to={seg.href || "#"} className="crumb-link">
             {seg.icon || null}
             {seg.label}
-          </a>
+          </Link>
           <span className="crumb-sep">/</span>
         </span>
       ))}

@@ -1,32 +1,45 @@
 /* Duster Console — design tokens.
-   Values copied 1:1 from the "Duster Console" Design System artifact's tokens.json (v2).
-   Light theme only today; names are role-based (canvas/surface/ink/accent) so a
-   `[data-theme="dark"]` block can redefine these same names later without renaming call sites. */
+   Black & green is the primary theme (see the Duster Console Design System artifact for the
+   full rationale). Names stay role-based (canvas/surface/ink/accent) — this file replaced the
+   values behind those names, not the names themselves, so no component or page needed to
+   change to pick up the new theme.
+
+   One deliberate exception to the system's usual "accent never doubles as a status color"
+   rule: --success reuses --accent here. In a black-and-green identity, "green = active/good"
+   is the whole point of the palette, so unifying them is intentional for this theme rather
+   than an accidental collision — everywhere else (warning/danger/data) keeps its own hue. */
 
 :root {
+  color-scheme: dark;
+
   /* color */
-  --canvas: #F5F6F8;
-  --surface: #FFFFFF;
-  --surface-sunken: #F0F2F5;
-  --surface-selected: #EEF1FE;
-  --border-subtle: #EAECF0;
-  --border: #DCE0E6;
-  --border-strong: #B7BEC8;
-  --ink: #10141A;
-  --ink-muted: #5B6472;
-  --ink-faint: #9AA2AD;
-  --accent: #3452E0;
-  --accent-strong: #2740B8;
-  --accent-subtle: #EEF1FE;
-  --data: #0C8599;
-  --data-subtle: #E3F6F8;
-  --success: #15803D;
-  --success-subtle: #E7F6EC;
-  --warning: #B45309;
-  --warning-subtle: #FDF1E2;
-  --danger: #B42318;
-  --danger-subtle: #FBEAE8;
-  --score-track: #E7E9ED;
+  --canvas: #090B09;
+  --surface: #111511;
+  --surface-sunken: #0D110D;
+  --surface-selected: #123321;
+  --border-subtle: #1B211B;
+  --border: #262E26;
+  --border-strong: #3A453A;
+  --ink: #E7F2E9;
+  --ink-muted: #8FA391;
+  --ink-faint: #5A6B5C;
+  --accent: #22C55E;
+  --accent-strong: #16A34A;
+  --accent-subtle: #123321;
+  --on-accent: #05100A;
+  --data: #22D3EE;
+  --data-subtle: #0F2A30;
+  --success: #22C55E;
+  --success-subtle: #12291B;
+  --warning: #F59E0B;
+  --warning-subtle: #2E2410;
+  --danger: #F87171;
+  --danger-subtle: #2E1515;
+  /* Primary-button-only color, deliberately separate from --accent so the rest of the
+     black-and-green identity (nav, tabs, chips, links, success) is unaffected. */
+  --button-primary: #F97316;
+  --button-primary-strong: #EA580C;
+  --score-track: #1B211B;
   --white: #FFFFFF;
 
   /* type */
@@ -50,10 +63,12 @@
   --radius-lg: 10px;
   --radius-full: 999px;
 
-  /* shadow — only for floating surfaces: dropdowns, tooltips, modals */
-  --shadow-sm: 0 1px 2px 0 rgba(16, 20, 26, 0.06);
-  --shadow-md: 0 4px 12px -2px rgba(16, 20, 26, 0.12), 0 0 0 1px rgba(16, 20, 26, 0.04);
-  --shadow-lg: 0 16px 40px -8px rgba(16, 20, 26, 0.22), 0 0 0 1px rgba(16, 20, 26, 0.04);
+  /* shadow — only for floating surfaces: dropdowns, tooltips, modals. Dark grounds need denser
+     shadows than light ones to read at all, plus a faint light hairline to separate the
+     floating surface from a background that's nearly the same value as a soft shadow would be. */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-lg: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* opacity */
   --disabled: 0.45;
